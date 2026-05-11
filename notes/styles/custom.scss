@@ -1,0 +1,38 @@
+/*-- scss:defaults --*/
+
+// Fonts
+$font-family-sans-serif: "Inter", system-ui, sans-serif;
+$font-family-monospace: "JetBrains Mono", "Fira Code", monospace;
+$headings-font-family: "Inter", system-ui, sans-serif;
+
+// Colors
+$primary: #2d6a4f;
+$body-bg: #fafaf8;
+$body-color: #1a1a1a;
+$link-color: $primary;
+
+/*-- scss:rules --*/
+
+// Website: clean readable layout
+.navbar {
+  border-bottom: 1px solid #e8e8e8;
+}
+
+// Revealjs: slide refinements
+.reveal {
+  font-size: 1.8rem;
+
+  h1, h2, h3 {
+    text-transform: none;
+    letter-spacing: -0.02em;
+  }
+
+  .slide-number {
+    font-size: 0.9rem;
+    opacity: 0.6;
+  }
+
+  pre code {
+    font-size: 0.85em;
+  }
+}

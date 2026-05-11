@@ -1,0 +1,27 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Notes"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: topics/example-topic/index.qmd
+        text: Example Topic
+    right:
+      - icon: github
+        href: https://github.com
+  page-footer:
+    center: "Built with [Quarto](https://quarto.org)"
+
+format:
+  html:
+    theme:
+      - cosmo
+      - styles/custom.scss
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    link-external-newwindow: true

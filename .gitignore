@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+
+# ── notes/ (Quarto) ──────────────────────────────────────────
+notes/_site/
+notes/_slides/
+notes/_freeze/
+notes/.quarto/
+notes/*_files/
+
+# ── data/ ────────────────────────────────────────────────────
+# (add rules here as the directory grows)

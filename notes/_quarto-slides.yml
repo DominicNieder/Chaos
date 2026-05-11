@@ -1,0 +1,22 @@
+# Profile: render all slide decks
+# Usage: quarto render --profile slides
+#        quarto preview topics/example-topic/slides.qmd
+
+project:
+  render:
+    - "**/slides.qmd"
+  output-dir: _slides
+
+format:
+  revealjs:
+    theme: [default, styles/custom.scss]
+    slide-number: true
+    chalkboard: true
+    preview-links: auto
+    footer: "Notes"
+    transition: slide
+    background-transition: fade
+    highlight-style: github
+    code-fold: false
+    width: 1280
+    height: 720

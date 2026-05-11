@@ -1,0 +1,47 @@
+## Overview
+
+This is the shared content partial. Both the web page and the slide deck include this file, so edits here propagate to both outputs automatically.
+
+Use standard Quarto/Pandoc markdown. Slide breaks are marked with `---` and are ignored in web output (they just become horizontal rules).
+
+---
+
+## Key Idea One
+
+Write content as you normally would. On the web this renders as continuous prose. In slides, each `---` creates a new slide.
+
+- Point A
+- Point B
+- Point C
+
+---
+
+## Key Idea Two
+
+Code blocks work in both contexts:
+
+```python
+def hello(name: str) -> str:
+    return f"Hello, {name}"
+
+print(hello("world"))
+```
+
+---
+
+## Key Idea Three
+
+You can embed figures, tables, callouts — all standard Quarto features.
+
+::: {.callout-tip}
+Use `{.callout-*}` blocks freely — they render nicely on the web and collapse gracefully in slides.
+:::
+
+---
+
+## Summary
+
+- The `_content.qmd` partial is the single source of truth
+- Web page wraps it in a full HTML layout
+- Slides wrap it in reveal.js
+- Edit once, publish both
