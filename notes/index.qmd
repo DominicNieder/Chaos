@@ -1,22 +1,16 @@
 ---
-title: "Notes"
+title: "Chaos"
 subtitle: "A modular knowledge base"
 page-layout: full
 ---
 
-Welcome. This site collects notes organized by topic.
 
-Each topic has a web page for reading and a slide deck for presenting — both rendered from the same source.
 
-## Topics
+## Table of Content
 
 | Topic | Notes | Slides |
 |-------|-------|--------|
-| [Example Topic](topics/example-topic/index.qmd) | Reading view | [Slides](topics/example-topic/slides.qmd) |
+
 | [26-05-26 Log](topics/26-05-26-log/index.qmd) | Reading view | [Slides](topics/26-05-26-log/slides.qmd) |
 
-## How it works
 
-- **Website** (`quarto render`) — full site published to GitHub Pages
-- **Slides** (`quarto render --profile slides`) — reveal.js deck from the same content
-- Shared content lives in `_content.qmd` partials; pages and slides both `{{< include >}}` them
