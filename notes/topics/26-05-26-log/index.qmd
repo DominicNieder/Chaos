@@ -1,0 +1,11 @@
+---
+title: "26-05-26 Log"
+description: "Log notes for 2026-05-26."
+date: last-modified
+---
+
+::: {.callout-note appearance="minimal"}
+Also available as a [slide deck](slides.qmd).
+:::
+
+{{< include _content.qmd >}}

@@ -1,0 +1,8 @@
+---
+title: "26-05-26 Log"
+subtitle: "Notes"
+date: last-modified
+format: revealjs
+---
+
+{{< include _content.qmd >}}
