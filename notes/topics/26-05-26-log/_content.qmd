@@ -1,10 +1,32 @@
-## Thoughts
-- Interests:
+### To do!
+
+-[ ] start github
+-[ ] initialize Julia environment for the project
+
+
+### Interests:
+
   - universality -> quantum chaos [A Field Theory Approach to Universality in Quantum Chaos](https://kups.ub.uni-koeln.de/1947/1/main.pdf)
-  - phase transitions 
-  - how non-linear systems develope
-- I have a lot of literature that I want to learn
-  - I have no goal though where I want to go, or what interests me
-  -    
-- I am missing an interesting model that I 
-- 
+    - random matrix theory?
+  - phase transitions as models for non-linear systems
+  - how non-linear systems develop as a function of degrees of freedom
+
+### Issues:
+
+  1) low understanding of basic concepts
+  2) I want to learn by doing, so that I come across basic concepts and problems
+  3) how to find a model to start?
+
+### talk with benoit:
+
+  - Hénon Heilses Hamiltonian -> classical chaos (connection to Toda potential, integrable)
+
+$$V(x,y)=1/2(x^2+y^2)+x^2y - 1/3 y^3$$
+
+  - Heno Heiles model, by Toda potential -> 3D; resulting in Heno Heiles 3D?
+  - obtaining higher order DOF by taking integral system, pert 
+  - find the models in the books
+  - computational methods (pioncare cross section)
+
+
+
