@@ -20,17 +20,22 @@ a:hover {
 
 // Checkboxes — slim circle, text colour
 input[type="checkbox"].task-list-item-checkbox {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 0.85em;
-  height: 0.85em;
-  border: 1px solid $body-color;
-  border-radius: 50%;
-  background: $body-bg;
-  cursor: pointer;
-  position: relative;
-  top: 0.1em;
-  flex-shrink: 0;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 0.85em !important;
+  height: 0.85em !important;
+  border: 1px solid $body-color !important;
+  border-radius: 50% !important;
+  background: $body-bg !important;
+  cursor: pointer !important;
+  position: relative !important;
+  top: 0.1em !important;
+  flex-shrink: 0 !important;
+
+  &:checked {
+    background: $body-bg !important;
+    border-color: $body-color !important;
+  }
 
   &:checked::after {
     content: "";
