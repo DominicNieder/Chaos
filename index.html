@@ -172,7 +172,10 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="latest-26-may-2026">Latest: 26 May, 2026</h2>
 <section id="to-do" class="level3">
 <h3 class="anchored" data-anchor-id="to-do">To do!</h3>
-<p>-[ ] start github -[ ] initialize Julia environment for the project</p>
+<ul class="task-list">
+<li><label><input type="checkbox">start github</label></li>
+<li><label><input type="checkbox">initialize Julia environment for the project</label></li>
+</ul>
 </section>
 <section id="interests" class="level3">
 <h3 class="anchored" data-anchor-id="interests">Interests:</h3>
@@ -211,6 +214,20 @@ window.Quarto = {
 </section>
 
 </main> <!-- /main -->
+document.addEventListener("DOMContentLoaded", () =&gt; {
+  const key = "tasks-" + window.location.pathname;
+  const boxes = document.querySelectorAll(".task-list-item-checkbox");
+  const saved = JSON.parse(localStorage.getItem(key) || "{}");
+  boxes.forEach((cb, i) =&gt; {
+    cb.disabled = false;
+    if (saved[i]) cb.checked = true;
+    cb.addEventListener("change", () =&gt; {
+      const state = {};
+      boxes.forEach((b, j) =&gt; (state[j] = b.checked));
+      localStorage.setItem(key, JSON.stringify(state));
+    });
+  });
+});
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";

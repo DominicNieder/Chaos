@@ -229,6 +229,20 @@ Tip
 </section>
 
 </main> <!-- /main -->
+document.addEventListener("DOMContentLoaded", () =&gt; {
+  const key = "tasks-" + window.location.pathname;
+  const boxes = document.querySelectorAll(".task-list-item-checkbox");
+  const saved = JSON.parse(localStorage.getItem(key) || "{}");
+  boxes.forEach((cb, i) =&gt; {
+    cb.disabled = false;
+    if (saved[i]) cb.checked = true;
+    cb.addEventListener("change", () =&gt; {
+      const state = {};
+      boxes.forEach((b, j) =&gt; (state[j] = b.checked));
+      localStorage.setItem(key, JSON.stringify(state));
+    });
+  });
+});
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
