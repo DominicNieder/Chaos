@@ -5,17 +5,17 @@ $font-family-sans-serif: "Inter", system-ui, sans-serif;
 $font-family-monospace: "JetBrains Mono", "Fira Code", monospace;
 $headings-font-family: "Inter", system-ui, sans-serif;
 
-// Colors
-$primary: #2d6a4f;
-$body-bg: #fafaf8;
-$body-color: #1a1a1a;
-$link-color: $primary;
+// Colors — dark background, creamy text
+$body-bg: #1a1a1a;
+$body-color: #f0ead6;
+$headings-color: #f5f0e8;
+$link-color: #c9b99a;
+$code-color: #d4c5a9;
 
 /*-- scss:rules --*/
 
-// Website: clean readable layout
-.navbar {
-  border-bottom: 1px solid #e8e8e8;
+a:hover {
+  color: #e8d9c0;
 }
 
 // Revealjs: slide refinements

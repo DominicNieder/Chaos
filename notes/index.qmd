@@ -4,13 +4,14 @@ subtitle: "A modular knowledge base"
 page-layout: full
 ---
 
-
-
 ## Table of Content
 
 | Topic | Notes | Slides |
 |-------|-------|--------|
-
 | [26-05-26 Log](topics/26-05-26-log/index.qmd) | Reading view | [Slides](topics/26-05-26-log/slides.qmd) |
 
+---
 
+## Latest: 26 May, 2026
+
+{{< include topics/26-05-26-log/_content.qmd >}}
