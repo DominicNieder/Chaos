@@ -2,7 +2,8 @@
 
 - [ ] start github
 - [ ] initialize Julia environment for the project
-
+- [ ] investigation of 'How to implement?' and 'How to visiualize?'
+- [ ] simple implementation of various and visualization 
 
 ### Interests:
 

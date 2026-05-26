@@ -7,15 +7,43 @@ $headings-font-family: "Inter", system-ui, sans-serif;
 
 // Colors — dark background, creamy text
 $body-bg: #1a1a1a;
-$body-color: #f0ead6;
-$headings-color: #f5f0e8;
-$link-color: #c9b99a;
-$code-color: #d4c5a9;
+$body-color: #f8f2e0;
+$headings-color: #f9f8f6;
+$link-color: #f48484;
+$code-color: #ae87f7;
 
 /*-- scss:rules --*/
 
 a:hover {
   color: #e8d9c0;
+}
+
+// Checkboxes — slim circle, text colour
+input[type="checkbox"].task-list-item-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.85em;
+  height: 0.85em;
+  border: 1px solid $body-color;
+  border-radius: 50%;
+  background: $body-bg;
+  cursor: pointer;
+  position: relative;
+  top: 0.1em;
+  flex-shrink: 0;
+
+  &:checked::after {
+    content: "";
+    display: block;
+    width: 0.45em;
+    height: 0.45em;
+    border-radius: 50%;
+    background: $body-color;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
 }
 
 // Revealjs: slide refinements
