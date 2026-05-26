@@ -1,0 +1,107 @@
+[
+  {
+    "objectID": "topics/example-topic/index.html",
+    "href": "topics/example-topic/index.html",
+    "title": "Example Topic",
+    "section": "",
+    "text": "Also available as a slide deck."
+  },
+  {
+    "objectID": "topics/example-topic/index.html#overview",
+    "href": "topics/example-topic/index.html#overview",
+    "title": "Example Topic",
+    "section": "Overview",
+    "text": "Overview\nThis is the shared content partial. Both the web page and the slide deck include this file, so edits here propagate to both outputs automatically.\nUse standard Quarto/Pandoc markdown. Slide breaks are marked with --- and are ignored in web output (they just become horizontal rules)."
+  },
+  {
+    "objectID": "topics/example-topic/index.html#key-idea-one",
+    "href": "topics/example-topic/index.html#key-idea-one",
+    "title": "Example Topic",
+    "section": "Key Idea One",
+    "text": "Key Idea One\nWrite content as you normally would. On the web this renders as continuous prose. In slides, each --- creates a new slide.\n\nPoint A\nPoint B\nPoint C"
+  },
+  {
+    "objectID": "topics/example-topic/index.html#key-idea-two",
+    "href": "topics/example-topic/index.html#key-idea-two",
+    "title": "Example Topic",
+    "section": "Key Idea Two",
+    "text": "Key Idea Two\nCode blocks work in both contexts:\ndef hello(name: str) -&gt; str:\n    return f\"Hello, {name}\"\n\nprint(hello(\"world\"))"
+  },
+  {
+    "objectID": "topics/example-topic/index.html#key-idea-three",
+    "href": "topics/example-topic/index.html#key-idea-three",
+    "title": "Example Topic",
+    "section": "Key Idea Three",
+    "text": "Key Idea Three\nYou can embed figures, tables, callouts — all standard Quarto features.\n\n\n\n\n\n\nTip\n\n\n\nUse {.callout-*} blocks freely — they render nicely on the web and collapse gracefully in slides."
+  },
+  {
+    "objectID": "topics/example-topic/index.html#summary",
+    "href": "topics/example-topic/index.html#summary",
+    "title": "Example Topic",
+    "section": "Summary",
+    "text": "Summary\n\nThe _content.qmd partial is the single source of truth\nWeb page wraps it in a full HTML layout\nSlides wrap it in reveal.js\nEdit once, publish both"
+  },
+  {
+    "objectID": "topics/26-05-26-log/index.html",
+    "href": "topics/26-05-26-log/index.html",
+    "title": "26 May, 2026",
+    "section": "",
+    "text": "Also available as a slide deck.\n\n\n\n\nTo do!\n-[ ] start github -[ ] initialize Julia environment for the project\n\n\nInterests:\n\nuniversality -&gt; quantum chaos A Field Theory Approach to Universality in Quantum Chaos\n\nrandom matrix theory?\n\nphase transitions as models for non-linear systems\nhow non-linear systems develop as a function of degrees of freedom\n\n\n\nIssues:\n\nlow understanding of basic concepts\nI want to learn by doing, so that I come across basic concepts and problems\nhow to find a model to start?\n\n\n\ntalk with benoit:\n\nHénon Heilses Hamiltonian -&gt; classical chaos (connection to Toda potential, integrable)\n\n\\[V(x,y)=1/2(x^2+y^2)+x^2y - 1/3 y^3\\]\n\nHeno Heiles model, by Toda potential -&gt; 3D; resulting in Heno Heiles 3D?\nobtaining higher order DOF by taking integral system, pert\nfind the models in the books\ncomputational methods (pioncare cross section)"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Chaos",
+    "section": "",
+    "text": "Topic\nNotes\nSlides\n\n\n\n\n26-05-26 Log\nReading view\nSlides"
+  },
+  {
+    "objectID": "index.html#table-of-content",
+    "href": "index.html#table-of-content",
+    "title": "Chaos",
+    "section": "",
+    "text": "Topic\nNotes\nSlides\n\n\n\n\n26-05-26 Log\nReading view\nSlides"
+  },
+  {
+    "objectID": "index.html#latest-26-may-2026",
+    "href": "index.html#latest-26-may-2026",
+    "title": "Chaos",
+    "section": "Latest: 26 May, 2026",
+    "text": "Latest: 26 May, 2026\n\nTo do!\n-[ ] start github -[ ] initialize Julia environment for the project\n\n\nInterests:\n\nuniversality -&gt; quantum chaos A Field Theory Approach to Universality in Quantum Chaos\n\nrandom matrix theory?\n\nphase transitions as models for non-linear systems\nhow non-linear systems develop as a function of degrees of freedom\n\n\n\nIssues:\n\nlow understanding of basic concepts\nI want to learn by doing, so that I come across basic concepts and problems\nhow to find a model to start?\n\n\n\ntalk with benoit:\n\nHénon Heilses Hamiltonian -&gt; classical chaos (connection to Toda potential, integrable)\n\n\\[V(x,y)=1/2(x^2+y^2)+x^2y - 1/3 y^3\\]\n\nHeno Heiles model, by Toda potential -&gt; 3D; resulting in Heno Heiles 3D?\nobtaining higher order DOF by taking integral system, pert\nfind the models in the books\ncomputational methods (pioncare cross section)"
+  },
+  {
+    "objectID": "topics/example-topic/slides.html#overview",
+    "href": "topics/example-topic/slides.html#overview",
+    "title": "Example Topic",
+    "section": "Overview",
+    "text": "Overview\nThis is the shared content partial. Both the web page and the slide deck include this file, so edits here propagate to both outputs automatically.\nUse standard Quarto/Pandoc markdown. Slide breaks are marked with --- and are ignored in web output (they just become horizontal rules)."
+  },
+  {
+    "objectID": "topics/example-topic/slides.html#key-idea-one",
+    "href": "topics/example-topic/slides.html#key-idea-one",
+    "title": "Example Topic",
+    "section": "Key Idea One",
+    "text": "Key Idea One\nWrite content as you normally would. On the web this renders as continuous prose. In slides, each --- creates a new slide.\n\nPoint A\nPoint B\nPoint C"
+  },
+  {
+    "objectID": "topics/example-topic/slides.html#key-idea-two",
+    "href": "topics/example-topic/slides.html#key-idea-two",
+    "title": "Example Topic",
+    "section": "Key Idea Two",
+    "text": "Key Idea Two\nCode blocks work in both contexts:\ndef hello(name: str) -&gt; str:\n    return f\"Hello, {name}\"\n\nprint(hello(\"world\"))"
+  },
+  {
+    "objectID": "topics/example-topic/slides.html#key-idea-three",
+    "href": "topics/example-topic/slides.html#key-idea-three",
+    "title": "Example Topic",
+    "section": "Key Idea Three",
+    "text": "Key Idea Three\nYou can embed figures, tables, callouts — all standard Quarto features.\n\n\n\n\n\n\nTip\n\n\nUse {.callout-*} blocks freely — they render nicely on the web and collapse gracefully in slides."
+  },
+  {
+    "objectID": "topics/example-topic/slides.html#summary",
+    "href": "topics/example-topic/slides.html#summary",
+    "title": "Example Topic",
+    "section": "Summary",
+    "text": "Summary\n\nThe _content.qmd partial is the single source of truth\nWeb page wraps it in a full HTML layout\nSlides wrap it in reveal.js\nEdit once, publish both"
+  }
+]
