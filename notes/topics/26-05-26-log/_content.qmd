@@ -5,6 +5,8 @@
 - [ ] investigation of 'How to implement?' and 'How to visiualize?'
 - [ ] simple implementation of various and visualization 
 
+--- 
+
 ### Interests:
 
   - universality -> quantum chaos [A Field Theory Approach to Universality in Quantum Chaos](https://kups.ub.uni-koeln.de/1947/1/main.pdf)
@@ -12,11 +14,15 @@
   - phase transitions as models for non-linear systems
   - how non-linear systems develop as a function of degrees of freedom
 
+---
+
 ### Issues:
 
   1) low understanding of basic concepts
   2) I want to learn by doing, so that I come across basic concepts and problems
   3) how to find a model to start?
+
+--- 
 
 ### talk with benoit:
 
