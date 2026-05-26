@@ -1,7 +1,7 @@
 ### To do!
 
--[ ] start github
--[ ] initialize Julia environment for the project
+- [ ] start github
+- [ ] initialize Julia environment for the project
 
 
 ### Interests:
