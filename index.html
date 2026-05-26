@@ -214,20 +214,22 @@ window.Quarto = {
 </section>
 
 </main> <!-- /main -->
-document.addEventListener("DOMContentLoaded", () =&gt; {
+<script>
+document.addEventListener("DOMContentLoaded", () => {
   const key = "tasks-" + window.location.pathname;
   const boxes = document.querySelectorAll(".task-list-item-checkbox");
   const saved = JSON.parse(localStorage.getItem(key) || "{}");
-  boxes.forEach((cb, i) =&gt; {
+  boxes.forEach((cb, i) => {
     cb.disabled = false;
     if (saved[i]) cb.checked = true;
-    cb.addEventListener("change", () =&gt; {
+    cb.addEventListener("change", () => {
       const state = {};
-      boxes.forEach((b, j) =&gt; (state[j] = b.checked));
+      boxes.forEach((b, j) => (state[j] = b.checked));
       localStorage.setItem(key, JSON.stringify(state));
     });
   });
 });
+</script>
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
