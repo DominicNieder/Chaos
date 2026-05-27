@@ -41,7 +41,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-5b9c4d9438c2366fdf56ac55b12b357f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-366d58d2c9c37ba7eaff3cb59925988f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-1e63ff109bb609a52a1e5ebc75becd30.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -78,6 +78,35 @@ MathJax = { tex: { macros: {
 }}};
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -134,22 +163,26 @@ MathJax = { tex: { macros: {
 <td></td>
 </tr>
 <tr class="odd">
+<td>diffeomorphism</td>
+<td>A continuously differentiable map <span class="math inline">\(f: N \to M\)</span> between two manifolds, such that <span class="math inline">\(f^{-1}: M \to N\)</span> is also differentiable. If <span class="math inline">\(f\)</span> is <span class="math inline">\(r\)</span>-times differentiable it is called a <span class="math inline">\(C^r\)</span>-diffeomorphism.</td>
+</tr>
+<tr class="even">
 <td>Hamiltonian</td>
 <td>The total energy function of a system, encoding kinetic and potential energy.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Lyapunov exponent</td>
 <td>Average rate of divergence of nearby trajectories. Positive values indicate chaos.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Poincaré section</td>
 <td>Intersections of a trajectory with a chosen hyperplane in phase space.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>phase space</td>
 <td>The space of all possible states, with axes for each position and momentum coordinate.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Hénon-Heiles potential</td>
 <td>Two-dimensional potential modelling chaotic motion: V = ½(x²+y²) + x²y − ⅓y³.</td>
 </tr>
