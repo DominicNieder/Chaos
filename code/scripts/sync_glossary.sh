@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-GLOSSARY="$ROOT/notes/glossary.json"
-MACROS="$ROOT/notes/styles/macros.html"
-QMD="$ROOT/notes/glossary.qmd"
+GLOSSARY="$ROOT/glossary.json"
+MACROS="$ROOT/styles/macros.html"
+QMD="$ROOT/glossary.qmd"
 
 # --- styles/macros.html ---
 {

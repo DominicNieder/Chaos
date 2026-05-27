@@ -12,39 +12,46 @@ Published here: **https://dominicnieder.github.io/Chaos/**
 
 ```
 Chaos/
-├── build.sh                # sync glossary + render notes in one command
-├── notes/                  # Quarto website source
-│   ├── index.qmd           # Homepage with topic table
-│   ├── glossary.json       # Single source of truth: definitions + LaTeX macros
-│   ├── glossary.qmd        # Generated glossary page (do not edit)
-│   ├── styles/
-│   │   ├── custom.scss     # Site theme
-│   │   ├── macros.html     # Generated MathJax macros (do not edit)
-│   │   └── tasks.html      # Persistent checkbox JS
-│   ├── topics/             # One folder per topic
-│   │   └── topic-name/
-│   │       ├── _content.qmd   # Shared content
-│   │       ├── index.qmd      # Web page view
-│   │       └── slides.qmd     # Slide deck view
-│   └── _site/              # Rendered output (ignored by git)
+├── _quarto.yml             # Quarto project config
+├── build.sh                # sync glossary + render site in one command
+├── index.qmd               # Homepage with topic table
+├── glossary.json           # Single source of truth: definitions + LaTeX macros
+├── glossary.qmd            # Generated glossary page (do not edit)
+├── styles/
+│   ├── custom.scss         # Site theme
+│   ├── macros.html         # Generated MathJax macros (do not edit)
+│   └── tasks.html          # Persistent checkbox JS
+├── templates/              # Templates for new log entries
+│   ├── _content.qmd
+│   ├── _index.qmd
+│   └── _slides.qmd
+├── topics/                 # One folder per topic/log
+│   └── YY-MM-DD-log/
+│       ├── _content.qmd   # Shared content
+│       ├── index.qmd      # Web page view
+│       └── slides.qmd     # Slide deck view
+├── _site/                  # Rendered output (ignored by git)
 ├── code/                   # Julia source
-│   ├── models/             # System definitions (equations of motion)
+│   ├── models/
 │   │   └── henon_heiles.jl
-│   ├── analysis/           # Derived quantities
-│   │   ├── poincare.jl     # Poincaré section
-│   │   └── lyapunov.jl     # Lyapunov exponent
+│   ├── analysis/
+│   │   ├── poincare.jl
+│   │   └── lyapunov.jl
 │   ├── scripts/
 │   │   ├── simulate.jl     # Run + save trajectory to data/
 │   │   ├── explore.jl      # Interactive GLMakie dashboard
-│   │   └── sync_glossary.sh  # Generates glossary.qmd and macros.html
+│   │   ├── new_log.sh      # Scaffold a new log entry
+│   │   └── sync_glossary.sh
 │   ├── notebooks/
-│   │   └── henon_heiles.jl # Pluto reactive notebook
-│   └── Project.toml        # Julia environment
+│   │   └── henon_heiles.jl
+│   └── Project.toml
 ├── figures/                # Generated plots (ignored by git)
+├── pic/                    # Photos and screenshots for notes
 ├── data/                   # Simulation outputs and parameter sets
-│   └── orientation.json    # Data orientation notes
+│   └── orientation.json
 ├── lit/                    # Literature and bibliography
-└── to_read/                # more reading
+│   └── references.bib
+└── to_read/
 ```
 
 ## Code & visualisation

@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-TEMPLATES="$ROOT/notes/templates"
-TOPICS="$ROOT/notes/topics"
-INDEX="$ROOT/notes/index.qmd"
+TEMPLATES="$ROOT/templates"
+TOPICS="$ROOT/topics"
+INDEX="$ROOT/index.qmd"
 
 # use provided date or today
 DATE="${1:-$(date +%y-%m-%d)}"
@@ -25,8 +25,8 @@ fi
 
 # --- create topic directory from templates ---
 mkdir -p "$DIR"
-for f in _content.qmd index.qmd slides.qmd; do
-  sed "s/{{DATE}}/$DISPLAY/g" "$TEMPLATES/$f" > "$DIR/$f"
+for f in _content.qmd _index.qmd _slides.qmd; do
+  sed "s/{{DATE}}/$DISPLAY/g" "$TEMPLATES/$f" > "$DIR/${f#_}"
 done
 echo "created: $DIR"
 

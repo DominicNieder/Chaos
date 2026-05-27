@@ -1,6 +1,12 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
+    - "topics/**/*.qmd"
+  resources:
+    - "pic/**"
+    - "figures/**"
 
 website:
   title: "Chaos"
@@ -18,4 +24,4 @@ format:
     link-external-newwindow: true
     include-after-body: styles/tasks.html
     include-in-header: styles/macros.html
-    bibliography: ../lit/references.bib
+    bibliography: lit/references.bib

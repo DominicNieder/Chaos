@@ -7,6 +7,6 @@ echo "==> syncing glossary..."
 bash "$ROOT/code/scripts/sync_glossary.sh"
 
 echo "==> rendering notes..."
-quarto render "$ROOT/notes/"
+quarto render "$ROOT"
 
 echo "==> done"
