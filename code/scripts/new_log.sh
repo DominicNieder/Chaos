@@ -31,7 +31,7 @@ done
 echo "created: $DIR"
 
 # --- insert new row after table header separator ---
-NEW_ROW="| [$DISPLAY](topics/${DATE}-log/index.qmd) | Reading view | [Slides](topics/${DATE}-log/slides.qmd) |"
+NEW_ROW="| [$DISPLAY](topics/${DATE}-log/index.qmd) | log entry | [Slides](topics/${DATE}-log/slides.qmd) |"
 awk -v row="$NEW_ROW" '
   /^\|---/ && !inserted { print; print row; inserted=1; next }
   { print }
