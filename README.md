@@ -106,3 +106,11 @@ This runs `sync_glossary.sh` which writes `glossary.qmd` and `styles/macros.html
 The Hamiltonian $\HH$ governs the dynamics in $\ps$.
 ```
 
+## Day Log workflow
+
+To start the day log run 
+
+```bash
+bash code/scripts/new_log.sh
+```
+This will update the main site of the github page and create the directory for the day-log based on the directory 'templates/'.
