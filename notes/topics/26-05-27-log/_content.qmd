@@ -5,6 +5,8 @@
 - [ ] investigation of 'How to implement?' and 'How to visiualize?'
 - [ ] simple implementation of various and visualization 
 
+
+
 ### getting started: Hénon Heils Model
 
 **Comments for the day:** 
@@ -24,7 +26,9 @@ So I use ai to set up my folder structure and to prepare the workflow. I also ne
 
 #### observations 
 
+- [original paper by Henon and Heiles](https://articles.adsabs.harvard.edu/pdf/1964AJ.....69...73H) @Henon1964
 - literature by @strogatz1994 under chapter 12 strange attractors
 - [wikipedia](https://en.wikipedia.org/wiki/H%C3%A9non_map)
   - 'orbit diagram' or 'bifracation diagram'
+  - **is the Héno Map the same as the Hénon–Heiles model?** I dont think so!
 
