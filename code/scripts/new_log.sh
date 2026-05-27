@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-TEMPLATES="$ROOT/templates"
+TEMPLATES="$ROOT/templates/yy-mm-dd-log"
 TOPICS="$ROOT/topics"
 INDEX="$ROOT/index.qmd"
 
