@@ -1,0 +1,13 @@
+### getting started: Hénon Heils Model
+
+#### suggested structure
+
+1) derivation
+2) considering derivation
+2) numerical implementation
+
+#### observations 
+
+- literature by @strogatz1994 under chapter 12 strange attractors
+
+

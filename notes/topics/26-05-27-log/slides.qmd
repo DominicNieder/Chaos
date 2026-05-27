@@ -1,0 +1,8 @@
+---
+title: "27 May, 2026"
+subtitle: "Notes"
+date: last-modified
+format: revealjs
+---
+
+{{< include _content.qmd >}}
