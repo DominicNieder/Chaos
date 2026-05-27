@@ -1,5 +1,14 @@
 ### getting started: Hénon Heils Model
 
+**Comments for the day:** 
+
+I first worked on some further workflow questions. Including a bash script for adding entries from the 'glossary.json' to the 'glossary.qmd' file and to the '_quarto.qmd' file, for latex macros or to initiate the day-log by the use of templates.
+
+I use the ai-tool provided by claude to help generate the bash-scripts for workflow and to communicate about the structure of my workspace. I have general idea from previous projects how I want to structure my workspace - though I do not have the knowledge in coding in 'bash' or 'yml' etc... 
+
+So I use ai to set up my folder structure and to prepare the workflow. I also need to keep track of my ai usage for transparency.
+
+
 #### suggested structure
 
 1) derivation
@@ -9,5 +18,6 @@
 #### observations 
 
 - literature by @strogatz1994 under chapter 12 strange attractors
-
+- [wikipedia](https://en.wikipedia.org/wiki/H%C3%A9non_map)
+  - 'orbit diagram' or 'bifracation diagram'
 
