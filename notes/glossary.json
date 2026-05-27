@@ -1,11 +1,53 @@
 {
-    "linear": {
-        "def": "",
-        "date": "2026-05-26"
-    },
+  "linear": {
+    "def": "",
+    "date": "2026-05-26",
+    "macro": null,
+    "latex": null
+  },
 
-    "non-linear":{
-        "def": "",
-        "data": "2026-05-26"
-    }
+  "non-linear": {
+    "def": "",
+    "date": "2026-05-26",
+    "macro": null,
+    "latex": null
+  },
+
+  "_comment": "Examples to understand workflow: ai-generated!",
+
+  "Hamiltonian": {
+    "def": "The total energy function of a system, encoding kinetic and potential energy.",
+    "date": "2026-05-26",
+    "macro": "HH",
+    "latex": "\\hat{H}"
+  },
+
+  "Lyapunov exponent": {
+    "def": "Average rate of divergence of nearby trajectories. Positive values indicate chaos.",
+    "date": "2026-05-26",
+    "macro": "Lya",
+    "latex": "\\lambda"
+  },
+
+  "Poincaré section": {
+    "def": "Intersections of a trajectory with a chosen hyperplane in phase space.",
+    "date": "2026-05-26",
+    "macro": null,
+    "latex": null
+  },
+
+  "phase space": {
+    "def": "The space of all possible states, with axes for each position and momentum coordinate.",
+    "date": "2026-05-27",
+    "macro": "ps",
+    "latex": "(x, y, p_x, p_y)"
+  },
+
+  "Hénon-Heiles potential": {
+    "def": "Two-dimensional potential modelling chaotic motion: V = ½(x²+y²) + x²y − ⅓y³.",
+    "date": "2026-05-26",
+    "macro": "VHH",
+    "latex": "\\tfrac{1}{2}(x^2+y^2)+x^2y-\\tfrac{1}{3}y^3"
+  }
+
 }
