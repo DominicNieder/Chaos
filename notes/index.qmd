@@ -6,9 +6,28 @@ page-layout: full
 
 ## Table of Content
 
-| Topic | Notes | Slides |
-|-------|-------|--------|
-| [26-05-26 Log](topics/26-05-26-log/index.qmd) | Reading view | [Slides](topics/26-05-26-log/slides.qmd) |
+<details open>
+<summary>**Logs**</summary>
+
+| Date | Notes | Slides |
+|------|-------|--------|
+| [26 May, 2026](topics/26-05-26-log/index.qmd) | Reading view | [Slides](topics/26-05-26-log/slides.qmd) |
+
+</details>
+
+<details>
+<summary>**Topics**</summary>
+
+*No topics yet.*
+
+</details>
+
+<details>
+<summary>**Glossary**</summary>
+
+{{< include glossary.qmd >}}
+
+</details>
 
 ---
 

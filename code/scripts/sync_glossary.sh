@@ -11,6 +11,7 @@ QMD="$ROOT/notes/glossary.qmd"
   echo "<script>"
   echo "MathJax = { tex: { macros: {"
   jq -r 'to_entries[]
+    | select(.value | type == "object")
     | select(.value.macro != null and .value.macro != "")
     | "  \(.value.macro): \"\(.value.latex)\","' "$GLOSSARY"
   echo "}}};"
@@ -26,6 +27,7 @@ QMD="$ROOT/notes/glossary.qmd"
   echo "| Term | Definition |"
   echo "|------|------------|"
   jq -r 'to_entries[]
+    | select(.value | type == "object")
     | "| \(.key) | \(.value.def) |"' "$GLOSSARY"
 } > "$QMD"
 

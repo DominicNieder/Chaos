@@ -1,0 +1,11 @@
+---
+title: "{{DATE}}"
+description: ""
+date: last-modified
+---
+
+::: {.callout-note appearance="minimal"}
+Also available as a [slide deck](slides.qmd).
+:::
+
+{{< include _content.qmd >}}
