@@ -20,10 +20,6 @@ QMD="$ROOT/notes/glossary.qmd"
 
 # --- notes/glossary.qmd ---
 {
-  echo "---"
-  echo "title: Glossary"
-  echo "---"
-  echo ""
   echo "| Term | Definition |"
   echo "|------|------------|"
   jq -r 'to_entries[]

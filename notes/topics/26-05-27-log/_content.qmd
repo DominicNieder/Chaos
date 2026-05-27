@@ -52,3 +52,4 @@ So I use ai to set up my folder structure and to prepare the workflow. I also ne
 
 ![The relation to the cantor set.](/pic/26-05-27-01-strangeAttractors.png)
 :::
+...
