@@ -1,3 +1,10 @@
+### Yesterdays To do!
+
+- [x] start github
+- [x] initialize Julia environment for the project
+- [ ] investigation of 'How to implement?' and 'How to visiualize?'
+- [ ] simple implementation of various and visualization 
+
 ### getting started: Hénon Heils Model
 
 **Comments for the day:** 
