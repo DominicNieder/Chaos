@@ -5,7 +5,7 @@
 - [ ] investigation of 'How to implement?' and 'How to visiualize?'
 - [ ] simple implementation of various and visualization 
 
-
+---
 
 ### getting started: Hénon Heils Model
 
@@ -17,6 +17,7 @@ I use the ai-tool provided by claude to help generate the bash-scripts for workf
 
 So I use ai to set up my folder structure and to prepare the workflow. I also need to keep track of my ai usage for transparency.
 
+---
 
 #### suggested structure
 
@@ -24,12 +25,29 @@ So I use ai to set up my folder structure and to prepare the workflow. I also ne
 2) considering derivation
 2) numerical implementation
 
+---
+
 #### observations 
 
 - [original paper by Henon and Heiles](https://articles.adsabs.harvard.edu/pdf/1964AJ.....69...73H) @Henon1964
   - I came across, need to undertand: 6-D phase space -> 5 independant conservative integrals of the motion; seemingly, sure but I want a rigorous understanding
+  - results in 5 hyper surfaces, **their intersections define the trajectories**
+
+---
+
 - literature by @strogatz1994 under chapter 12 strange attractors
 - [wikipedia](https://en.wikipedia.org/wiki/H%C3%A9non_map)
   - 'orbit diagram' or 'bifracation diagram'
   - **is the Héno Map the same as the Hénon–Heiles model?** I dont think so!
-- 
+
+---
+
+### Lost traveler thoughts
+
+- connections of strange attractor to @Arnold1989 p. 430-431
+
+::: {layout-ncol=2}
+![How the manningfold gets created.](../../pic/26-05-27-03-strangeAttractors.png)
+
+![The relation to the cantor set.](../../pic/26-05-27-01-strangeAttractors.png)
+:::
