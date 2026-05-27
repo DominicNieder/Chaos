@@ -1,8 +1,0 @@
----
-title: "Example Topic"
-subtitle: "Notes"
-date: last-modified
-format: revealjs
----
-
-{{< include _content.qmd >}}
