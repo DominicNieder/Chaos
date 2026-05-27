@@ -24,7 +24,7 @@
 
 --- 
 
-### talk with benoit:
+### talk with Benoit:
 
   - Hénon Heilses Hamiltonian -> classical chaos (connection to Toda potential, integrable)
 
