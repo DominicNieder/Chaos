@@ -1,7 +1,7 @@
 ### To do!
 
-- [ ] [original paper by Henon and Heiles](https://articles.adsabs.harvard.edu/pdf/1964AJ.....69...73H) @Henon1964
-- [ ] 
+- [x] [original paper by Henon and Heiles](https://articles.adsabs.harvard.edu/pdf/1964AJ.....69...73H) @Henon1964
+
 
 **yesterdays todo's:***
 
@@ -18,7 +18,7 @@ I should also read their original paper.
 Whilst working on Hénon & Heiles, I realize I need to get an in depth understanding of the Lagrange and Hamiltonian formalism!
 
 ### Notes from Hénon & Heiles
-
+@Henon1964
 - on isolating and non isolating integrals [A CLASSIFICATION OF THE INTEGRALS OF MOTION by
 George Contopoulos](https://adsabs.harvard.edu/pdf/1963ApJ...138.1297C)
 
