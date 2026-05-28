@@ -23,16 +23,16 @@ Whilst working on Hénon & Heiles, I realize I need to get an in depth understan
 George Contopoulos](https://adsabs.harvard.edu/pdf/1963ApJ...138.1297C)
 
 
-::: {layout-ncol=1}
+::: {layout-ncol=2}
 ![Citation @Henon1964: On the argument of 2 or 3 non isolating integrals.](/pic/2026-05-28-01-henon_heiles.png)
+
+![Citation @Henon1964: On finding the second Integral. Leading to an understanding of what it means to be ergodic.](/pic/2026-05-28-03-HenonHeiles-ergodic.png)
 :::
 
 - I did not understand much of section 2
 - a second read and note shed some light, here is an interesting paragraph describing what ergodic mean
 
-::: {layout-ncol=1}
-![Citation @Henon1964: On finding the second Integral. Leading to an understanding of what it means to be ergodic.](/pic/2026-05-28-03-HenonHeiles-ergodic.png)
-:::
+
 
 - a question they seem to be answering is how to find a proof of the existence of an non isolating integral
 
@@ -43,7 +43,7 @@ George Contopoulos](https://adsabs.harvard.edu/pdf/1963ApJ...138.1297C)
 - Their analysis introduces terms as *islands* and *chain of islands*, *dimension of islands*, *dense* and need to be understood when I study this model
 
 ::: {layout-ncol=1}
-![Citation @Henon1964: Statements and potential open questions.](/pic/2026-05-28-05-HenonHeiles-openquestion.png)
+![Citation @Henon1964: Statements and potential open questions.](/pic/2026-05-28-05-HenonHeiles-openquestion.png){width=60%}
 :::
 
 - "but the dimensions are so small that finding them is difficult" – is how the term dimensions gets used again
