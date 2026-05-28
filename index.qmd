@@ -11,6 +11,7 @@ page-layout: full
 
 | Date | Notes | Slides |
 |------|-------|--------|
+| [28 May, 2026](topics/26-05-28-log/index.qmd) | log entry | [Slides](topics/26-05-28-log/slides.qmd) |
 | [26 May, 2026](topics/26-05-26-log/index.qmd) | day log | [Slides](topics/26-05-26-log/slides.qmd) |
 | [27 May, 2026](topics/26-05-27-log/index.qmd) | day log | [Slides](topics/26-05-27-log/slides.qmd) |
 
@@ -32,6 +33,6 @@ page-layout: full
 
 ---
 
-## Latest: 27 May, 2026
+## Latest: 28 May, 2026
 
-{{< include topics/26-05-27-log/_content.qmd >}}
+{{< include topics/26-05-28-log/_content.qmd >}}
