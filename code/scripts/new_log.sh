@@ -25,9 +25,10 @@ fi
 
 # --- create topic directory from templates ---
 mkdir -p "$DIR"
-for f in _content.qmd _index.qmd _slides.qmd; do
+for f in _index.qmd _slides.qmd; do
   sed "s/{{DATE}}/$DISPLAY/g" "$TEMPLATES/$f" > "$DIR/${f#_}"
 done
+sed "s/{{DATE}}/$DISPLAY/g" "$TEMPLATES/_content.qmd" > "$DIR/_content.qmd"
 echo "created: $DIR"
 
 # --- insert new row after table header separator ---
@@ -47,4 +48,4 @@ awk -v display="$DISPLAY" -v date="$DATE" '
 ' "$INDEX" > "$INDEX.tmp" && mv "$INDEX.tmp" "$INDEX"
 
 echo "updated: $INDEX"
-echo "done — open notes/topics/${DATE}-log/_content.qmd to start writing"
+echo "done — open topics/${DATE}-log/_content.qmd to start writing"

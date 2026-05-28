@@ -35,3 +35,7 @@ George Contopoulos](https://adsabs.harvard.edu/pdf/1963ApJ...138.1297C)
 :::
 
 - a question they seem to be answering is how to find a proof of the existence of an non isolating integral
+
+- they speak of two integration schemes: 
+  - Adams
+  - Runge-Kutta
