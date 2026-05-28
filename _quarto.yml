@@ -24,4 +24,4 @@ format:
     link-external-newwindow: true
     include-after-body: styles/tasks.html
     include-in-header: styles/macros.html
-    bibliography: lit/references.bib
+    bibliography: literature/references.bib
