@@ -10,7 +10,7 @@
   <meta name="generator" content="quarto-1.9.38">
 
   <meta name="dcterms.date" content="2026-05-28">
-  <title>Chaos – 27 May, 2026</title>
+  <title>Chaos – 28 May, 2026</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -130,7 +130,7 @@
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">27 May, 2026</h1>
+  <h1 class="title">28 May, 2026</h1>
   <p class="subtitle">Notes</p>
 
 <div class="quarto-title-authors">
@@ -140,81 +140,62 @@
 </section>
 <section class="slide level2">
 
-<h3 id="yesterdays-to-do">Yesterdays To do!</h3>
+<h3 id="to-do">To do!</h3>
+<ul>
+<li><label><input type="checkbox"><a href="https://articles.adsabs.harvard.edu/pdf/1964AJ.....69...73H">original paper by Henon and Heiles</a> <span class="citation" data-cites="Henon1964">@Henon1964</span></label></li>
+<li>[ ]</li>
+</ul>
+<p><strong>yesterdays todo’s:</strong>*</p>
 <ul class="task-list">
-<li><label><input type="checkbox" checked="">start github</label></li>
-<li><label><input type="checkbox" checked="">initialize Julia environment for the project</label></li>
 <li><label><input type="checkbox">investigation of ‘How to implement?’ and ‘How to visiualize?’</label></li>
 <li><label><input type="checkbox">simple implementation of various and visualization</label></li>
 </ul>
 </section>
 <section class="slide level2">
 
-<h3 id="getting-started-hénon-heils-model">getting started: Hénon Heils Model</h3>
-<p><strong>Comments for the day:</strong></p>
-<p>I first worked on some further workflow questions. Including a bash script for adding entries from the ‘glossary.json’ to the ‘glossary.qmd’ file and to the ’_quarto.qmd’ file, for latex macros or to initiate the day-log by the use of templates.</p>
-<p>I use the ai-tool provided by claude to help generate the bash-scripts for workflow and to communicate about the structure of my workspace. I have general idea from previous projects how I want to structure my workspace - though I do not have the knowledge in coding in ‘bash’ or ‘yml’ etc…</p>
-<p>So I use ai to set up my folder structure and to prepare the workflow. I also need to keep track of my ai usage for transparency.</p>
-</section>
-<section class="slide level2">
-
-<h4 id="suggested-structure">suggested structure</h4>
-<ol type="1">
-<li>derivation</li>
-<li>considering derivation</li>
-<li>numerical implementation</li>
-</ol>
-</section>
-<section class="slide level2">
-
-<h4 id="observations">observations</h4>
+<h3 id="checking-in">checking in</h3>
+<p>I feel that I should read about implementing the Hénon &amp; Heiles. I should also read their original paper.</p>
+<p>Whilst working on Hénon &amp; Heiles, I realize I need to get an in depth understanding of the Lagrange and Hamiltonian formalism!</p>
+<h3 id="notes-from-hénon-heiles">Notes from Hénon &amp; Heiles</h3>
 <ul>
-<li><a href="https://articles.adsabs.harvard.edu/pdf/1964AJ.....69...73H">original paper by Henon and Heiles</a> <span class="citation" data-cites="Henon1964">@Henon1964</span>
-<ul>
-<li>I came across, need to undertand: 6-D phase space -&gt; 5 independant conservative integrals of the motion; seemingly, sure but I want a rigorous understanding</li>
-<li>results in 5 hyper surfaces, <strong>their intersections define the trajectories</strong></li>
-</ul></li>
+<li>on isolating and non isolating integrals <a href="https://adsabs.harvard.edu/pdf/1963ApJ...138.1297C">A CLASSIFICATION OF THE INTEGRALS OF MOTION by George Contopoulos</a></li>
 </ul>
-</section>
-<section class="slide level2">
-
-<ul>
-<li>literature by <span class="citation" data-cites="strogatz1994">@strogatz1994</span> under chapter 12 strange attractors</li>
-<li><a href="https://en.wikipedia.org/wiki/H%C3%A9non_map">wikipedia</a>
-<ul>
-<li>‘orbit diagram’ or ‘bifracation diagram’</li>
-<li><strong>is the Héno Map the same as the Hénon–Heiles model?</strong> I dont think so!</li>
-</ul></li>
-</ul>
-</section>
-<section class="slide level2">
-
-<h3 id="lost-traveler-thoughts">Lost traveler thoughts</h3>
-<ul>
-<li>connections of strange attractor to Cantor Set <span class="citation" data-cites="Arnold1989">@Arnold1989</span> p.&nbsp;430-431;</li>
-<li>gets me to think about how ternary number representation (base 3) is a useful way to analyze the Cantor set</li>
-</ul>
-<div class="quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-panel" data-layout-ncol="1">
 <div class="quarto-layout-row">
-<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: flex-start;">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="../../pic/26-05-27-03-strangeAttractors.png"></p>
-<figcaption>How the manningfold gets created.</figcaption>
-</figure>
-</div>
-</div>
-<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="../../pic/26-05-27-01-strangeAttractors.png"></p>
-<figcaption>The relation to the cantor set.</figcaption>
+<p><img data-src="../../pic/2026-05-28-01-henon_heiles.png"></p>
+<figcaption>Citation <span class="citation" data-cites="Henon1964">@Henon1964</span>: On the argument of 2 or 3 non isolating integrals.</figcaption>
 </figure>
 </div>
 </div>
 </div>
 </div>
-<p>…</p>
+<ul>
+<li>I did not understand much of section 2</li>
+<li>a second read and note shed some light, here is an interesting paragraph describing what ergodic mean</li>
+</ul>
+<div class="quarto-layout-panel" data-layout-ncol="1">
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="../../pic/2026-05-28-03-HenonHeiles-ergodic.png"></p>
+<figcaption>Citation <span class="citation" data-cites="Henon1964">@Henon1964</span>: On finding the second Integral. Leading to an understanding of what it means to be ergodic.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<ul>
+<li><p>a question they seem to be answering is how to find a proof of the existence of an non isolating integral</p></li>
+<li><p>they speak of two integration schemes:</p>
+<ul>
+<li>Adams</li>
+<li>Runge-Kutta</li>
+</ul></li>
+</ul>
 
 
 </section>
