@@ -13,19 +13,47 @@
     "latex": null
   },
 
-"diffeomorphism": {
-  "def": "A continuously differentiable map $f: N \\to M$ between two manifolds, such that $f^{-1}: M \\to N$ is also differentiable. If $f$ is $r$-times differentiable it is called a $C^r$-diffeomorphism.",
-  "date": "2026-05-27",
-  "macro": null,
-  "latex": null
-},
+  "diffeomorphism": {
+    "def": "A continuously differentiable map $f: N \\to M$ between two manifolds, such that $f^{-1}: M \\to N$ is also differentiable. If $f$ is $r$-times differentiable it is called a $C^r$-diffeomorphism.",
+    "date": "2026-05-27",
+    "macro": null,
+    "latex": null
+  },
 
-"hyper surfaces": {
-  "def": "Coming from the analogy of a surface in 3D space is a 2D object. An geometric object that lives in a $n$–dimensional space, though itself is a $n-1$–dimensinal object. ",
-  "date": "2026-05-27",
-  "macro": null,
-  "latex": null
-},
+  "hyper surfaces": {
+    "def": "Coming from the analogy of a surface in 3D space is a 2D object. An geometric object that lives in a $n$–dimensional space, though itself is a $n-1$–dimensinal object. ",
+    "date": "2026-05-27",
+    "macro": null,
+    "latex": null
+  },
+
+  "isolating integral": {
+    "def": "",
+    "date": "2026-05-28",
+    "macro": null,
+    "latex": null
+  },
+
+  "non isolating integral": {
+    "def": "",
+    "date": "2026-05-28",
+    "macro": null,
+    "latex": null
+  },
+
+  "ergodic": {
+    "def": "",
+    "date": "2026-05-28",
+    "macro": null,
+    "latex": null
+  },
+
+  "integrable": {
+    "def": "",
+    "date": "2026-05-28",
+    "macro": null,
+    "latex": null
+  },
 
   "_comment": "Examples to understand workflow: ai-generated!",
 
