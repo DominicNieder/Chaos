@@ -39,3 +39,11 @@ George Contopoulos](https://adsabs.harvard.edu/pdf/1963ApJ...138.1297C)
 - they speak of two integration schemes: 
   - Adams
   - Runge-Kutta
+
+- Their analysis introduces terms as *islands* and *chain of islands*, *dimension of islands*, *dense* and need to be understood when I study this model
+
+::: {layout-ncol=1}
+![Citation @Henon1964: Statements and potential open questions.](/pic/2026-05-28-05-HenonHeiles-openquestion.png)
+:::
+
+- "but the dimensions are so small that finding them is difficult" – is how the term dimensions gets used again
