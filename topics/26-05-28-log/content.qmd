@@ -1,7 +1,7 @@
 ### To do!
 
 - [ ] [original paper by Henon and Heiles](https://articles.adsabs.harvard.edu/pdf/1964AJ.....69...73H) @Henon1964
-- [ ]
+- [ ] 
 
 **yesterdays todo's:***
 
@@ -12,8 +12,10 @@
 
 ### checking in
 
-I feel that I should read about implementing the Héno & Heiles. 
+I feel that I should read about implementing the Hénon & Heiles. 
 I should also read their original paper.
 
+
+### Notes from Hénon & Heiles
 
 
