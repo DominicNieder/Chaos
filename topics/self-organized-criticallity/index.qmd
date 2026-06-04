@@ -1,6 +1,6 @@
 ---
 title: "Self Organized Criticality"
-description: "This is a topic I have come to find interesting. Systems that show self organized criticality (SOC) meaning the system tend to operate at its [critical point](/glossary.html)."
+description: "This is a topic I have come to find interesting. Systems that show self organized criticality (SOC) meaning the system tend to operate at its critical point."
 date: last-modified
 ---
 
