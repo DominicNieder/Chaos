@@ -1,0 +1,14 @@
+### To do!
+
+- [ ]
+
+---
+
+### Lost Wanders Thoughts:
+
+**Quantum Walk & Chaos**
+
+- Quantum Walk: linear equations, no chaos
+- it has been used [@Kamran2022] for encryption of pictures
+
+![After talking with Hanzlar, he showed me a link to [@Kamran2022] whilst talking about the idea for a (photo)encryption method using a 'quantum wlak' of Qubits.](/pic/2026-06-05-02-randomness-quantum-walk){width=60%}
