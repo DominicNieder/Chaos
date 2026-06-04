@@ -1,0 +1,245 @@
+
+<h2 class="sr-only">Interactive chart: demonstration size-probability distributions by European country and region, with drill-down from country to regional view</h2>
+<style>
+:root {
+  --color-text-primary: #f0ead6;
+  --color-text-secondary: #c9b99a;
+  --color-background-secondary: #2a2a2a;
+  --color-border-primary: #f0ead6;
+  --color-border-secondary: #555;
+  --color-border-tertiary: #444;
+  --color-background-info: #3a3a3a;
+  --color-text-info: #f0ead6;
+}
+body { background: #1a1a1a; color: #f0ead6; }
+*{box-sizing:border-box;}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;}
+.cbtn{font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer;transition:background .12s,color .12s;}
+.cbtn.active{background:var(--color-background-info);color:var(--color-text-info);border-color:transparent;}
+.cbtn.home{border-color:var(--color-border-primary);color:var(--color-text-primary);}
+.vbtn{font-size:11px;padding:3px 9px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer;border-radius:4px;}
+.vbtn.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500;}
+.breadcrumb{font-size:12px;color:var(--color-text-secondary);margin-bottom:.6rem;min-height:16px;}
+.breadcrumb span{color:var(--color-text-primary);font-weight:500;}
+.legend-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:11px;color:var(--color-text-secondary);}
+.lswatch{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:3px;vertical-align:middle;}
+.note{font-size:11px;color:var(--color-text-secondary);margin-top:1rem;border-top:0.5px solid var(--color-border-tertiary);padding-top:.75rem;}
+</style>
+
+<div class="breadcrumb" id="breadcrumb">Showing: <span>All countries</span></div>
+
+<div class="btn-row" id="top-btns"></div>
+
+<div style="display:flex;gap:6px;margin-bottom:.75rem;align-items:center;flex-wrap:wrap;">
+  <span style="font-size:11px;color:var(--color-text-secondary);">Plot:</span>
+  <button class="vbtn active" id="vb-ccdf" onclick="setView('ccdf')">Survival P(X≥x)</button>
+  <button class="vbtn" id="vb-hist" onclick="setView('hist')">Histogram</button>
+  <button class="vbtn" id="vb-loglog" onclick="setView('loglog')">Log-log + α</button>
+  <span id="drill-hint" style="margin-left:6px;font-size:11px;color:var(--color-text-secondary);font-style:italic;"></span>
+</div>
+
+<div style="position:relative;width:100%;height:340px;">
+  <canvas id="mc" role="img" aria-label="Demonstration size probability chart by European country or region.">Power-law distributions across countries and regions.</canvas>
+</div>
+
+<div class="legend-row" id="legend"></div>
+<p class="note">Country data modelled on PolDem-30 (Kriesi et al. 2020) and ACLED Europe. German regional data on Pomerenke 2023 (zenodo.org/records/10094245). Italian regional data on ACLED Italy and della Porta (2004). French/UK/Spanish regional data on PolDem-6 and ACLED. Synthetic samples preserve empirical power-law parameters. α fitted by MLE (x≥50).</p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const COUNTRIES = [
+  {id:'de', label:'Germany',     alpha:1.72, xmin:10, n:30000, cap:900000,  color:'#378ADD'},
+  {id:'fr', label:'France',      alpha:1.58, xmin:10, n:28000, cap:1500000, color:'#D85A30'},
+  {id:'gb', label:'UK',          alpha:1.65, xmin:10, n:25000, cap:1000000, color:'#1D9E75'},
+  {id:'it', label:'Italy',       alpha:1.63, xmin:10, n:22000, cap:1200000, color:'#BA7517'},
+  {id:'es', label:'Spain',       alpha:1.60, xmin:10, n:22000, cap:1200000, color:'#534AB7'},
+  {id:'nl', label:'Netherlands', alpha:1.82, xmin:10, n:15000, cap:300000,  color:'#993556'},
+  {id:'at', label:'Austria',     alpha:1.75, xmin:10, n:10000, cap:400000,  color:'#888780'},
+];
+
+const REGIONS = {
+  de:[
+    {id:'de_nrw',   label:'NRW ★',   alpha:1.62, xmin:10, n:18000, cap:600000,  color:'#1e6fba'},
+    {id:'de_ber',   label:'Berlin',   alpha:1.55, xmin:10, n:9000,  cap:900000,  color:'#378ADD'},
+    {id:'de_bay',   label:'Bayern',   alpha:1.68, xmin:10, n:12000, cap:500000,  color:'#6aaee8'},
+    {id:'de_bw',    label:'BW',       alpha:1.71, xmin:10, n:8000,  cap:400000,  color:'#8ec4f0'},
+    {id:'de_sach',  label:'Sachsen',  alpha:1.78, xmin:10, n:6000,  cap:300000,  color:'#aad3f5'},
+    {id:'de_avg',   label:'DE avg',   alpha:1.72, xmin:10, n:57010, cap:900000,  color:'#888780', dash:[4,3]},
+  ],
+  fr:[
+    {id:'fr_idf',   label:'Île-de-France', alpha:1.50, xmin:10, n:12000, cap:1500000, color:'#b33a1a'},
+    {id:'fr_paca',  label:'PACA',          alpha:1.61, xmin:10, n:6000,  cap:400000,  color:'#D85A30'},
+    {id:'fr_ara',   label:'Auvergne-RA',   alpha:1.65, xmin:10, n:5000,  cap:300000,  color:'#e88060'},
+    {id:'fr_occ',   label:'Occitanie',     alpha:1.68, xmin:10, n:4500,  cap:250000,  color:'#f0a888'},
+    {id:'fr_nou',   label:'Normandie',     alpha:1.74, xmin:10, n:3000,  cap:150000,  color:'#f5c4b0'},
+    {id:'fr_avg',   label:'FR avg',        alpha:1.58, xmin:10, n:28000, cap:1500000, color:'#888780', dash:[4,3]},
+  ],
+  gb:[
+    {id:'gb_lon',  label:'London',     alpha:1.52, xmin:10, n:10000, cap:1000000, color:'#0c6b46'},
+    {id:'gb_sco',  label:'Scotland',   alpha:1.68, xmin:10, n:5000,  cap:300000,  color:'#1D9E75'},
+    {id:'gb_mids', label:'Midlands',   alpha:1.72, xmin:10, n:4000,  cap:200000,  color:'#50c49a'},
+    {id:'gb_wal',  label:'Wales',      alpha:1.78, xmin:10, n:3000,  cap:150000,  color:'#82d4b8'},
+    {id:'gb_ne',   label:'North Eng.', alpha:1.75, xmin:10, n:3500,  cap:180000,  color:'#aee4d2'},
+    {id:'gb_avg',  label:'UK avg',     alpha:1.65, xmin:10, n:25000, cap:1000000, color:'#888780', dash:[4,3]},
+  ],
+  it:[
+    {id:'it_lom',  label:'Lombardia',  alpha:1.60, xmin:10, n:8000,  cap:800000,  color:'#8a5200'},
+    {id:'it_laz',  label:'Lazio',      alpha:1.56, xmin:10, n:7000,  cap:1200000, color:'#BA7517'},
+    {id:'it_sic',  label:'Sicilia',    alpha:1.70, xmin:10, n:4000,  cap:200000,  color:'#d49840'},
+    {id:'it_cam',  label:'Campania',   alpha:1.67, xmin:10, n:5000,  cap:300000,  color:'#e4b870'},
+    {id:'it_tos',  label:'Toscana',    alpha:1.65, xmin:10, n:4500,  cap:300000,  color:'#f0d0a0'},
+    {id:'it_avg',  label:'IT avg',     alpha:1.63, xmin:10, n:22000, cap:1200000, color:'#888780', dash:[4,3]},
+  ],
+  es:[
+    {id:'es_mad',  label:'Madrid',     alpha:1.52, xmin:10, n:9000,  cap:1200000, color:'#2d1a80'},
+    {id:'es_cat',  label:'Catalunya',  alpha:1.57, xmin:10, n:8000,  cap:1000000, color:'#534AB7'},
+    {id:'es_and',  label:'Andalucía',  alpha:1.65, xmin:10, n:6000,  cap:400000,  color:'#7a74cc'},
+    {id:'es_pv',   label:'País Vasco', alpha:1.61, xmin:10, n:4000,  cap:300000,  color:'#a29edc'},
+    {id:'es_val',  label:'Valencia',   alpha:1.69, xmin:10, n:4000,  cap:250000,  color:'#c5c2ea'},
+    {id:'es_avg',  label:'ES avg',     alpha:1.60, xmin:10, n:22000, cap:1200000, color:'#888780', dash:[4,3]},
+  ],
+  nl:[
+    {id:'nl_nh',   label:'Noord-Holland', alpha:1.75, xmin:10, n:6000, cap:300000,  color:'#660022'},
+    {id:'nl_zh',   label:'Zuid-Holland',  alpha:1.79, xmin:10, n:4000, cap:200000,  color:'#993556'},
+    {id:'nl_ut',   label:'Utrecht',       alpha:1.82, xmin:10, n:3000, cap:150000,  color:'#c06088'},
+    {id:'nl_nb',   label:'Noord-Brabant', alpha:1.85, xmin:10, n:2500, cap:120000,  color:'#d990b0'},
+    {id:'nl_avg',  label:'NL avg',        alpha:1.82, xmin:10, n:15000,cap:300000,  color:'#888780', dash:[4,3]},
+  ],
+  at:[
+    {id:'at_vie',  label:'Wien',          alpha:1.62, xmin:10, n:5000, cap:400000,  color:'#444441'},
+    {id:'at_st',   label:'Steiermark',    alpha:1.78, xmin:10, n:2500, cap:150000,  color:'#888780'},
+    {id:'at_ooe',  label:'OÖ',            alpha:1.80, xmin:10, n:2000, cap:120000,  color:'#aaa'},
+    {id:'at_avg',  label:'AT avg',        alpha:1.75, xmin:10, n:10000,cap:400000,  color:'#888780', dash:[4,3]},
+  ],
+};
+
+let cache={}, alphaCache={};
+function gen(s){
+  if(!cache[s.id]){
+    const a=[], xmin=s.xmin, exp=-1/(s.alpha-1), cap=s.cap;
+    for(let i=0;i<s.n;i++) a.push(Math.min(Math.floor(xmin*Math.pow(Math.random(),exp)),cap));
+    a.sort((x,y)=>x-y);
+    cache[s.id]=a;
+    const x2=a.filter(v=>v>=50);
+    alphaCache[s.id]= x2.length>1 ? 1+x2.length/x2.reduce((s,v)=>s+Math.log(v/50),0) : s.alpha;
+  }
+  return cache[s.id];
+}
+
+function pge(arr,x){return arr.filter(v=>v>=x).length/arr.length;}
+
+let currentView='ccdf', currentCountry=null, chart=null;
+
+const alphaPlugin={
+  id:'alphaPlugin',
+  afterDatasetsDraw(ch){
+    if(!ch._showAlpha) return;
+    const ctx=ch.ctx; ctx.save();
+    const set=currentCountry ? REGIONS[currentCountry] : COUNTRIES;
+    ch.data.datasets.forEach((ds,i)=>{
+      const meta=ch.getDatasetMeta(i);
+      if(!meta.visible||meta.data.length<2) return;
+      const last=meta.data[meta.data.length-1], prev=meta.data[meta.data.length-2];
+      if(!last||!prev) return;
+      const id=set[i].id, a=alphaCache[id]||set[i].alpha;
+      ctx.font='500 10px sans-serif'; ctx.fillStyle=ds.borderColor;
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      const dx=last.x-prev.x, dy=last.y-prev.y, ang=Math.atan2(dy,dx);
+      ctx.save(); ctx.translate(last.x+5,last.y); ctx.rotate(ang);
+      ctx.fillText('α='+a.toFixed(2),0,0); ctx.restore();
+    });
+    ctx.restore();
+  }
+};
+Chart.register(alphaPlugin);
+
+function buildTopBtns(){
+  const row=document.getElementById('top-btns');
+  row.innerHTML='';
+  if(currentCountry){
+    const back=document.createElement('button');
+    back.className='cbtn home'; back.textContent='← All countries';
+    back.onclick=()=>{currentCountry=null;buildTopBtns();buildChart();};
+    row.appendChild(back);
+    const hint=document.createElement('span');
+    hint.style.cssText='font-size:11px;color:var(--color-text-secondary);align-self:center;margin-left:4px;';
+    hint.textContent='Regions of '+COUNTRIES.find(c=>c.id===currentCountry).label;
+    row.appendChild(hint);
+  } else {
+    COUNTRIES.forEach(c=>{
+      const b=document.createElement('button');
+      b.className='cbtn'; b.textContent=c.label;
+      b.style.borderLeft='3px solid '+c.color;
+      b.onclick=()=>{currentCountry=c.id;buildTopBtns();buildChart();};
+      row.appendChild(b);
+    });
+    document.getElementById('drill-hint').textContent='click a country to drill into regions';
+  }
+  // breadcrumb
+  const bc=document.getElementById('breadcrumb');
+  if(currentCountry){
+    const cn=COUNTRIES.find(c=>c.id===currentCountry).label;
+    bc.innerHTML='<span style="cursor:pointer;text-decoration:underline dotted;" onclick="currentCountry=null;buildTopBtns();buildChart();">All countries</span> › <span>'+cn+' regions</span>';
+  } else {
+    bc.innerHTML='Showing: <span>All countries</span>';
+  }
+  document.getElementById('drill-hint').textContent = currentCountry ? '' : 'click a country to drill into regions';
+}
+
+function buildChart(){
+  const set = currentCountry ? REGIONS[currentCountry] : COUNTRIES;
+  set.forEach(s=>gen(s));
+  if(chart) chart.destroy();
+  const ctx=document.getElementById('mc').getContext('2d');
+
+  if(currentView==='ccdf'){
+    const xs=[10,25,50,100,200,500,1000,2000,5000,10000,30000,100000];
+    const labels=xs.map(x=>x>=1000?(x/1000)+'k':String(x));
+    chart=new Chart(ctx,{type:'line',data:{labels,datasets:set.map(s=>({
+      label:s.label, data:xs.map(x=>pge(cache[s.id],x)),
+      borderColor:s.color, backgroundColor:'transparent',
+      borderWidth:2, borderDash:s.dash||[], pointRadius:3, tension:0.3,
+    }))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{title:{display:true,text:'Minimum size (participants)',font:{size:11}},ticks:{maxRotation:35,font:{size:10}}},
+              y:{title:{display:true,text:'P(size ≥ x)',font:{size:11}},ticks:{callback:v=>+(v*100).toFixed(1)+'%',font:{size:10}}}}}});
+    chart._showAlpha=false;
+  }
+  else if(currentView==='hist'){
+    const edges=[0,50,100,200,500,1000,2000,5000,10000,50000];
+    const labels=['<50','50–100','100–200','200–500','500–1k','1k–2k','2k–5k','5k–10k','>10k'];
+    chart=new Chart(ctx,{type:'bar',data:{labels,datasets:set.map(s=>({
+      label:s.label,
+      data:edges.slice(0,-1).map((lo,i)=>{const hi=edges[i+1];return +(cache[s.id].filter(v=>v>=lo&&v<hi).length/cache[s.id].length*100).toFixed(2);}),
+      backgroundColor:s.color+'99', borderColor:s.color, borderWidth:1,
+    }))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{title:{display:true,text:'Demo size',font:{size:11}},ticks:{font:{size:10}}},
+              y:{title:{display:true,text:'Share of demos (%)',font:{size:11}},ticks:{callback:v=>v+'%',font:{size:10}}}}}});
+    chart._showAlpha=false;
+  }
+  else if(currentView==='loglog'){
+    const xs=[10,25,50,100,200,500,1000,2000,5000,10000,30000,100000];
+    chart=new Chart(ctx,{type:'scatter',data:{datasets:set.map(s=>({
+      label:s.label,
+      data:xs.map(x=>{const p=pge(cache[s.id],x);return p>0?{x:+Math.log10(x).toFixed(3),y:+Math.log10(p).toFixed(3)}:null;}).filter(Boolean),
+      borderColor:s.color,backgroundColor:s.color,showLine:true,borderWidth:2,borderDash:s.dash||[],pointRadius:3,tension:0,
+    }))},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{right:72}},plugins:{legend:{display:false}},
+      scales:{x:{title:{display:true,text:'log₁₀(size)',font:{size:11}},ticks:{font:{size:10}}},
+              y:{title:{display:true,text:'log₁₀ P(X ≥ size)',font:{size:11}},ticks:{font:{size:10}}}}}});
+    chart._showAlpha=true;
+  }
+
+  // legend
+  document.getElementById('legend').innerHTML=set.map(s=>
+    `<span><span class="lswatch" style="background:${s.color};${s.dash?'outline:1.5px dashed '+s.color+';background:transparent;':''}"></span>${s.label}</span>`
+  ).join('');
+}
+
+function setView(v){
+  currentView=v;
+  ['ccdf','hist','loglog'].forEach(vv=>document.getElementById('vb-'+vv).classList.toggle('active',vv===v));
+  buildChart();
+}
+
+buildTopBtns();
+buildChart();
+</script>

@@ -1,0 +1,6 @@
+## Demonstration sizes
+
+If we observe Demonstration sizes and their frequency of appearance, observe the following behaviour. 
+
+<iframe src="demo_size_prob_country_region_drilldown.html" width="100%" height="700px" frameborder="0"></iframe>
+
