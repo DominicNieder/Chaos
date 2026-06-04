@@ -24,7 +24,7 @@ QMD="$ROOT/glossary.qmd"
   echo "|------|------------|"
   jq -r 'to_entries[]
     | select(.value | type == "object")
-    | "| \(.key) | \(.value.def) |"' "$GLOSSARY"
+    | "| <abbr title=\"\(.value.def)\">\(.key)</abbr> | \(.value.def) |"' "$GLOSSARY"
 } > "$QMD"
 
 echo "sync_glossary: macros.html and glossary.qmd updated"
