@@ -42,7 +42,7 @@ So I use ai to set up my folder structure and to prepare the workflow. I also ne
 
 ---
 
-### Lost traveler thoughts
+### Lost Wanders Thoughts:
 
 - connections of strange attractor to Cantor Set @Arnold1989 p. 430-431;
 - gets me to think about how ternary number representation (base 3) is a useful way to analyze the Cantor set
