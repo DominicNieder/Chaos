@@ -4,6 +4,7 @@ project:
   render:
     - "*.qmd"
     - "topics/**/*.qmd"
+    - "!glossary.qmd"
   resources:
     - "pic/**"
     - "figures/**"
@@ -13,6 +14,18 @@ website:
   title: "Chaos"
   # page-footer:
   #   center: "Built with [Quarto](https://quarto.org)"
+  sidebar:
+    contents:
+      - index.qmd
+      - section: "Logs"
+        contents:
+          - topics/26-06-05-log/index.qmd
+          - topics/26-05-26-log/index.qmd
+          - topics/26-05-27-log/index.qmd
+          - topics/26-05-28-log/index.qmd
+      - section: "Topics"
+        contents:
+          - topics/self-organized-criticallity/index.qmd
 
 format:
   html:

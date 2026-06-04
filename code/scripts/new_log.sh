@@ -47,5 +47,13 @@ awk -v display="$DISPLAY" -v date="$DATE" '
   { print }
 ' "$INDEX" > "$INDEX.tmp" && mv "$INDEX.tmp" "$INDEX"
 
-echo "updated: $INDEX"
+# --- insert new entry at top of Logs section in _quarto.yml ---
+QUARTO="$ROOT/_quarto.yml"
+awk -v date="$DATE" '
+  /section: "Logs"/ { print; in_logs=1; next }
+  in_logs && /contents:/ { print; print "          - topics/" date "-log/index.qmd"; in_logs=0; next }
+  { print }
+' "$QUARTO" > "$QUARTO.tmp" && mv "$QUARTO.tmp" "$QUARTO"
+
+echo "updated: $INDEX and $QUARTO"
 echo "done — open topics/${DATE}-log/_content.qmd to start writing"
