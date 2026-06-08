@@ -25,6 +25,7 @@ website:
           - topics/26-05-28-log/index.qmd
       - section: "Topics"
         contents:
+          - topics/henon-heiles/index.qmd
           - topics/self-organized-criticallity/index.qmd
 
 format:

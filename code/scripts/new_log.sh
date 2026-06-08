@@ -31,12 +31,6 @@ done
 sed "s/{{DATE}}/$DISPLAY/g" "$TEMPLATES/_content.qmd" > "$DIR/_content.qmd"
 echo "created: $DIR"
 
-# --- insert new row after table header separator ---
-NEW_ROW="| [$DISPLAY](topics/${DATE}-log/index.qmd) | log entry | [Slides](topics/${DATE}-log/slides.qmd) |"
-awk -v row="$NEW_ROW" '
-  /^\|---/ && !inserted { print; print row; inserted=1; next }
-  { print }
-' "$INDEX" > "$INDEX.tmp" && mv "$INDEX.tmp" "$INDEX"
 
 # --- update Latest section ---
 awk -v display="$DISPLAY" -v date="$DATE" '
