@@ -41,8 +41,15 @@
     "latex": null
   },
 
-  "ergodic": {
-    "def": "",
+  "trajectory": {
+    "def": "A mathematical 1 dimensional object, that describes a dynamics of a system.",
+    "date": "2026-06-05",
+    "macro": null,
+    "latex": null
+  },
+
+  "ergodic trajectory": {
+    "def": "A trajectory that will fill th whole volume of the accessible phase space.",
     "date": "2026-05-28",
     "macro": null,
     "latex": null
@@ -51,6 +58,13 @@
   "integrable": {
     "def": "",
     "date": "2026-05-28",
+    "macro": null,
+    "latex": null
+  },
+
+  "critical point": {
+    "def": "",
+    "date": "2026-06-04",
     "macro": null,
     "latex": null
   },
