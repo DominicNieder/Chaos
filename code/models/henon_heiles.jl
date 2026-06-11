@@ -29,7 +29,7 @@ end
 Equation of motion for Hénon-Heiles potential. 
 """
 function equations!(du, u, p, t)
-    m, a, w = p 
+    a, m, w = p 
     x, y, px, py = u
     du[1] =  px
     du[2] =  py
@@ -41,7 +41,7 @@ end
 # Energies, param= (a, m, w)
 potential(x, y; p=param) = p[2]*p[3]^2/2 *(x^2+y^2) + p[1]*(x^2*y - y^3/3)
 
-kinetic(px, py; m=param[1]) = (px^2 + py^2)/(2*m)
+kinetic(px, py; m=param[2]) = (px^2 + py^2)/(2*m)
 
 hamiltonian(x, y, px, py; p=param) = kinetic(px, py, m=p[2]) + potential(x,y, p=p)
 
@@ -49,7 +49,7 @@ hamiltonian(x, y, px, py; p=param) = kinetic(px, py, m=p[2]) + potential(x,y, p=
 # numerical integration, num_int = (T, dt)
 function solve_trajectory(u0; tspan=(0.0, num_int[1]), dt=num_int[2], p=param)
     prob = ODEProblem(equations!, u0, tspan, p)
-    solve(prob, RK4(), abstol=1e-10, reltol=1e-10, saveat=dt)
+    solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt)
 end
 
 
