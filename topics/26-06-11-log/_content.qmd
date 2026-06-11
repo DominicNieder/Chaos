@@ -22,8 +22,9 @@ Semiclassical approximation of quantum amplitudes have a *universal* form and is
 $$\psi(x)=\sum_n \sqrt{P_n(x)} \,\exp\Big\{i \varphi_n(x)/\hbar\Big\},$$
 with
 
--$\varphi_n(x)$ – classical action along the $n^\text{th}$ path reaching $x$
--$P_n(x)$ – classical probability
+- $\varphi_n(x)$ – classical action along the $n^\text{th}$ path reaching $x$
+
+- $P_n(x)$ – classical probability
 
 ---
 
