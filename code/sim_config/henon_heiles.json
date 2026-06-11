@@ -1,4 +1,14 @@
 {
+    "timestep": {
+        "value": 0.1,
+        "description": "Timestep for the numerical integration.",
+        "units": "s"
+    },
+    "T": {
+        "value": 50,
+        "description": "Total time of numerical integration.",
+        "units": "s"        
+    },
     "a": {
         "value": 2.0,
         "description": "non-linear coupling strength.",
