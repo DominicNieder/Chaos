@@ -1,4 +1,4 @@
-### Implementation
+### Implementation of Hénon-Heiles
 
 So I have the Hamiltonian of the Hénon–Heiles potential
 
