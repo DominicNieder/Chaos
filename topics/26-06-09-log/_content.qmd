@@ -26,16 +26,34 @@ $$\dot{p_i} =-\frac{\partial H}{\partial q_i} $$
 for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$.
 
 The resulting equation of motion in julia code:
-```{markdown}
+```{julia}
+#| eval: false
+
 function equations!(du, u, p, t)
-    m = 1
-    a = 1
-    w = 1
+    m, a, w = p 
     x, y, px, py = u
-    du[1] =  px/m
-    du[2] =  py/m
+    du[1] =  px
+    du[2] =  py
     du[3] = -m*w^2*x - 2a*x*y
-    du[4] = -m*w^2*y - a*(x^2 + y^2)
+    du[4] = -m*w^2*y - a*(x^2 - y^2)
 end
 ```
+Here the potentials are defined:
+```{julia}
+#| eval: false
+potential(x, y; m=m, w=w, a=a) = m*w^2/2 *(x^2+y^2) + a*(x^2*y - y^3/3)
 
+kinetic(px, py; m=m, w=w) = (px^2 + py^2)/(2*m)
+
+hamiltonian(x, y, px, py; m=m, w=w, a=a) = kinetic(px, py, m=m, w=w) + potential(x,y, m=m, w=w, a=a)
+```
+
+
+And here the trajectory gets solved:
+```{julia}
+#| eval: false
+function solve_trajectory(u0; tspan=(0.0, 500.0), dt=0.1, p=param)
+    prob = ODEProblem(equations!, u0, tspan, p)
+    solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt)
+end
+```
