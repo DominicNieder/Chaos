@@ -1,3 +1,9 @@
+### On implementation of Hénon-Heiles
+
+- [ ] I need to check the errors for the config variables
+- [ ] I need to check for error in the explore.jl for bugs
+
+
 ### Lost Wonderers Thoughts:
 
 I spend an hour raading 
