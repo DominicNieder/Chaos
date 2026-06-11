@@ -3,6 +3,15 @@
 - [ ] I need to check the errors for the config variables
 - [ ] I need to check for error in the explore.jl for bugs
 
+---
+
+These are two screen shots of the Hénon-Heiles potential
+
+::: {layout-ncol=2}
+![3D potential](/figures/2026-06-11-01-henon_heiles-3Dpotential.png)
+
+![Top view](/figures/2026-06-11-02-henon_heiles-top_potential.png)
+:::
 
 ### Lost Wonderers Thoughts:
 
