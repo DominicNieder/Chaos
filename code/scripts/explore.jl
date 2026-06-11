@@ -4,10 +4,10 @@ include("../models/henon_heiles.jl")
 include("../analysis/poincare.jl")
 
 # --- initial conditions ---
-E  = Observable(init_E0)
-x0 = Observable(init_x0)
-y0 = Observable(init_y0)
-py0= Observable(init_py0)
+E  = Observable(init_var[1])
+x0 = Observable(init_var[2])
+y0 = Observable(init_var[3])
+py0= Observable(init_var[4])
 
 py0_eff = lift(E, x0, y0, py0) do e, x, y, py
     a, m, w = param
@@ -41,9 +41,9 @@ lines!(ax3, lift(s->s.t, sol), traj_x, linewidth=0.5)
 
 # --- controls ---
 sg = SliderGrid(fig[3, 1:2],
-    (label="Energy E",  range=0.01:0.000001:0.9,startvalue=0.08333),
-    (label="x₀",        range=-0.4:0.01:0.4,    startvalue=0.0),
-    (label="y₀",        range=-0.4:0.01:0.4,    startvalue=0.0),
+    (label="Energy E",  range=0.01:0.000001:0.09,startvalue=0.08333),
+    (label="x₀",        range=-0.6:0.01:0.6,    startvalue=0.0),
+    (label="y₀",        range=-0.6:0.01:0.6,    startvalue=0.0),
     (label="py₀",       range=0.0:0.01:0.4,     startvalue=0.0)
 )
 connect!(E,     sg.sliders[1].value)
