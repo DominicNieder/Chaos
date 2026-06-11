@@ -15,23 +15,23 @@
         "units": "1/s"
     },
     "E": {
-        "value": 1.0,
+        "value": 0.08333,
         "description": "Available energy of system.",
         "units": "kg m^2/s^2"
     },
     "x0": {
         "value": 0.0,
-        "description": "Available energy of system.",
-        "units": "kg m^2/s^2"
+        "description": "Initial x-coordinate.",
+        "units": "m"
     },
     "y0": {
         "value": 0.0,
-        "description": "Available energy of system.",
-        "units": "kg m^2/s^2"
+        "description": "Initial y-coordinate.",
+        "units": "m"
     },
     "py0": {
         "value": 0.0,
-        "description": "Available energy of system.",
-        "units": "kg m^2/s^2"
+        "description": "Initial momentum py, in y direction.",
+        "units": "kg m/s"
     }
 }
