@@ -2,20 +2,40 @@
 
 So I have the Hamiltonian of the Hénon–Heiles potential
 
-$$H(x,y,p_x,p_y)=\frac{(p_x^2+p_y^2)}{2m} + \frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3})$$
+$$H(x,y,p_x,p_y)=\frac{(p_x^2+p_y^2)}{2m} + \frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3}).$$
 
-The resulting equation of motion:
-```{julia}
-#| eval: false
-#| echo: true
+We obtain the equations of motion by
+
+
+::: {.columns}
+
+::: {.column}
+$$\dot{q_i} =\frac{\partial H}{\partial p_i} $$ 
+
+
+:::
+
+::: {.column}
+
+$$\dot{p_i} =-\frac{\partial H}{\partial q_i} $$
+
+:::
+
+:::
+
+for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$.
+
+The resulting equation of motion in julia code:
+```{markdown}
 function equations!(du, u, p, t)
     m = 1
     a = 1
     w = 1
     x, y, px, py = u
-    du[1] =  px
-    du[2] =  py
+    du[1] =  px/m
+    du[2] =  py/m
     du[3] = -m*w^2*x - 2a*x*y
     du[4] = -m*w^2*y - a*(x^2 + y^2)
 end
 ```
+
