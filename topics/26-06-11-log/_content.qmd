@@ -1,0 +1,18 @@
+### Lost Wonderers Thoughts:
+
+I spend an hour raading 
+"Postmoden Quantummechanics" [@heller1993postmodern].
+
+Semiclassical approximation of quantum amplitudes have a *universal* form and is given by
+$$\psi(x)=\sum_n \sqrt{P_n(x)} \,\exp\Big\{i \varphi_n(x)/\hbar\Big\},$$
+with
+
+-$\varphi_n(x)$ – classical action along the $n^\text{th}$ path reaching $x$
+-$P_n(x)$ – classical probability
+
+---
+
+![Lines I considered interesting. What is it that makes the theory break down exactly?](/pic/2026-06-11-01-postmodern-QM.png){wdith=60%}
+
+---
+
