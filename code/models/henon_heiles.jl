@@ -4,22 +4,18 @@ using JSON3  # or JSON
 # ---------------------------------------------------
 #               Simulation Settings
 # ---------------------------------------------------
-
-cfg = JSON3.read(read("../sim_config/henon_heiles.json", String))
-# system parameters
-a       =   cfg.a.value   
-m       =   cfg.m.value   
-w       =   cfg.w.value   
-param   =   (a,m,w) 
-# running variables
-E0      =   cfg.E.value  
-x0      =   cfg.x0.value
-y0      =   cfg.y0.value
-py0     =   cfg.py0.value
-var     =   (E0, x0, y0, py0)
-
+const CONFIG_DIR = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
 const FIGURES_DIR = joinpath(@__DIR__, "../../figures")
 const DATA_DIR    = joinpath(@__DIR__, "../../data")
+
+cfg = JSON3.read(read(CONFIG_DIR, String))
+
+# system parameters
+param       =   (cfg.a.value, cfg.m.value, cfg.w.value ) 
+# running variables
+init_var    =   (cfg.E.value, cfg.x0.value, cfg.y0.value, cfg.py0.value)
+# integration variables
+num_int     =   (cfg.T.value, cfg.timestep.value)
 
 # ---------------------------------------------------
 #                   System equations
@@ -42,18 +38,18 @@ function equations!(du, u, p, t)
 end
 
 
-# Energies
-potential(x, y; m=m, w=w, a=a) = m*w^2/2 *(x^2+y^2) + a*(x^2*y - y^3/3)
+# Energies, param= (a, m, w)
+potential(x, y; p=param) = p[2]*p[3]^2/2 *(x^2+y^2) + p[1]*(x^2*y - y^3/3)
 
-kinetic(px, py; m=m, w=w) = (px^2 + py^2)/(2*m)
+kinetic(px, py; m=param[1]) = (px^2 + py^2)/(2*m)
 
-hamiltonian(x, y, px, py; m=m, w=w, a=a) = kinetic(px, py, m=m, w=w) + potential(x,y, m=m, w=w, a=a)
+hamiltonian(x, y, px, py; p=param) = kinetic(px, py, m=p[2]) + potential(x,y, p=p)
 
 
-# numerical integration
-function solve_trajectory(u0; tspan=(0.0, 500.0), dt=0.1, p=param)
+# numerical integration, num_int = (T, dt)
+function solve_trajectory(u0; tspan=(0.0, num_int[1]), dt=num_int[2], p=param)
     prob = ODEProblem(equations!, u0, tspan, p)
-    solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt)
+    solve(prob, RK4(), abstol=1e-10, reltol=1e-10, saveat=dt)
 end
 
 
