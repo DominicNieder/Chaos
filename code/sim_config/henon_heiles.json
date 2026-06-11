@@ -1,0 +1,37 @@
+{
+    "a": {
+        "value": 2.0,
+        "description": "non-linear coupling strength.",
+        "units": ""
+    },
+    "m": {
+        "value": 1.0,
+        "description": "mass of object",
+        "units": "kg"
+    },
+    "w": {
+        "value": 1.0,
+        "description": "Harmonic oscillation frequency term. Quantifies how strong the effect of the harmonic oscillation is.",
+        "units": "1/s"
+    },
+    "E": {
+        "value": 1.0,
+        "description": "Available energy of system.",
+        "units": "kg m^2/s^2"
+    },
+    "x0": {
+        "value": 0.0,
+        "description": "Available energy of system.",
+        "units": "kg m^2/s^2"
+    },
+    "y0": {
+        "value": 0.0,
+        "description": "Available energy of system.",
+        "units": "kg m^2/s^2"
+    },
+    "py0": {
+        "value": 0.0,
+        "description": "Available energy of system.",
+        "units": "kg m^2/s^2"
+    }
+}
