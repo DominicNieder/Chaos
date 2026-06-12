@@ -47,7 +47,13 @@ hamiltonian(x, y, px, py; p=param) = kinetic(px, py, m=p[2]) + potential(x,y, p=
 
 
 # numerical integration, num_int = (T, dt)
-function solve_trajectory(u0; tspan=(0.0, num_int[1]), dt=num_int[2], p=param)
+"""
+Uses Vern9 algorithem: 
+"Verner's “Most Efficient” 9/8 Runge-Kutta method. (lazy 9th order interpolant)"
+"""
+function solve_trajectory(u0; 
+    tspan=(0.0, num_int[1]), dt=num_int[2], p=param
+    )
     prob = ODEProblem(equations!, u0, tspan, p)
     solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt)
 end
