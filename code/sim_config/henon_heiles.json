@@ -40,7 +40,7 @@
         "units": "m"
     },
     "py0": {
-        "value": 0.0,
+        "value": 0.22,
         "description": "Initial momentum py, in y direction.",
         "units": "kg m/s"
     }
