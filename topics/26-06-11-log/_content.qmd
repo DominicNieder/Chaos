@@ -13,6 +13,14 @@ These are two screen shots of the Hénon-Heiles potential
 ![Top view](/figures/2026-06-11-02-henon_heiles-top_potential.png)
 :::
 
+**Parameters**
+
+| Parameter | Value | Units | Description |
+|-----------|-------|-------|-------------|
+| $a$ | 2.0 | — | Non-linear coupling strength |
+| $m$ | 1.0 | kg | Mass |
+| $\omega$ | 1.0 | 1/s | Harmonic oscillator frequency |
+
 ### Lost Wonderers Thoughts:
 
 I spend an hour raading 
