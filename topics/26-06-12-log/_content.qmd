@@ -1,0 +1,8 @@
+### On implementation of Hénon-Heiles
+
+
+- [ ] I need to check for error in the explore.jl for bugs
+
+
+---
+

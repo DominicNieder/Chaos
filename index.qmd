@@ -14,6 +14,6 @@ page-layout: full
 
 ---
 
-## Latest: 11 June, 2026
+## Latest: 12 June, 2026
 
-{{< include topics/26-06-11-log/_content.qmd >}}
+{{< include topics/26-06-12-log/_content.qmd >}}
