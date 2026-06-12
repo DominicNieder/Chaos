@@ -3,7 +3,10 @@ using GLMakie
 include("../models/henon_heiles.jl")
 include("../analysis/poincare.jl")
 
-# --- initial conditions ---
+# --- simulation parameters ---
+
+
+# --- simulation variables ---
 E  = Observable(init_var[1])
 x0 = Observable(init_var[2])
 y0 = Observable(init_var[3])
