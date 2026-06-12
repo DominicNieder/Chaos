@@ -63,10 +63,10 @@
   },
 
   "critical point": {
-    "def": "",
-    "date": "2026-06-04",
-    "macro": null,
-    "latex": null
+    "def": "A point in state-space, for which a continuous transition between two states exists.",
+    "date": "2026-06-12",
+    "macro": "crit_point",
+    "latex": "\\mathcal{C}"
   },
 
   "_comment": "Examples to understand workflow: ai-generated!",
