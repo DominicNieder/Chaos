@@ -19,6 +19,7 @@ website:
       - index.qmd
       - section: "Logs"
         contents:
+          - topics/26-06-14-log/index.qmd
           - topics/26-06-12-log/index.qmd
           - topics/26-06-11-log/index.qmd
           - topics/26-06-09-log/index.qmd

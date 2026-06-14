@@ -1,0 +1,28 @@
+###
+
+**Issues:**
+1) The hamiltonian I used and the one of Hénon-Heiles, I oversaw a prefactor of $1/2$
+
+$$U(x,y)= \frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3}).$$
+
+![The potential used by @Henon1964](/pic/2026-06-14-01-henon-heiles-potential.png){width=60%}
+
+
+which translates to $\alpha=1.0$, $m=1$ and $\omega=1$.
+
+This results in the following plots depict the difference
+
+::: {layout-ncol=2}
+![$\alpha=1$](/figures/henon-heiles/potential_contour-a1-m1-w1.png)
+
+![$\alpha=2$](/figures/henon-heiles/potential_contour-a2-m1-w1.png)
+:::
+
+The specific detail I obtain from this plot is, the *initial-conditions*-space that I need to sample.
+
+I need to sample:
+
+1) ($x$, $y$)–plane 
+2) ($p_x$, $p_y$)–plane
+3) even distribution,
+4) weighted distribution based on regions of interest, i.e a "zoom"

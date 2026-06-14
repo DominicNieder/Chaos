@@ -1,7 +1,7 @@
 ### On implementation of Hénon-Heiles
 
 
-- [ ] I need to check for error in the explore.jl for bugs
+- [x] I need to check for error in the explore.jl for bugs
 - [ ] I want to have a menu that allows me to observe all parameters
 
 
