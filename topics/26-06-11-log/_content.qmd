@@ -7,9 +7,7 @@
 
 These are two screen shots of the Hénon-Heiles potential
 
-:: {layout-ncol=1}
 ![Left: a 3D and right a contour plot of the Hénon-Heiles potential.](/figures/henon-heiles/potential.png){width=90%}
-:::
 
 **Parameters**
 
