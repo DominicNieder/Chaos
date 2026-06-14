@@ -45,9 +45,9 @@ lines!(ax3, lift(s->s.t, sol), traj_x, linewidth=0.5)
 # --- controls ---
 sg = SliderGrid(fig[3, 1:2],
     (label="Energy E",  range=0.01:0.000001:0.09,startvalue=0.08333),
-    (label="x₀",        range=-0.6:0.01:0.6,    startvalue=0.0),
-    (label="y₀",        range=-0.6:0.01:0.6,    startvalue=0.0),
-    (label="py₀",       range=0.0:0.01:0.4,     startvalue=0.0)
+    (label="x₀",        range=-1.0:0.01:1.0,    startvalue=0.0),
+    (label="y₀",        range=-0.8:0.01:1.2,    startvalue=0.0),
+    (label="py₀",       range=0.0:0.01:1.0,     startvalue=0.0)
 )
 connect!(E,     sg.sliders[1].value)
 connect!(x0,    sg.sliders[2].value)
