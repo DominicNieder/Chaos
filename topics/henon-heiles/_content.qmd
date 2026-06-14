@@ -1,1 +1,73 @@
-The Henon–Heiles describes a celestial system. 
+The Henon–Heiles describes a celestial system of ib example a star inside of a galaxy.
+
+$$H(x,y,p_x,p_y)=\frac{(p_x^2+p_y^2)}{2m} + \frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3}).$$
+
+---
+
+We obtain the equations of motion by
+
+
+::: {.columns}
+
+::: {.column}
+$$\dot{q_i} =\frac{\partial H}{\partial p_i} $$ 
+
+
+:::
+
+::: {.column}
+
+$$\dot{p_i} =-\frac{\partial H}{\partial q_i} $$
+
+:::
+
+:::
+
+for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$.
+
+---
+
+The effect of choosing $\alpha$ gives the **scale** of the potential
+
+::: {layout-ncol=2}
+![$\alpha=1$](/figures/henon-heiles/potential_contour-a1-m1-w1.png)
+
+![$\alpha=2$](/figures/henon-heiles/potential_contour-a2-m1-w1.png)
+:::
+
+---
+
+
+
+---
+
+## Implementation
+
+The resulting equation of motion in julia code:
+```julia
+function equations!(du, u, p, t)
+    m, a, w = p
+    x, y, px, py = u
+    du[1] =  px
+    du[2] =  py
+    du[3] = -m*w^2*x - 2a*x*y
+    du[4] = -m*w^2*y - a*(x^2 - y^2)
+end
+```
+Here the potentials are defined:
+```julia
+potential(x, y; m=m, w=w, a=a) = m*w^2/2 *(x^2+y^2) + a*(x^2*y - y^3/3)
+
+kinetic(px, py; m=m, w=w) = (px^2 + py^2)/(2*m)
+
+hamiltonian(x, y, px, py; m=m, w=w, a=a) = kinetic(px, py, m=m, w=w) + potential(x,y, m=m, w=w, a=a)
+```
+
+
+And here the trajectory gets solved:
+```julia
+function solve_trajectory(u0; tspan=(0.0, 500.0), dt=0.1, p=param)
+    prob = ODEProblem(equations!, u0, tspan, p)
+    solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt)
+end
+```
