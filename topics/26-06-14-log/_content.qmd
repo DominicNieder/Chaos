@@ -28,23 +28,33 @@ The specific detail I obtain from this plot is, the *initial-conditions*-space t
 4) weighted distribution based on regions of interest, i.e a "zoom"
 
 - [ ] I need to estimate the time of these simulations
-- [ ] I need to understand the analysis too of my cut through the phase plane
+- [ ] I need to understand the analysis too of my cut through the phase plane, i.e. why do I not see it below in the appropriate plots
 
 I have made the following observations running the following interesting observations of transitions, sudden changes on the kind of trajectories made in the x-y plane
 
-::: {layout-ncol=3}
+::: {columns}
+::: {.column width=30%}
+
 ![](/pic/2026-06-15-01-obs11.png)
 ![](/pic/2026-06-15-02-obs12.png)
 ![](/pic/2026-06-15-03-obs13.png)
+
 :::
-::: {layout-ncol=3}
+
+::: {.column width=30%}
+
 ![](/pic/2026-06-15-04-obs21.png)
 ![](/pic/2026-06-15-05-obs22.png)
 ![](/pic/2026-06-15-06-obs23.png)
+
 :::
-::: {layout-ncol=3}
+
+::: {.column width=30%}
+
 ![](/pic/2026-06-15-07-obs31.png)
 ![](/pic/2026-06-15-08-obs32.png)
 ![](/pic/2026-06-15-09-obs33.png)
+
+:::
 :::
 
