@@ -1,0 +1,13 @@
+### To do
+
+
+- [ ] I need to sample:
+
+1) ($x$, $y$)–plane 
+2) ($p_x$, $p_y$)–plane
+3) even distribution,
+4) weighted distribution based on regions of interest, i.e a "zoom"
+
+- [ ] I need to estimate the time of these simulations
+- [ ] I need to understand the analysis too of my cut through the phase plane, i.e. why do I not see it below in the appropriate plots
+
