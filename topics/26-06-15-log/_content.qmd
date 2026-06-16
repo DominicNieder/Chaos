@@ -11,3 +11,7 @@
 - [ ] I need to estimate the time of these simulations
 - [ ] I need to understand the analysis too of my cut through the phase plane, i.e. why do I not see it below in the appropriate plots
 
+
+### Talk with Benoit
+
+- [ ] find outer orbit of the surface section
