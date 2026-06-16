@@ -3,7 +3,7 @@ using OrdinaryDiffEq
 include("../models/henon_heiles.jl")
 
 # Collect section at y=0, py>0
-function section_y0(sol)
+function surface_section_y0(sol)
     xs, pxs = Float64[], Float64[]
     for i in 2:length(sol.t)
         y_prev = sol[2, i-1]
@@ -21,7 +21,7 @@ function section_y0(sol)
 end
 
 # Collect section at x=0, px>0
-function section_x0(sol)
+function surface_section_x0(sol)
     ys, pys = Float64[], Float64[]
     for i in 2:length(sol.t)
         x_prev = sol[1, i-1]
