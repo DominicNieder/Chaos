@@ -10,22 +10,35 @@ We obtain the equations of motion by
 ::: {.columns}
 
 ::: {.column}
-$$\dot{q_i} =\frac{\partial H}{\partial p_i} $$ 
+$$
+\begin{align}
+\dot{q_i} &=\frac{\partial H}{\partial p_i} \\
+\dot{x} &=p_x/m \\
+\dot{y} &=p_y/m
+
+\end{align}
+$$ 
 
 
 :::
 
 ::: {.column}
 
-$$\dot{p_i} =-\frac{\partial H}{\partial q_i} $$
+$$
+\begin{align}
+\dot{p_i} &=-\frac{\partial H}{\partial q_i} \\
+\dot{p_x} &= 
+\end{align}$$
 
 :::
 
 :::
 
-for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$.
+for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$. In our case simply $q_i\in\{x,y\}$ and $p_i\in\{p_x, p_y\}$
 
----
+
+
+###
 
 The effect of choosing $\alpha$ gives the **scale** of the potential
 
