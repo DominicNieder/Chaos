@@ -1,5 +1,8 @@
 project:
   type: website
+
+execute:
+  freeze: auto
   output-dir: _site
   render:
     - "*.qmd"
@@ -17,6 +20,11 @@ website:
   sidebar:
     contents:
       - index.qmd
+      - topics/day-logs/index.qmd
+      - section: "Topics"
+        contents:
+          - topics/henon-heiles/index.qmd
+          - topics/self-organized-criticallity/index.qmd
       - section: "Logs"
         contents:
           - topics/26-06-19-log/index.qmd
@@ -30,10 +38,6 @@ website:
           - topics/26-05-26-log/index.qmd
           - topics/26-05-27-log/index.qmd
           - topics/26-05-28-log/index.qmd
-      - section: "Topics"
-        contents:
-          - topics/henon-heiles/index.qmd
-          - topics/self-organized-criticallity/index.qmd
 
 
 

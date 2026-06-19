@@ -1,0 +1,65 @@
+::: {.callout-note collapse="false"}
+## 19 June, 2026
+
+{{< include ../26-06-19-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 17 June, 2026
+
+{{< include ../26-06-17-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 15 June, 2026
+
+{{< include ../26-06-15-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 14 June, 2026
+
+{{< include ../26-06-14-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 12 June, 2026
+
+{{< include ../26-06-12-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 11 June, 2026
+
+{{< include ../26-06-11-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 9 June, 2026
+
+{{< include ../26-06-09-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 5 June, 2026
+
+{{< include ../26-06-05-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 28 May, 2026
+
+{{< include ../26-05-28-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 27 May, 2026
+
+{{< include ../26-05-27-log/_content.qmd >}}
+:::
+
+::: {.callout-note collapse="true"}
+## 26 May, 2026
+
+{{< include ../26-05-26-log/_content.qmd >}}
+:::

@@ -49,5 +49,11 @@ awk -v date="$DATE" '
   { print }
 ' "$QUARTO" > "$QUARTO.tmp" && mv "$QUARTO.tmp" "$QUARTO"
 
-echo "updated: $INDEX and $QUARTO"
+# --- insert new entry at top of day-logs/_content.qmd, collapse previous top entry ---
+DAYLOGS="$ROOT/topics/day-logs/_content.qmd"
+sed -i '0,/collapse="false"/s/collapse="false"/collapse="true"/' "$DAYLOGS"
+NEW_BLOCK="::: {.callout-note collapse=\"false\"}\n## $DISPLAY\n\n{{< include ../${DATE}-log/_content.qmd >}}\n:::\n"
+printf '%b\n' "$NEW_BLOCK$(cat "$DAYLOGS")" > "$DAYLOGS"
+
+echo "updated: $INDEX, $QUARTO, and $DAYLOGS"
 echo "done — open topics/${DATE}-log/_content.qmd to start writing"
