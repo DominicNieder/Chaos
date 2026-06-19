@@ -13,7 +13,7 @@ QMD="$ROOT/glossary.qmd"
   jq -r 'to_entries[]
     | select(.value | type == "object")
     | select(.value.macro != null and .value.macro != "")
-    | "  \(.value.macro): \"\(.value.latex)\","' "$GLOSSARY"
+    | "  \(.value.macro): \"\(.value.latex)\","' "$GLOSSARY" | sed 's/\\/\\\\/g'
   echo "}}};"
   echo "</script>"
 } > "$MACROS"
