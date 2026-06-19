@@ -99,19 +99,19 @@ with_theme(QUARTO_THEME) do
     # --- save trajectory figure ---
     save_fig_btn_traj = Button(fig[2, 3][2,1], label="traj", labelcolor=:black)
     on(save_fig_btn_traj.clicks) do _
-        println("--- Saving trajectory fiugre---")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "traj-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
-        # save only ax1 (trajectory plot)
-        fig_export = Figure(size=ideal_size)
-        ax_export = Axis(fig_export[1,1])
-        lines!(ax_export, traj_x[], traj_y[], linewidth=1.0)
-        contour!(ax_export, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
-        xlims!(ax_export,  -1, 1)
-        ylims!(ax_export, -0.6, 1)
-        ax_export.xlabel = "x"
-        ax_export.ylabel = "y"
-        save(fname, fig_export, px_per_unit=2)
-        println("--- done ---")
+        with_theme(QUARTO_THEME) do
+            fig_export = Figure(size=ideal_size)
+            ax_export  = Axis(fig_export[1,1])
+            lines!(ax_export, traj_x[], traj_y[], linewidth=1.0)
+            contour!(ax_export, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
+            xlims!(ax_export, -1, 1)
+            ylims!(ax_export, -0.6, 1)
+            ax_export.xlabel = "x"
+            ax_export.ylabel = "y"
+            save(fname, fig_export, px_per_unit=2)
+        end
+        println("--- done: $fname ---")
     end
 
     # == Plot: phase space trajectory ==
@@ -137,26 +137,24 @@ with_theme(QUARTO_THEME) do
     # --- save surface section figure ---
     save_fig_btn_phasesect = Button(fig[2, 3][2,2], label="section", labelcolor=:black)
     on(save_fig_btn_phasesect.clicks) do _
-        println("--- save surface sectio figure ---")
-
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "surf_of_sec-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
-        # save only ax1 (trajectory plot)
-        fig_export = Figure(size=ideal_size)
-        ax_export = Axis(fig_export[1,1])
-        lines!(ax_export, y_sec_obs[], py_sec_obs[], linewidth=1.0)
-        scatter!(ax_export, y0_range_obs[], py0_range_obs[], markersize=5, color=C_CREAM)  # max py
-        scatter!(ax_export, y0_range_obs[], -py0_range_obs[], markersize=5, color=C_CREAM) # min -py
-        y_min, y_max =  extrema(y0_range_obs[])
-        p_max        =  maximum(py0_range_obs[])
-        dy           =  (y_max-y_min)/50
-        dp           =  p_max/30
-        ylims!(ax_export,  -p_max-dp, p_max+dp)
-        xlims!(ax_export, y_min-dy, y_max+dy)
-        ax_export.xlabel = "y"
-        ax_export.ylabel = "p_y"
-        save(fname, fig_export, px_per_unit=2)
-        println("--- done ---")
-
+        with_theme(QUARTO_THEME) do
+            fig_export = Figure(size=ideal_size)
+            ax_export  = Axis(fig_export[1,1])
+            scatter!(ax_export, y_sec_obs[], py_sec_obs[], markersize=5)
+            scatter!(ax_export, y0_range_obs[], py0_range_obs[], markersize=5, color=C_CREAM)
+            scatter!(ax_export, y0_range_obs[], -py0_range_obs[], markersize=5, color=C_CREAM)
+            y_min, y_max = extrema(y0_range_obs[])
+            p_max        = maximum(py0_range_obs[])
+            dy = (y_max - y_min) / 50
+            dp = p_max / 30
+            xlims!(ax_export, y_min-dy, y_max+dy)
+            ylims!(ax_export, -p_max-dp, p_max+dp)
+            ax_export.xlabel = "y"
+            ax_export.ylabel = "p_y"
+            save(fname, fig_export, px_per_unit=2)
+        end
+        println("--- done: $fname ---")
     end
 
     # == Plot: x(t) ==
@@ -169,19 +167,18 @@ with_theme(QUARTO_THEME) do
     # --- save x(t) figure ---
     save_fig_btn_xt = Button(fig[2, 3][2,3], label="x(t)", labelcolor=:black)
     on(save_fig_btn_xt.clicks) do _
-        println("--- save x(t) ---")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "xt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
-        # save only ax1 (trajectory plot)
-        fig_export = Figure(size=ideal_size)
-        ax_export = Axis(fig_export[1,1])
-        lines!(ax_export, sol_t[], traj_x[], linewidth=0.5)
-        ylims!(ax_export,  -1.0, 1.0)
-        xlims!(ax_export, 0.0, T[]+0.01)
-        ax_export.xlabel = "t"
-        ax_export.ylabel = "x(t)"
-        save(fname, fig_export, px_per_unit=2)
-        println("--- done ---")
-
+        with_theme(QUARTO_THEME) do
+            fig_export = Figure(size=ideal_size)
+            ax_export  = Axis(fig_export[1,1])
+            lines!(ax_export, sol_t[], traj_x[], linewidth=0.5)
+            ylims!(ax_export, -1.0, 1.0)
+            xlims!(ax_export, 0.0, T[]+0.01)
+            ax_export.xlabel = "t"
+            ax_export.ylabel = "x(t)"
+            save(fname, fig_export, px_per_unit=2)
+        end
+        println("--- done: $fname ---")
     end
 
     # == Plot: y(t) ==
@@ -198,18 +195,18 @@ with_theme(QUARTO_THEME) do
     # --- save y(t) figure ---
     save_fig_btn_yt = Button(fig[2, 3][2,4], label="y(t)", labelcolor=:black)
     on(save_fig_btn_yt.clicks) do _
-        println("--- save y(t) ---")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "yt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
-        # save only ax1 (trajectory plot)
-        fig_export = Figure(size=ideal_size)
-        ax_export = Axis(fig_export[1,1])
-        lines!(ax_export, sol_t[], traj_y[], linewidth=0.5)
-        ylims!(ax_export,  -1.0, 1.0)
-        xlims!(ax_export, 0.0, T[]+0.01)
-        ax_export.xlabel = "t"
-        ax_export.ylabel = "y(t)"
-        save(fname, fig_export, px_per_unit=2)
-        println("--- done ---")
+        with_theme(QUARTO_THEME) do
+            fig_export = Figure(size=ideal_size)
+            ax_export  = Axis(fig_export[1,1])
+            lines!(ax_export, sol_t[], traj_y[], linewidth=0.5)
+            ylims!(ax_export, -1.0, 1.0)
+            xlims!(ax_export, 0.0, T[]+0.01)
+            ax_export.xlabel = "t"
+            ax_export.ylabel = "y(t)"
+            save(fname, fig_export, px_per_unit=2)
+        end
+        println("--- done: $fname ---")
     end
 
     # === controls of initial parameters ===
