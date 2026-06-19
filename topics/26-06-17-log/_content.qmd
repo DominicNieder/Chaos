@@ -3,21 +3,21 @@
 I am currently working on the analysis of the phase space.
 For this I am wanting to understand the outer-most trajectory in the surface section with the condition $x=0$ and $p_x\geq 0$.
 
----
+###
 Our first constraint comes from the energy of the system.
 
 $$\HH(x,y,p_x,p_y)=\Ekin(p_x,p_y)+\Epot(x,y)=E$$
 
 
----
+###
 
-To do this, the equation 
+To do this, the equation
 
 $$\Epot(x,y)= \VHH $$
 
 is considered for $x=0$ and $p_x=0$.
 
----
+###
 
 $$
 \begin{align}
