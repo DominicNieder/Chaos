@@ -99,7 +99,6 @@ calculates the limit for y0, for surface section x=0.
 """
 function limit_of_initial_y0(E::Float64)
     p=Polynomial([2E, 0,-1, 2/3])
-    print(p)
     roots(p)
 end
 
