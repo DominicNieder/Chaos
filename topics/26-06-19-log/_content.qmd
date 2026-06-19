@@ -1,0 +1,97 @@
+### Integration and analysis
+
+- some issues in efficiency in the code: integration and analysis are two for-loops
+
+- **integration:**
+
+```julia
+function solve_trajectory(u0; 
+    tspan=(0.0, num_int[1]), dt=num_int[2], p=param
+    )
+    prob = ODEProblem(equations!, u0, tspan, p)
+    solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt)
+end
+```
+- ODEProblem from [@DifferentialEquations2017]
+  - Vern9 - Verner's “Most Efficient” 9/8 Runge-Kutta method. (lazy 9th order interpolant) 
+
+
+- **surface of section:**
+
+```julia
+function surface_section_x0(sol; x_cut=0)
+    ys, pys = Float64[], Float64[]
+    for i in 2:length(sol.t)
+        x_prev = sol[1, i-1]
+        x_curr = sol[1, i]
+        if x_prev < x_cut && x_curr >= x_cut
+            # linear interpolation to x=0 crossing
+            α = -x_prev / (x_curr - x_prev)
+            y  = sol[2, i-1] + α * (sol[2, i]  - sol[2, i-1])
+            py = sol[4, i-1] + α * (sol[4, i]  - sol[4, i-1])
+            push!(ys, y)
+            push!(pys, py)
+        end
+    end
+    ys, pys
+end
+```
+- checks every saved value of the integration if $x(t)<0$ and $x(t+\tau)\geq 0$
+- inefficient due to iterating though both bodies at once
+
+- **Solution:**
+
+- using the function
+
+``` julia
+ContinuousCallback(condition, affect!)
+```
+- results in the following implementation
+
+```julia
+function section_callback(section_q, section_p)
+    condition(u, t, integrator) = u[1]
+    affect!(integrator) = begin
+        if integrator.u[3] >= 0
+            push!(section_q, integrator.u[2])
+            push!(section_p, integrator.u[4])
+        end
+    end
+    ContinuousCallback(condition, affect!)
+end
+```
+
+```julia
+function solve_trajectory(
+    u0; 
+    tspan=(0.0, num_int[1]), 
+    dt=num_int[2], 
+    p=param, 
+    callback=nothing
+    )
+    prob = ODEProblem(
+        equations!, u0, tspan, p
+        )
+    solve(
+        prob, 
+        Vern9(), 
+        abstol=1e-10, 
+        reltol=1e-10, 
+        saveat=dt, 
+        callback=callback
+        )
+end
+```
+This gets then implemented by 1) *initializing* the surface of section arrays, 2) 
+
+```julia
+y_sec, py_sec   =   Float64[], Float64[]  
+cl              =   section_callback!(y_sec, py_sec)
+sol             =   solve_trajectory(
+                        [x, y, px, py], 
+                        tspan=(0.0, T), 
+                        dt=num_int[2], 
+                        p=param,
+                        callback=cb
+                    )
+```
