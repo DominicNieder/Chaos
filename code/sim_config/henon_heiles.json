@@ -25,7 +25,7 @@
         "units": "1/s"
     },
     "E": {
-        "value": 0.08333,
+        "value": 0.08333333,
         "description": "Available energy of system.",
         "units": "kg m^2/s^2"
     },
