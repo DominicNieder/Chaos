@@ -66,44 +66,48 @@
     "def": "A point in state-space, for which a continuous transition between two states exists.",
     "date": "2026-06-12",
     "macro": "crit_point",
-    "latex": "\\mathcal{C}"
+    "latex": "\\mathcal{C_{rit}}"
   },
-
-  "_comment": "Examples to understand workflow: ai-generated!",
 
   "Hamiltonian": {
-    "def": "The total energy function of a system, encoding kinetic and potential energy. ai-generated!",
-    "date": "2026-05-26",
+    "def": "The total energy function of a system, made of the sum of the kinetic and potential energy.",
+    "date": "2026-06-17",
     "macro": "HH",
-    "latex": "\\hat{H}"
+    "latex": "H"
   },
 
-  "Lyapunov exponent": {
-    "def": "Average rate of divergence of nearby trajectories. Positive values indicate chaos. ai-generated!",
-    "date": "2026-05-26",
-    "macro": "Lya",
-    "latex": "\\lambda"
+  "kinetic energy": {
+    "def": "Is the energy that is in the form of motion of a massive objects. It is defined by $\\hat{T}=\\sum_i\\tfrac{p_i^2}{2m}$ for all particles labeled $i$",
+    "date": "2026-06-17",
+    "macro": "Ekin",
+    "latex": "T"
   },
 
-  "Poincaré section": {
-    "def": "Intersections of a trajectory with a chosen hyperplane in phase space. ai-generated!",
-    "date": "2026-05-26",
-    "macro": null,
-    "latex": null
+  "potential energy": {
+    "def": "Is the energy that is stored in the interaction that the particles obey. It carries the potential to transform it into kinetic energy i.e. movement.",
+    "date": "2026-06-17",
+    "macro": "Epot",
+    "latex": "U"
+  },
+  "surface of section": {
+    "def": "A surface cutting through the phase space. This registers the trajectory that passes through it. This can have constraints i.e. in a 4D phase-space $p_x\\geq 0$",
+    "date": "2026-06-17",
+    "macro": "sufsec",
+    "latex": "\\mathcal{S}"
   },
 
   "phase space": {
-    "def": "The space of all possible states, with axes for each position and momentum coordinate. ai-generated!",
-    "date": "2026-05-27",
+    "def": "The space of all possible states, with axes for each position $q_i$ and momentum $p_i$ coordinate.",
+    "date": "2026-06-17",
     "macro": "ps",
-    "latex": "(x, y, p_x, p_y)"
+    "latex": "(\\vec{q}, \\vec{p})"
   },
 
   "Hénon-Heiles potential": {
-    "def": "Two-dimensional potential modelling chaotic motion: V = ½(x²+y²) + x²y − ⅓y³. ai-generated!",
-    "date": "2026-05-26",
+    "def": "Two-dimensional potential: $U = \\tfrac{m \\omega^2}{2}(x^2+y^2)+\\alpha(x^2y-\\tfrac{1}{3}y^3)$. It is a model describing stellar motion in a galaxy and is used to study chaos.",
+    "date": "2026-06-17",
     "macro": "VHH",
-    "latex": "\\tfrac{1}{2}(x^2+y^2)+x^2y-\\tfrac{1}{3}y^3"
+    "latex": "\\frac{m \\omega^2}{2}(x^2+y^2)+\\alpha(x^2y-\\frac{1}{3}y^3)"
   }
 
 }
