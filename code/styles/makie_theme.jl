@@ -1,3 +1,8 @@
+const C_RED    = "#f48484"
+const C_PURPLE = "#ae87f7"
+const C_CREAM  = "#f8f2e0"
+const C_TEAL   = "#7ec8c8"
+
 const QUARTO_THEME = Theme(
     backgroundcolor = RGBf(0.102, 0.102, 0.102),   # #1a1a1a
     textcolor       = RGBf(0.973, 0.949, 0.878),   # #f8f2e0
@@ -12,10 +17,6 @@ const QUARTO_THEME = Theme(
         titlecolor  = RGBf(0.980, 0.973, 0.965),   # #f9f8f6
         spinecolor  = RGBf(0.973, 0.949, 0.878),
     ),
-    palette = (color = [
-        "#f48484",   # link red — first series
-        "#ae87f7",   # code purple — second series
-        "#f8f2e0",   # cream — third
-        "#7ec8c8",   # teal — fourth
-    ],),
+    palette = (color = [C_RED, C_PURPLE, C_CREAM, C_TEAL],),
+
 )
