@@ -10,14 +10,11 @@ We obtain the equations of motion by
 ::: {.columns}
 
 ::: {.column}
-$$
-\begin{align}
+$$\begin{align}
 \dot{q_i} &=\frac{\partial H}{\partial p_i} \\
 \dot{x} &=p_x/m \\
 \dot{y} &=p_y/m
-
-\end{align}
-$$ 
+\end{align}$$ 
 
 
 :::
@@ -34,7 +31,7 @@ $$
 
 :::
 
-for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$. In our case simply $q_i\in\{x,y\}$ and $p_i\in\{p_x, p_y\}$
+for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$. In our case simply $q_i\in\{x,y\}$ and $p_i\in\{p_x, p_y\}$ span the phase space.
 
 
 
@@ -67,7 +64,7 @@ function equations!(du, u, p, t)
     du[4] = -m*w^2*y - a*(x^2 - y^2)
 end
 ```
-Here the potentials are defined:
+Here the potential and kinetic energy are defined:
 ```julia
 potential(x, y; m=m, w=w, a=a) = m*w^2/2 *(x^2+y^2) + a*(x^2*y - y^3/3)
 

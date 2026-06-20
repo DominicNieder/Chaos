@@ -41,15 +41,22 @@
     "latex": null
   },
 
+  "dynamical system":{
+    "def": "A set of $N$ first order differential equations in $N$ variables $\\vec{x}=(x_1, \\dots, x_N).",
+    "date": "2026-06-20",
+    "macro": "dynmSyst",
+    "latex": "\\frac{d\\vec{x}}{dt}=\\vec{f}(\\vec{x}, t)"
+  },
+
   "trajectory": {
-    "def": "A mathematical 1 dimensional object, that describes a dynamics of a system.",
+    "def": "A mathematical 1 dimensional object, that describes a dynamics of a point in a phase space.",
     "date": "2026-06-05",
-    "macro": null,
-    "latex": null
+    "macro": "traj",
+    "latex": "\\vec{x}(\\vec{x}_0,t)"
   },
 
   "ergodic trajectory": {
-    "def": "A trajectory that will fill th whole volume of the accessible phase space.",
+    "def": "A trajectory that will fill th whole volume of the accessible phase space. Thus \\vec{x}(\\vec{x}_0,t_1)=\\vec{x}(\\vec{x}_0,t_2) \\Rightarrow t_1=t_2.",
     "date": "2026-05-28",
     "macro": null,
     "latex": null
@@ -89,12 +96,14 @@
     "macro": "Epot",
     "latex": "U"
   },
+
   "surface of section": {
-    "def": "A surface cutting through the phase space. This registers the trajectory that passes through it. This can have constraints i.e. in a 4D phase-space $p_x\\geq 0$",
+    "def": "A surface cutting through the phase space. This registers the trajectory that passes through it. This can have constraints i.e. in a 4D phase-space $x=0$ and $p_x\\geq 0$-",
     "date": "2026-06-17",
     "macro": "sufsec",
     "latex": "\\mathcal{S}"
   },
+
 
   "configuration space": {
     "def": "The space of all possible positions $\\vec{x}_i \\in \\mathbb{R}^3$, for all $N$ particles $1\\leq i \\leq N$. I am wondering, what about time?",
@@ -104,14 +113,14 @@
   },
 
   "phase space": {
-    "def": "The space of all possible states, with axes for each canonical coordinates – position $q_i$ and momentum $p_i$.",
+    "def": "The space of all possible states, with axes for each canonical coordinates – position $\\{q_i | 1\\leq i \\leq N\\} = \\textbf{q}$ and momentum $\\{p_i | 1\\leq i \\leq N\\} = \\textbf{p}$. $N$ describes the number of degrees of freedom.",
     "date": "2026-06-17",
     "macro": "ps",
-    "latex": "(\\vec{q}, \\vec{p})"
+    "latex": "(\\textbf{q}, \\textbf{p})"
   },
 
   "state": {
-    "def": "Describes a system dialectically. One state can become another. Often 'state' can be used to describe synonymously to 'mode' or a 'function-type' of a system. The state is determined by boundry–, including initial-conditions.",
+    "def": "Describes a system dialectically. One state can become another. Often 'state' can be used to describe synonymously to 'mode' or a 'function-type' of a system. The state is determined by boundary–, including initial-conditions.",
     "date": "2026-06-17",
     "macro": null,
     "latex": null
