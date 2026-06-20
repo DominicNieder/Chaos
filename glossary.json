@@ -96,11 +96,32 @@
     "latex": "\\mathcal{S}"
   },
 
+  "configuration space": {
+    "def": "The space of all possible positions $\\vec{x}_i \\in \\mathbb{R}^3$, for all $N$ particles $1\\leq i \\leq N$. I am wondering, what about time?",
+    "date": "2026-06-17",
+    "macro": "ps",
+    "latex": "(\\vec{x}_i, \\vec{p})"
+  },
+
   "phase space": {
-    "def": "The space of all possible states, with axes for each position $q_i$ and momentum $p_i$ coordinate.",
+    "def": "The space of all possible states, with axes for each canonical coordinates – position $q_i$ and momentum $p_i$.",
     "date": "2026-06-17",
     "macro": "ps",
     "latex": "(\\vec{q}, \\vec{p})"
+  },
+
+  "state": {
+    "def": "Describes a system dialectically. One state can become another. Often 'state' can be used to describe synonymously to 'mode' or a 'function-type' of a system. The state is determined by boundry–, including initial-conditions.",
+    "date": "2026-06-17",
+    "macro": null,
+    "latex": null
+  },
+
+  "orbit": {
+    "def": "Similar to a state (i.e. in QM). Only that this is referred to trajectories. Or when the system is a dynamical system itself, (i.e. configuration space, phase-space). ",
+    "date": "2026-06-17",
+    "macro": null,
+    "latex": null
   },
 
   "Hénon-Heiles potential": {
