@@ -1,7 +1,6 @@
 using GLMakie
 
 include("../models/henon_heiles.jl")
-include("../analysis/section.jl")
 include("../styles/makie_theme.jl")
 
 mkpath(joinpath(@__DIR__, "../../figures/henon-heiles/explore"))
@@ -24,8 +23,8 @@ y0_range_obs  = Observable(Float64[])
 py0_range_obs = Observable(Float64[])
 
 # --- figure parameters---
-ideal_size= (1920 , 1200)
-
+full_screen_size= (1920 , 1200)
+save_size       = (1200, 1200)
 # --- contour plot ---
 r      = range(-1.0, 1.0, length=120)
 levels = logrange(5.0*0.009, 6.9*0.089, 7)
@@ -85,7 +84,7 @@ with_theme(QUARTO_THEME) do
 
 
     # === layout ===
-    fig = Figure(size=ideal_size)
+    fig = Figure(size=full_screen_size)
 
     # == Plot: configuration space ==
     ax1 = Axis(fig[1:2,1], title="Configuration space", xlabel="x", ylabel="y")
@@ -101,7 +100,7 @@ with_theme(QUARTO_THEME) do
     on(save_fig_btn_traj.clicks) do _
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "traj-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
-            fig_export = Figure(size=ideal_size)
+            fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
             lines!(ax_export, traj_x[], traj_y[], linewidth=1.0)
             contour!(ax_export, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
@@ -139,7 +138,7 @@ with_theme(QUARTO_THEME) do
     on(save_fig_btn_phasesect.clicks) do _
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "surf_of_sec-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
-            fig_export = Figure(size=ideal_size)
+            fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
             scatter!(ax_export, y_sec_obs[], py_sec_obs[], markersize=5)
             scatter!(ax_export, y0_range_obs[], py0_range_obs[], markersize=5, color=C_CREAM)
@@ -169,7 +168,7 @@ with_theme(QUARTO_THEME) do
     on(save_fig_btn_xt.clicks) do _
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "xt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
-            fig_export = Figure(size=ideal_size)
+            fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
             lines!(ax_export, sol_t[], traj_x[], linewidth=0.5)
             ylims!(ax_export, -1.0, 1.0)
@@ -197,7 +196,7 @@ with_theme(QUARTO_THEME) do
     on(save_fig_btn_yt.clicks) do _
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "yt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
-            fig_export = Figure(size=ideal_size)
+            fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
             lines!(ax_export, sol_t[], traj_y[], linewidth=0.5)
             ylims!(ax_export, -1.0, 1.0)
