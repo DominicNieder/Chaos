@@ -52,7 +52,7 @@
             "property": "Trajectory along symmetry axis of triangle."
         },
 
-        "surf_of_sec-0.0894-0.0--0.01-0.0": {
+        "surf_of_sec-0.0894-0.0--0.01-0.0.png": {
             "a": 1.0,
             "m": 1.0,
             "w": 1.0,
@@ -76,6 +76,32 @@
             "y0": -0.01,
             "py0": 0.0,
             "property": "Trajectory does not fill the entire canonical space of the accessible energy. There is a preferred focal point or range in which the trajectory stays contained."
+        },
+
+        "surf_of_sec-0.083-0.0--0.32-0.0.png": {
+            "a": 1.0,
+            "m": 1.0,
+            "w": 1.0,
+            "T": 10000,
+            "dt": 0.1,
+            "E": 0.083,
+            "x0": 0.0,
+            "y0": -0.32,
+            "py0": 0.0,
+            "property": ""
+        },
+
+        "traj-0.083-0.0--0.32-0.0.png": {
+            "a": 1.0,
+            "m": 1.0,
+            "w": 1.0,
+            "T": 10000,
+            "dt": 0.1,
+            "E": 0.083,
+            "x0": 0.0,
+            "y0": -0.32,
+            "py0": 0.0,
+            "property": ""
         }
     }
 }

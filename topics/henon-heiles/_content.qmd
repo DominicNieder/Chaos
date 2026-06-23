@@ -1,62 +1,93 @@
-The Henon–Heiles describes a celestial system of ib example a star inside of a galaxy.
+The Henon–Heiles describes a celestial system of a star inside of a effective potential of a galaxy. It is a well understood and results can be compared to existing results. 
 
-$$H(x,y,p_x,p_y)=\frac{(p_x^2+p_y^2)}{2m} + \frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3}).$$
+### Hénon-Heiles potential
+
+$$\Epot(x,y)=\frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3})$$
+
+
+::: {layout-ncol=2}
+![3D with contour lines.](/figures/henon-heiles/potential_3D-a1-m1-w1.png)
+
+![Contour plot.](/figures/henon-heiles/potential_contour-a2-m1-w1.png)
+:::
+
+### Hamiltonian & equations of motion
+
+$$\begin{align}
+\HH(x,y,p_x,p_y) &= \Ekin(p_x, p_y) + \Epot(x,y) \\
+=&\frac{(p_x^2+p_y^2)}{2m} + \frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3}) \\
+\overset{\alpha=1, m=1, \omega=1}{\longrightarrow}\, &\frac{(p_x^2+p_y^2)}{2} + \frac{(x^2+y^2)}{2}+(x^2y-\frac{y^3}{3}).
+\end{align}
+$$
 
 ---
 
-We obtain the equations of motion by
-
+We obtain the equations of motion $(\dot{x_i}\equiv\tfrac{\partial x_i}{\partial t})$ by 
 
 ::: {.columns}
 
 ::: {.column}
-$$\begin{align}
-\dot{q_i} &=\frac{\partial H}{\partial p_i} \\
-\dot{x} &=p_x/m \\
-\dot{y} &=p_y/m
+$$
+\dot{q_i} =\frac{\partial H}{\partial p_i} = \frac{\partial\Ekin}{\partial p_i}
+$$ 
+:::
+::: {.column}
+$$
+\dot{p_i} =-\frac{\partial H}{\partial q_i} = -\frac{\partial \Epot}{\partial q_i} \\
+$$
+:::
+:::
+
+- canonical conjugate variables $(p_i,q_i)_{i\in\mathbb{N}}$ labeled by $i\in (1,2 \dots, n)$. 
+- In our case simply $q_i\in\{x,y\}$ and $p_i\in\{p_x, p_y\}$ span the phase space 
+- phase space: $\textbf{x}=(\textbf{p}, \textbf{q}) \in \mathbb{R}^N$, $N=4$. 
+
+---
+
+It may be helpful to define the following:
+
+- $\HH(\textbf{x},t)= \HH(\textbf{p},\textbf{q},t)\equiv \HH(x,y,p_x,p_y)$,
+- $\Ekin(\textbf{p})\equiv\Ekin(p_x, p_y)=\Ekin(p_x)+\Ekin(p_y)$,
+- $\Epot(\textbf{q})\equiv\Epot(x,y)$ and finally
+- $\Epot(y)=\Epot(0,y)$ or $\Epot(x)=\Epot(x,0)$
+
+
+---
+
+The equations of motion are then derived by $\dot{q_i} =\tfrac{\partial H}{\partial p_i}$ and $\dot{p_i} = -\frac{\partial \Epot}{\partial q_i}$ resulting in 
+
+$$\begin{align} x&=\frac{p_x}{m} &\longrightarrow & &p_x \\
+y&= \frac{{p_y}}{m} &\longrightarrow & &p_y\\
+p_x&= -m\omega^2\,x - 2\alpha\, xy &\longrightarrow & & -x-2xy \\
+p_y&=  -m\omega^2 y - \alpha (x^2-y^2) &\longrightarrow & &-y- x^2+y^2
 \end{align}$$ 
 
+### surface of section
 
-:::
+To understand our 4-dimensional phase space:
 
-::: {.column}
+1) the system is bound by Energy $E$ available
+$$\HH(\textbf{x})=E=\Ekin(\textbf{p})+\Epot(\textbf{q})$$
 
-$$
-\begin{align}
-\dot{p_i} &=-\frac{\partial H}{\partial q_i} \\
-\dot{p_x} &= 
-\end{align}$$
+2) Due to $\Ekin(p_i)\geq 0$
+$$\Rightarrow \;E\geq\Ekin(p_y)+\Epot(\textbf{q})$$
+with equality if and only if $p_x=0$
 
-:::
+3) check for periodic orbits, create surface of section $\sufsec\in\mathbb{R}^2$ at $x=0, p_x\geq0$,
+$$E\geq\Ekin(p_y)+\Epot(y)$$
 
-:::
-
-for canonical conjugate variables $(p_i,q_i)$ labeled by $i\in\mathbb{N}$. In our case simply $q_i\in\{x,y\}$ and $p_i\in\{p_x, p_y\}$ span the phase space.
-
-
-
-###
-
-The effect of choosing $\alpha$ gives the **scale** of the potential
-
-::: {layout-ncol=2}
-![$\alpha=1$](/figures/henon-heiles/potential_contour-a1-m1-w1.png)
-
-![$\alpha=2$](/figures/henon-heiles/potential_contour-a2-m1-w1.png)
-:::
+4) find the boundary of the possible phase space points passing $\sufsec$, i.e. 
+$$\{(y,p_y) | E=\Ekin(p_y)+\Epot(y)\}$$
 
 ---
 
-
-
----
 
 ## Implementation
 
 The resulting equation of motion in julia code:
 ```julia
 function equations!(du, u, p, t)
-    m, a, w = p
+    a, m, w = p 
     x, y, px, py = u
     du[1] =  px
     du[2] =  py
@@ -64,20 +95,100 @@ function equations!(du, u, p, t)
     du[4] = -m*w^2*y - a*(x^2 - y^2)
 end
 ```
+
+---
+
+
 Here the potential and kinetic energy are defined:
 ```julia
-potential(x, y; m=m, w=w, a=a) = m*w^2/2 *(x^2+y^2) + a*(x^2*y - y^3/3)
+potential(x, y, p) = p[2]*p[3]^2/2 *(x^2+y^2) + p[1]*(x^2*y - y^3/3)
 
-kinetic(px, py; m=m, w=w) = (px^2 + py^2)/(2*m)
+kinetic(px, py, p) = (px^2 + py^2)/(2*p[2])
 
-hamiltonian(x, y, px, py; m=m, w=w, a=a) = kinetic(px, py, m=m, w=w) + potential(x,y, m=m, w=w, a=a)
+hamiltonian(x, y, px, py, p) = kinetic(px, py, p) + potential(x,y, p)
 ```
 
+---
 
-And here the trajectory gets solved:
+The equations of motion are solved by use of the package[@DifferentialEquations2017]. The data for the surface of section is gathered in runtime of the solver. This is achieved by creating a 'callbackfuntion', conditioned on $x=0, p_x\geq0$, appending $(y,p_y)$ to their respective lists:
 ```julia
-function solve_trajectory(u0; tspan=(0.0, 500.0), dt=0.1, p=param)
-    prob = ODEProblem(equations!, u0, tspan, p)
-    solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt)
+function section_callback(section_q, section_p)
+    condition(u, t, integrator) = u[1]
+    affect!(integrator) = begin
+        if integrator.u[3] >= 0
+            push!(section_q, integrator.u[2])
+            push!(section_p, integrator.u[4])
+        end
+    end
+    ContinuousCallback(condition, affect!)
 end
 ```
+The trajectory gets solved as followed
+```julia
+function solve_trajectory(u0, p, tspan, dt; callback=nothing)
+    prob = ODEProblem(equations!, u0, tspan, p)
+    solve(prob, Vern9(), abstol=1e-10, reltol=1e-10, saveat=dt, callback=callback)
+end
+```
+
+
+### Results
+
+Due to $E\geq \Ekin(p_y)+\Epot(y)$ we can obtain a boundary of our plot for our surface of section, which correspond to $x=0, p_x=0$.
+
+- solve $E-(\Ekin(p_y)+\Epot(y))=0\Rightarrow (p_y,y)$?
+- $p_y=0$ to obtain 3rd-order polynomial: $E-\Epot(y)=0\Rightarrow (y_\text{min}, y_\text{max})$
+- numerically determine $E-(\Ekin(p_y)+\Epot(y))=0\Rightarrow (p_y,y)$ for $y\in(y_\text{min}, y_\text{max})$
+
+---
+
+::: {layout-ncol=2}
+![](/figures/henon-heiles/explore/traj-0.0833-0.0-0.0-0.47.png)
+
+![](/figures/henon-heiles/explore/surf_of_sec-0.0833-0.0-0.0-0.47.png)
+:::
+
+---
+
+This can be used to gain make sure the initial conditions match the energy constraint.
+
+
+We can compare the trajectories and surface sections for various energies
+
+---
+
+::: {layout-ncol=2}
+![](/figures/henon-heiles/explore/traj-0.083-0.0--0.12-0.0.png)
+
+![](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.12-0.0.png)
+:::
+
+---
+
+::: {layout-ncol=2}
+![](/figures/henon-heiles/explore/traj-0.083-0.0--0.32-0.0.png)
+
+![](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.32-0.0.png)
+:::
+
+---
+
+::: {layout-ncol=2}
+![](/figures/henon-heiles/explore/traj-0.0481-0.0-0.02-0.14.png)
+
+![](/figures/henon-heiles/explore/surf_of_sec-0.0481-0.0-0.02-0.14.png)
+:::
+
+
+
+---
+
+::: {layout-ncol=2}
+![](/figures/henon-heiles/explore/traj-0.0894-0.0--0.01-0.0.png)
+
+![](/figures/henon-heiles/explore/surf_of_sec-0.0894-0.0--0.01-0.0.png)
+:::
+
+
+---
+
