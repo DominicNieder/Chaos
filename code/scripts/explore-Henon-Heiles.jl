@@ -1,19 +1,22 @@
 using GLMakie
 
 include("../models/henon_heiles.jl")
+using .HenonHeiles
 include("../styles/makie_theme.jl")
 
+# checking for paths
 mkpath(joinpath(@__DIR__, "../../figures/henon-heiles/explore"))
 
-# --- functions ---
-
-
 # --- simulation variables ---
-E  = Observable(Float64(init_var[1]))
-x0 = Observable(Float64(init_var[2]))
-y0 = Observable(Float64(init_var[3]))
-py0= Observable(Float64(init_var[4]))
-T  = Observable(  Int64( num_int[1]))
+cfg   = load_config(joinpath(@__DIR__, "../sim_config/henon_heiles.json"))
+param = (cfg.a, cfg.m, cfg.w)
+
+
+E  = Observable(Float64(cfg.E))
+x0 = Observable(Float64(cfg.x0))
+y0 = Observable(Float64(cfg.y0))
+py0= Observable(Float64(cfg.py0))
+T  = Observable(  Int64(cfg.T))
 
 # --- analysis observables ---
 y_sec_obs  = Observable(Float64[]) # surface of section
@@ -28,19 +31,18 @@ save_size       = (1200, 1200)
 # --- contour plot ---
 r      = range(-1.0, 1.0, length=120)
 levels = logrange(5.0*0.009, 6.9*0.089, 7)
-epot   = [potential(x,y; p=param) for x in r, y in r]
+epot   = [potential(x,y, param) for x in r, y in r]
 
 
 with_theme(QUARTO_THEME) do
     init = lift(E, x0, y0, py0, T) do e, x, y, py, T
         a, m, w = param
-        v       = potential(x, y; p=param)  # potential energy
+        v       = potential(x, y, param)  # potential energy
         psquare = 2m*(e - v)  # p_y^2 if p_x=0 
         pmax    = sqrt(max(0.0, psquare))  # results in a maximal p_y
         py_c    = clamp(py, 0.0, pmax)  # clamp the observable py
         pdiff   = psquare - py_c^2  
         px      = sqrt(max(0.0, pdiff))
-        # println(" – the polynomial\nsolve the polynomial for y0min, y0max:\n$(limit_of_initial_y0(e))")
         (x, y, px, py_c, T)
     end
 
@@ -50,9 +52,9 @@ with_theme(QUARTO_THEME) do
         cb  = section_callback(y_sec, py_sec)
         s   = solve_trajectory(
                 [x, y, px, py], 
-                tspan=(0.0, T), 
-                dt=num_int[2], 
-                p=param,
+                param,
+                (0.0, T), 
+                cfg.dt; 
                 callback=cb
                 )
         y_sec_obs[] =   y_sec
@@ -67,7 +69,7 @@ with_theme(QUARTO_THEME) do
         m  = $m
         ω  = $w
         T  = $T
-        dt = $(num_int[2])
+        dt = $(cfg.dt)
         E  = $e
         x₀ = $x
         y₀ = $y
@@ -118,12 +120,12 @@ with_theme(QUARTO_THEME) do
     scatter!(ax2, y_sec_obs, py_sec_obs, markersize=5)  # from trajectory
     # calculating maximum cricumfarence of phase space trajectory
     on(E; update=true) do e
-        y0_roots        = real.(filter(r -> abs(imag(r)) < 1e-10, limit_of_initial_y0(e)))
+        y0_roots        = real.(filter(r -> abs(imag(r)) < 1e-10, limit_of_initial_y0(e, param)))
         y0_1, y0_2 = y0_roots[1], y0_roots[2]
         dy = (y0_roots[2] - y0_roots[1])/100
         y0_range       = collect(range(y0_1, y0_2, length=100))
         y0_range_obs[] = y0_range
-        py0_range_obs[] = limit_of_initial_py0(y0_range, e)
+        py0_range_obs[] = limit_of_initial_py0(y0_range, e, param)
         _, p_max    = extrema(py0_range_obs[])
         dp = p_max/50
         xlims!(ax2, y0_1-dy, y0_2+dy)
@@ -214,7 +216,7 @@ with_theme(QUARTO_THEME) do
         (label="x₀",        range=-1.0:0.01:1.0,    startvalue=0.0),
         (label="y₀",        range=-0.5:0.01:1.0,    startvalue=0.0),
         (label="py₀",       range=0.0:0.01:1.0,     startvalue=0.0),
-        (label="T",       range=600:200:10000,     startvalue=num_int[1])
+        (label="T",       range=600:200:10000,     startvalue=cfg.T)
     )
     on(sg.sliders[1].value) do v; E[]   = v; end
     on(sg.sliders[2].value) do v; x0[]  = v; end
