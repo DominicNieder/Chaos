@@ -56,7 +56,7 @@
   },
 
   "ergodic trajectory": {
-    "def": "A trajectory that will fill th whole volume of the accessible phase space. Thus \\textbf{x}(\\textbf{x}_0,t_1)=\\textbf{x}(\\textbf{x}_0,t_2) \\Rightarrow t_1=t_2.",
+    "def": "A trajectory that will fill th whole volume of the accessible phase space. Thus $\\textbf{x}(\\textbf{x}_0,t_1)=\\textbf{x}(\\textbf{x}_0,t_2) \\Rightarrow t_1=t_2$.",
     "date": "2026-05-28",
     "macro": null,
     "latex": null
