@@ -1,29 +1,25 @@
-using OrdinaryDiffEq
-using JSON3  # or JSON
-using Polynomials
-# ---------------------------------------------------
-#               Simulation Settings
-# ---------------------------------------------------
-const CONFIG_DIR = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
-const FIGURES_DIR = joinpath(@__DIR__, "../../figures")
-const DATA_DIR    = joinpath(@__DIR__, "../../data")
+module HenonHeiles
 
-cfg = JSON3.read(read(CONFIG_DIR, String))
+using OrdinaryDiffEq, JSON3, Polynomials
 
-# system parameters
-param       =   (cfg.a.value, cfg.m.value, cfg.w.value ) 
-# running variables
-init_var    =   (cfg.E.value, cfg.x0.value, cfg.y0.value, cfg.py0.value)
-# integration variables
-num_int     =   (cfg.T.value, cfg.timestep.value)
 
-# ---------------------------------------------------
-#                   System equations
-# ---------------------------------------------------
+export load_config, equations!, solve_trajectory, potential, kinetic,
+       hamiltonian, section_callback, limit_of_initial_y0, limit_of_initial_py0
 
-struct HenonHeiles
-    E::Float64
+
+struct SimConfig
+    a::Float64; m::Float64; w::Float64
+    E::Float64; x0::Float64; y0::Float64; py0::Float64
+    T::Float64; dt::Float64
 end
+
+function load_config(path)
+    cfg = JSON3.read(read(path, String))
+    SimConfig(cfg.a.value, cfg.m.value, cfg.w.value,
+              cfg.E.value, cfg.x0.value, cfg.y0.value, cfg.py0.value,
+              cfg.T.value, cfg.timestep.value)
+end
+
 
 """
 Equation of motion for Hénon-Heiles potential. 
@@ -31,19 +27,19 @@ Equation of motion for Hénon-Heiles potential.
 function equations!(du, u, p, t)
     a, m, w = p 
     x, y, px, py = u
-    du[1] =  px
-    du[2] =  py
+    du[1] =  px/m
+    du[2] =  py/m
     du[3] = -m*w^2*x - 2a*x*y
     du[4] = -m*w^2*y - a*(x^2 - y^2)
 end
 
 
 # Energies, param= (a, m, w)
-potential(x::Real, y::Real; p=param) = p[2]*p[3]^2/2 *(x^2+y^2) + p[1]*(x^2*y - y^3/3)
+potential(x, y, p) = p[2]*p[3]^2/2 *(x^2+y^2) + p[1]*(x^2*y - y^3/3)
 
-kinetic(px, py; m=param[2]) = (px^2 + py^2)/(2*m)
+kinetic(px, py, p) = (px^2 + py^2)/(2*p[2])
 
-hamiltonian(x, y, px, py; p=param) = kinetic(px, py, m=p[2]) + potential(x,y, p=p)
+hamiltonian(x, y, px, py, p) = kinetic(px, py, p) + potential(x,y, p)
 
 
 """
@@ -60,20 +56,21 @@ function section_callback(section_q, section_p)
     ContinuousCallback(condition, affect!)
 end
 
+
 """
 u0 -> initial conditions
 tspan   =   (tmin, tmax)
-dt      =   timestep size
+dt      =   saved time points (adaptive integration)
 p       =   parameters of the henon heiles modle
 
 Uses Vern9 algorithem: 
 "Verner's “Most Efficient” 9/8 Runge-Kutta method. (lazy 9th order interpolant)"
 """
 function solve_trajectory(
-    u0; 
-    tspan=(0.0, num_int[1]), 
-    dt=num_int[2], 
-    p=param, 
+    u0,
+    p, 
+    tspan, 
+    dt; 
     callback=nothing
     )
     prob = ODEProblem(
@@ -97,15 +94,17 @@ calculates the limit for y0, for surface section x=0.
     m       =   1
     w       =   1
 """
-function limit_of_initial_y0(E::Float64)
-    p=Polynomial([2E, 0,-1, 2/3])
-    roots(p)
+limit_of_initial_y0(E::Float64, p) = roots(
+    Polynomial([3E/p[1], 0,-3*p[2]*p[3]^2/(2p[1]), 1])
+    )
+
+
+function limit_of_initial_py0(y::Real, E::Float64, p)
+   sqrt(max(0.0, 2*(E - potential(0.0, y, p))))
 end
 
-function limit_of_initial_py0(y::Real, E::Float64)
-   sqrt(max(0.0, 2*(E - potential(0.0, y))))
+function limit_of_initial_py0(y::AbstractVector{<:Real}, E::Float64, p)
+    map(yi -> limit_of_initial_py0(yi, E, p), y)
 end
 
-function limit_of_initial_py0(y::AbstractVector{<:Real}, E::Float64)
-    map(yi -> sqrt( max(0.0, 2*(E - potential(0.0, yi) )) ), y)
-end
+end  # module
