@@ -5,7 +5,7 @@
         "units": "s"
     },
     "T": {
-        "value": 5000,
+        "value": 500,
         "description": "Total time of numerical integration.",
         "units": "s"        
     },

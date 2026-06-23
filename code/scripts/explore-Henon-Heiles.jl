@@ -243,17 +243,24 @@ with_theme(QUARTO_THEME) do
         (label="T",       range=500:500:100000,     startvalue=cfg.T)
     )
 
-    tb_E   = bind_textbox(sg.layout[1, 4], sg.sliders[1], "E")
-    tb_x0  = bind_textbox(sg.layout[2, 4], sg.sliders[2], "x₀")
-    tb_y0  = bind_textbox(sg.layout[3, 4], sg.sliders[3], "y₀")
-    tb_py0 = bind_textbox(sg.layout[4, 4], sg.sliders[4], "py₀")
-    tb_T   = bind_textbox(sg.layout[5, 4], sg.sliders[5], "T"; parser=Int64)
+    on(sg.sliders[1].value) do v; E[]   = v; end
+    on(sg.sliders[2].value) do v; x0[]  = v; end
+    on(sg.sliders[3].value) do v; y0[]  = v; end
+    on(sg.sliders[4].value) do v; py0[] = v; end
+    on(sg.sliders[5].value) do v; T[]   = v; end
+
+
+    # tb_E   = bind_textbox(sg.layout[1, 4], sg.sliders[1], "E")
+    # tb_x0  = bind_textbox(sg.layout[2, 4], sg.sliders[2], "x₀")
+    # tb_y0  = bind_textbox(sg.layout[3, 4], sg.sliders[3], "y₀")
+    # tb_py0 = bind_textbox(sg.layout[4, 4], sg.sliders[4], "py₀")
+    # tb_T   = bind_textbox(sg.layout[5, 4], sg.sliders[5], "T"; parser=Int64)
     
-    on(E)   do v; tb_E.displayed_string[]   = string(round(v, digits=4)); end
-    on(x0)  do v; tb_x0.displayed_string[]  = string(v); end
-    on(y0)  do v; tb_y0.displayed_string[]  = string(v); end
-    on(py0) do v; tb_py0.displayed_string[] = string(v); end
-    on(T)   do v; tb_T.displayed_string[]   = string(v); end
+    # on(E)   do v; tb_E.displayed_string[]   = string(round(v, digits=4)); end
+    # on(x0)  do v; tb_x0.displayed_string[]  = string(v); end
+    # on(y0)  do v; tb_y0.displayed_string[]  = string(v); end
+    # on(py0) do v; tb_py0.displayed_string[] = string(v); end
+    # on(T)   do v; tb_T.displayed_string[]   = string(v); end
 
     # displaying all parameters
     Label(fig[3, 3], param_label, justification=:left, font="JetBrainsMono Nerd Font")
