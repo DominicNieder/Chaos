@@ -9,19 +9,73 @@
             "E": 0.08333333,
             "x0": 0.0,
             "y0": -0.1,
-            "py0": 0.0
+            "py0": 0.0,
+            "property": ""
         },
 
         "surf_of_sec-0.0833-0.0--0.1-0.0.png": {
             "a": 1.0,
             "m": 1.0,
             "w": 1.0,
-            "T": 10e3,
+            "T": 10000,
             "dt": 0.1,
             "E": 0.08333333,
             "x0": 0.0,
             "y0": -0.1,
-            "py0": 0.0
+            "py0": 0.0,
+            "property": ""
+        },
+
+        "surf_of_sec-0.0481-0.0-0.02-0.14.png": {
+            "a": 1.0,
+            "m": 1.0,
+            "w": 1.0,
+            "T": 1000,
+            "dt": 0.1,
+            "E": 0.0481,
+            "x0": 0.0,
+            "y0": 0.02,
+            "py0": 0.14,
+            "property": "Center-top, diagonal, oval periodic 'stability orbit', showing "
+        },
+
+        "traj-0.0481-0.0-0.02-0.14.png": {
+            "a": 1.0,
+            "m": 1.0,
+            "w": 1.0,
+            "T": 1000,
+            "dt": 0.1,
+            "E": 0.0481,
+            "x0": 0.0,
+            "y0": 0.02,
+            "py0": 0.14,
+            "property": "Trajectory along symmetry axis of triangle."
+        },
+
+        "surf_of_sec-0.0894-0.0--0.01-0.0": {
+            "a": 1.0,
+            "m": 1.0,
+            "w": 1.0,
+            "T": 10000,
+            "dt": 0.1,
+            "E": 0.0894,
+            "x0": 0.0,
+            "y0": -0.01,
+            "py0": 0.0,
+            "property": "Stability orbit center right. This one is not a continuous graph, the islands of stability around the periodic 'orbit'."
+        },
+
+        "traj-0.0894-0.0--0.01-0.0.png": {
+            "a": 1.0,
+            "m": 1.0,
+            "w": 1.0,
+            "T": 1000,
+            "dt": 0.1,
+            "E": 0.0894,
+            "x0": 0.0,
+            "y0": -0.01,
+            "py0": 0.0,
+            "property": "Trajectory does not fill the entire canonical space of the accessible energy. There is a preferred focal point or range in which the trajectory stays contained."
         }
     }
 }
