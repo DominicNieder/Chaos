@@ -13,7 +13,6 @@
   - I am orientating myself on hénon-heiles paper ($\alpha=2$, $E=0.08333$) 
   - looking at the potential energy plot
 
----
 
 ### potential energy
 
