@@ -1,4 +1,5 @@
 using GLMakie
+using JLD2
 
 include("../models/henon_heiles.jl")
 using .HenonHeiles
@@ -6,6 +7,7 @@ include("../styles/makie_theme.jl")
 
 # checking for paths
 mkpath(joinpath(@__DIR__, "../../figures/henon-heiles/explore"))
+mkpath(joinpath(@__DIR__, "../../data/henon-heiles/explore"))
 
 # --- simulation variables ---
 cfg   = load_config(joinpath(@__DIR__, "../sim_config/henon_heiles.json"))
@@ -100,6 +102,8 @@ with_theme(QUARTO_THEME) do
     # --- save trajectory figure ---
     save_fig_btn_traj = Button(fig[2, 3][2,1], label="traj", labelcolor=:black)
     on(save_fig_btn_traj.clicks) do _
+        println("--- save trajecctory plot ---")
+        println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "traj-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
@@ -138,6 +142,8 @@ with_theme(QUARTO_THEME) do
     # --- save surface section figure ---
     save_fig_btn_phasesect = Button(fig[2, 3][2,2], label="section", labelcolor=:black)
     on(save_fig_btn_phasesect.clicks) do _
+        println("--- save surface of section plot ---")
+        println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "surf_of_sec-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
@@ -168,6 +174,8 @@ with_theme(QUARTO_THEME) do
     # --- save x(t) figure ---
     save_fig_btn_xt = Button(fig[2, 3][2,3], label="x(t)", labelcolor=:black)
     on(save_fig_btn_xt.clicks) do _
+        println("--- save xt plot ---")
+        println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "xt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
@@ -196,6 +204,8 @@ with_theme(QUARTO_THEME) do
     # --- save y(t) figure ---
     save_fig_btn_yt = Button(fig[2, 3][2,4], label="y(t)", labelcolor=:black)
     on(save_fig_btn_yt.clicks) do _
+        println("--- save yt plot ---")
+        println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "yt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
@@ -216,7 +226,7 @@ with_theme(QUARTO_THEME) do
         (label="x₀",        range=-1.0:0.01:1.0,    startvalue=0.0),
         (label="y₀",        range=-0.5:0.01:1.0,    startvalue=0.0),
         (label="py₀",       range=0.0:0.01:1.0,     startvalue=0.0),
-        (label="T",       range=600:200:10000,     startvalue=cfg.T)
+        (label="T",       range=500:500:100000,     startvalue=cfg.T)
     )
     on(sg.sliders[1].value) do v; E[]   = v; end
     on(sg.sliders[2].value) do v; x0[]  = v; end
@@ -230,6 +240,21 @@ with_theme(QUARTO_THEME) do
         px == 0.0 && py == 0.0 ? "⚠ outside energy surface" : ""
     end
     Label(fig[5, 1:2], is_valid, color=:red)
+
+    # --- save data ---
+    save_data_bin_btn = Button(fig[2, 3][3,1:4], label="save data", labelcolor=:black)
+    on(save_data_bin_btn.clicks) do _
+        println("--- save data ---")
+        println("parameters:\n$(param_label[])")
+        fname1 = joinpath(@__DIR__, "../../data/henon-heiles/explore",
+            "sim_traj-T$(T[])-E$(round(E[], digits=4))-x0$(x0[])-y0$(y0[])-py0$(py0[]).jld2")
+        fname2 = joinpath(@__DIR__, "../../data/henon-heiles/explore",   
+            "surf_of_sec-T$(T[])-E$(round(E[], digits=4))-x0$(x0[])-y0$(y0[])-py0$(py0[]).jld2")
+        jldsave(fname1; t=sol_t[], u=sol[].u)  # saving trajectories
+        jldsave(fname2; y=y_sec_obs[], py=py_sec_obs[])  # saving surface of section
+        println("--- done: $fname1 and $fname2 ---")
+    end
+
 
 
     display(GLMakie.Screen(), fig)
