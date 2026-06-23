@@ -36,6 +36,20 @@ levels = logrange(5.0*0.009, 6.9*0.089, 7)
 epot   = [potential(x,y, param) for x in r, y in r]
 
 
+# --- functions ---
+
+function bind_textbox(fig_pos, slider, label_text; parser=Float64)
+    tb = Textbox(fig_pos, placeholder=label_text,
+                 validator = s -> tryparse(parser, s) !== nothing, width=20)
+    on(tb.stored_string) do s
+        v = tryparse(parser, s)
+        v === nothing && return
+        set_close_to!(slider, v)
+    end
+    tb
+end
+
+# === User interface ===
 with_theme(QUARTO_THEME) do
     init = lift(E, x0, y0, py0, T) do e, x, y, py, T
         a, m, w = param
@@ -222,17 +236,24 @@ with_theme(QUARTO_THEME) do
 
     # === controls of initial parameters ===
     sg = SliderGrid(fig[1, 3],
-        (label="Energy E",  range=0.01:0.0001:0.16667,   startvalue=0.083),
+        (label="E",  range=0.01:0.0001:0.16667,   startvalue=0.083),
         (label="x₀",        range=-1.0:0.01:1.0,    startvalue=0.0),
         (label="y₀",        range=-0.5:0.01:1.0,    startvalue=0.0),
         (label="py₀",       range=0.0:0.01:1.0,     startvalue=0.0),
         (label="T",       range=500:500:100000,     startvalue=cfg.T)
     )
-    on(sg.sliders[1].value) do v; E[]   = v; end
-    on(sg.sliders[2].value) do v; x0[]  = v; end
-    on(sg.sliders[3].value) do v; y0[]  = v; end
-    on(sg.sliders[4].value) do v; py0[] = v; end
-    on(sg.sliders[5].value) do v; T[]   = v; end
+
+    tb_E   = bind_textbox(sg.layout[1, 4], sg.sliders[1], "E")
+    tb_x0  = bind_textbox(sg.layout[2, 4], sg.sliders[2], "x₀")
+    tb_y0  = bind_textbox(sg.layout[3, 4], sg.sliders[3], "y₀")
+    tb_py0 = bind_textbox(sg.layout[4, 4], sg.sliders[4], "py₀")
+    tb_T   = bind_textbox(sg.layout[5, 4], sg.sliders[5], "T"; parser=Int64)
+    
+    on(E)   do v; tb_E.displayed_string[]   = string(round(v, digits=4)); end
+    on(x0)  do v; tb_x0.displayed_string[]  = string(v); end
+    on(y0)  do v; tb_y0.displayed_string[]  = string(v); end
+    on(py0) do v; tb_py0.displayed_string[] = string(v); end
+    on(T)   do v; tb_T.displayed_string[]   = string(v); end
 
     # displaying all parameters
     Label(fig[3, 3], param_label, justification=:left, font="JetBrainsMono Nerd Font")
