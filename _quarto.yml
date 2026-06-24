@@ -50,6 +50,9 @@ format:
     link-external-newwindow: true
     include-after-body:
       - styles/tasks.html
-      - styles/glossary.html
+      # - styles/glossary.html
     include-in-header: styles/macros.html
     bibliography: literature/references.bib
+
+filters:
+  - glossary.lua

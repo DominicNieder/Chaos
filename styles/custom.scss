@@ -18,6 +18,45 @@ a:hover {
   color: #e8d9c0;
 }
 
+// Glossary hover/focus popovers — math inside renders via MathJax,
+// since this is plain DOM text, not a `title` attribute.
+.gloss-term {
+  position: relative;
+  border-bottom: 1px dotted $link-color;
+  cursor: help;
+
+  .gloss-tooltip {
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    min-width: 220px;
+    max-width: 360px;
+    background: #262626;
+    color: $body-color;
+    border: 1px solid $code-color;
+    border-radius: 6px;
+    padding: 0.6em 0.8em;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    text-align: left;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  &:hover .gloss-tooltip,
+  &:focus .gloss-tooltip,
+  &:focus-within .gloss-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 // Checkboxes — slim circle, text colour
 ul.task-list li input[type="checkbox"],
 li input[type="checkbox"].task-list-item-checkbox {
