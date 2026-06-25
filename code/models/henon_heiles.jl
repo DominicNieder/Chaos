@@ -3,8 +3,8 @@ module HenonHeiles
 using OrdinaryDiffEq, JSON3, Polynomials
 
 
-export load_config, equations!, solve_trajectory, potential, kinetic,
-       hamiltonian, section_callback, limit_of_initial_y0, limit_of_initial_py0
+export load_config, save_config, equations!, solve_trajectory, potential, kinetic,
+       hamiltonian, section_callback, limit_of_initial_y0, limit_of_initial_py0, section_boundary_ranges, section_boundary, SimConfig
 
 
 struct SimConfig
@@ -20,6 +20,31 @@ function load_config(path)
               cfg.T.value, cfg.timestep.value)
 end
 
+
+function save_config(path, new_key, cfg::SimConfig; comment="")
+    orient_file = isfile(path) ? JSON3.read(read(path, String), Dict{String,Any}) : Dict{String,Any}()
+
+    if haskey(orient_file, new_key)
+        return save_config(path, "_rename_"*new_key, cfg, comment=comment)
+    else
+        cfg_dict = Dict(
+                "a"         =>  cfg.a,
+                "m"         =>  cfg.m,
+                "w"         =>  cfg.w,
+                "T"         =>  cfg.T,
+                "dt"        =>  cfg.dt,
+                "E"         =>  cfg.E,
+                "x0"        =>  cfg.x0,
+                "y0"        =>  cfg.y0,
+                "py0"       =>  cfg.py0,
+                "comment"   =>  comment
+        )
+        get!(orient_file, new_key, cfg_dict)
+    end
+    open(path, "w") do io
+        JSON3.pretty(io, orient_file)
+    end
+end
 
 """
 Equation of motion for Hénon-Heiles potential. 
@@ -105,6 +130,24 @@ end
 
 function limit_of_initial_py0(y::AbstractVector{<:Real}, E::Float64, p)
     map(yi -> limit_of_initial_py0(yi, E, p), y)
+end
+
+function section_boundary_ranges(e,  param, resolution)
+    y0_roots        = real.(filter(r -> abs(imag(r)) < 1e-10, limit_of_initial_y0(e, param)))
+    y0_1, y0_2 = y0_roots[1], y0_roots[2]
+
+    y0_range  = collect(range(y0_1, y0_2, length=resolution))
+    py0_range = limit_of_initial_py0(y0_range, e, param)
+    y0_range, py0_range
+end
+
+function section_boundary(y0_range, py0_range)
+    boundary = vcat(
+        collect(zip(y0_range, py0_range)),
+        collect(zip(reverse(y0_range), -reverse(py0_range)))
+    )
+    push!(boundary, boundary[1])  # close the ring
+    boundary
 end
 
 end  # module
