@@ -2,7 +2,7 @@
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "adaf369aaffd7425d078977c9ee206d1da7f7679"
+project_hash = "ea6085ef1fbca56c1448c854470197c49b1ccdda"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "bbc22a9a08a0ef6460041086d8a7b27940ed4ffd"
@@ -538,6 +538,12 @@ weakdeps = ["OffsetArrays"]
 git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.16.0"
+
+[[deps.DataFrames]]
+deps = ["Compat", "DataAPI", "DataStructures", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrecompileTools", "PrettyTables", "Printf", "Random", "Reexport", "SentinelArrays", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "5fab31e2e01e70ad66e3e24c968c264d1cf166d6"
+uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+version = "1.8.2"
 
 [[deps.DataStructures]]
 deps = ["OrderedCollections"]
@@ -1252,6 +1258,19 @@ git-tree-sha1 = "4da0f88e9a39111c2fa3add390ab15f3a44f3ca3"
 uuid = "22cec73e-a1b8-11e9-2c92-598750a2cf9c"
 version = "0.3.1"
 
+[[deps.InlineStrings]]
+git-tree-sha1 = "8f3d257792a522b4601c24a577954b0a8cd7334d"
+uuid = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
+version = "1.4.5"
+
+    [deps.InlineStrings.extensions]
+    ArrowTypesExt = "ArrowTypes"
+    ParsersExt = "Parsers"
+
+    [deps.InlineStrings.weakdeps]
+    ArrowTypes = "31f734f8-188a-4ce0-8406-c8a06bd891cd"
+    Parsers = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+
 [[deps.IntegerMathUtils]]
 git-tree-sha1 = "4c1acff2dc6b6967e7e750633c50bc3b8d83e617"
 uuid = "18e54dd8-cb9d-406c-a71d-865a43cbb235"
@@ -1331,6 +1350,11 @@ weakdeps = ["Dates", "Test"]
     [deps.InverseFunctions.extensions]
     InverseFunctionsDatesExt = "Dates"
     InverseFunctionsTestExt = "Test"
+
+[[deps.InvertedIndices]]
+git-tree-sha1 = "6da3c4316095de0f5ee2ebd875df8721e7e0bdbe"
+uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
+version = "1.3.1"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "b2d91fe939cae05960e760110b328288867b5758"
@@ -2312,6 +2336,12 @@ weakdeps = ["ChainRulesCore", "FFTW", "Makie", "MutableArithmetics", "RecipesBas
     PolynomialsMutableArithmeticsExt = "MutableArithmetics"
     PolynomialsRecipesBaseExt = "RecipesBase"
 
+[[deps.PooledArrays]]
+deps = ["DataAPI", "Future"]
+git-tree-sha1 = "36d8b4b899628fb92c2749eb488d884a926614d3"
+uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
+version = "1.4.3"
+
 [[deps.PositiveFactorizations]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "17275485f373e6673f7e7f97051f703ed5b15b20"
@@ -2356,6 +2386,18 @@ deps = ["TOML"]
 git-tree-sha1 = "8b770b60760d4451834fe79dd483e318eee709c4"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.5.2"
+
+[[deps.PrettyTables]]
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "REPL", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "624de6279ab7d94fc9f672f0068107eb6619732c"
+uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
+version = "3.3.2"
+
+    [deps.PrettyTables.extensions]
+    PrettyTablesTypstryExt = "Typstry"
+
+    [deps.PrettyTables.weakdeps]
+    Typstry = "f0ed7684-a786-439e-b1e3-3b82803b501e"
 
 [[deps.Primes]]
 deps = ["IntegerMathUtils"]
@@ -2678,6 +2720,12 @@ git-tree-sha1 = "9b81b8393e50b7d4e6d0a9f14e192294d3b7c109"
 uuid = "6c6a2e73-6563-6170-7368-637461726353"
 version = "1.3.0"
 
+[[deps.SentinelArrays]]
+deps = ["Dates", "Random"]
+git-tree-sha1 = "084c47c7c5ce5cfecefa0a98dff69eb3646b5a80"
+uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
+version = "1.4.10"
+
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 version = "1.11.0"
@@ -2908,6 +2956,12 @@ git-tree-sha1 = "083805654fde34d3d32d4dd91bcc20f4c0330db3"
 uuid = "90dbc90e-856a-4131-af2c-e8c5aa0f35b5"
 version = "2.0.0"
 
+[[deps.StringManipulation]]
+deps = ["PrecompileTools"]
+git-tree-sha1 = "d05693d339e37d6ab134c5ab53c29fce5ee5d7d5"
+uuid = "892a3eda-7b42-436c-8928-eab12a02cf0e"
+version = "0.4.4"
+
 [[deps.StructArrays]]
 deps = ["ConstructionBase", "DataAPI", "Tables"]
 git-tree-sha1 = "ad8002667372439f2e3611cfd14097e03fa4bccd"
@@ -2959,12 +3013,10 @@ deps = ["Accessors", "ArrayInterface", "RuntimeGeneratedFunctions", "StaticArray
 git-tree-sha1 = "64b15330b9e3c91a86bcac92f369c58e382981c6"
 uuid = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 version = "0.3.48"
+weakdeps = ["PrettyTables"]
 
     [deps.SymbolicIndexingInterface.extensions]
     SymbolicIndexingInterfacePrettyTablesExt = "PrettyTables"
-
-    [deps.SymbolicIndexingInterface.weakdeps]
-    PrettyTables = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
 
 [[deps.TOML]]
 deps = ["Dates"]
