@@ -1,3 +1,5 @@
+import Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
 using GLMakie
 using JLD2
 
@@ -240,7 +242,7 @@ with_theme(QUARTO_THEME) do
         (label="x₀",        range=-1.0:0.01:1.0,    startvalue=0.0),
         (label="y₀",        range=-0.5:0.01:1.0,    startvalue=0.0),
         (label="py₀",       range=0.0:0.01:1.0,     startvalue=0.0),
-        (label="T",       range=500:500:100000,     startvalue=cfg.T)
+        (label="T",       range=500:500:100000,     startvalue=5000)
     )
 
     on(sg.sliders[1].value) do v; E[]   = v; end
