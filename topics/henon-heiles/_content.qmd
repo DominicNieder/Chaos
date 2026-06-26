@@ -14,7 +14,7 @@ $$\Epot(x,y)=\frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3})$$
 ### Hamiltonian & equations of motion
 
 $$\begin{align}
-\HH(x,y,p_x,p_y) &= \Ekin(p_x, p_y) + \Epot(x,y) \\
+H(x,y,p_x,p_y) &= \Ekin(p_x, p_y) + \Epot(x,y) \\
 =&\frac{(p_x^2+p_y^2)}{2m} + \frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3}) \\
 \overset{\alpha=1, m=1, \omega=1}{\longrightarrow}\, &\frac{(p_x^2+p_y^2)}{2} + \frac{(x^2+y^2)}{2}+(x^2y-\frac{y^3}{3}).
 \end{align}
@@ -42,17 +42,12 @@ $$
 - In our case simply $q_i\in\{x,y\}$ and $p_i\in\{p_x, p_y\}$ span the phase space 
 - phase space: $\textbf{x}=(\textbf{p}, \textbf{q}) \in \mathbb{R}^N$, $N=4$. 
 
----
 
-It may be helpful to define the following:
-
-- $\HH(\textbf{x},t)= \HH(\textbf{p},\textbf{q},t)\equiv \HH(x,y,p_x,p_y)$,
-- $\Ekin(\textbf{p})\equiv\Ekin(p_x, p_y)=\Ekin(p_x)+\Ekin(p_y)$,
-- $\Epot(\textbf{q})\equiv\Epot(x,y)$ and finally
-- $\Epot(y)=\Epot(0,y)$ or $\Epot(x)=\Epot(x,0)$
 
 
 ---
+
+
 
 The equations of motion are then derived by $\dot{q_i} =\tfrac{\partial H}{\partial p_i}$ and $\dot{p_i} = -\frac{\partial \Epot}{\partial q_i}$ resulting in 
 
@@ -62,18 +57,29 @@ p_x&= -m\omega^2\,x - 2\alpha\, xy &\longrightarrow & & -x-2xy \\
 p_y&=  -m\omega^2 y - \alpha (x^2-y^2) &\longrightarrow & &-y- x^2+y^2
 \end{align}$$ 
 
-### surface of section
+
+---
+
+It may be helpful to define the following:
+
+- $H(\textbf{x},t)= H(\textbf{p},\textbf{q},t)\equiv H(p_x,p_y,x,y)$,
+- $\Ekin(\textbf{p})\equiv\Ekin(p_x, p_y)=\Ekin(p_x)+\Ekin(p_y)$,
+- $\Epot(\textbf{q})\equiv\Epot(x,y)$ and finally
+- $\Epot(y)=\Epot(0,y)$ or $\Epot(x)=\Epot(x,0)$
+
+
+### Pioncré section
 
 To understand our 4-dimensional phase space:
 
 1) the system is bound by Energy $E$ available
-$$\HH(\textbf{x})=E=\Ekin(\textbf{p})+\Epot(\textbf{q})$$
+$$H(\textbf{x})=E=\Ekin(\textbf{p})+\Epot(\textbf{q})$$
 
 2) Due to $\Ekin(p_i)\geq 0$
 $$\Rightarrow \;E\geq\Ekin(p_y)+\Epot(\textbf{q})$$
 with equality if and only if $p_x=0$
 
-3) check for periodic orbits, create surface of section $\sufsec\in\mathbb{R}^2$ at $x=0, p_x\geq0$,
+3) to check for periodic orbits we create surface of section $\sufsec\in\mathbb{R}^2$ at $x=0, p_x\geq0$,
 $$E\geq\Ekin(p_y)+\Epot(y)$$
 
 4) find the boundary of the possible phase space points passing $\sufsec$, i.e. 
@@ -138,7 +144,13 @@ Due to $E\geq \Ekin(p_y)+\Epot(y)$ we can obtain a boundary of our plot for our 
 
 - solve $E-(\Ekin(p_y)+\Epot(y))=0\Rightarrow (p_y,y)$?
 - $p_y=0$ to obtain 3rd-order polynomial: $E-\Epot(y)=0\Rightarrow (y_\text{min}, y_\text{max})$
-- numerically determine $E-(\Ekin(p_y)+\Epot(y))=0\Rightarrow (p_y,y)$ for $y\in(y_\text{min}, y_\text{max})$
+- numerically determine $E-(\Ekin(p_y)+\Epot(y))=0\Rightarrow (p_y,y)$ for $y\in[y_\text{min}, y_\text{max}]$
+
+---
+
+The results presented consistently use the parameters 
+
+- $m=1$, $\omega=1$, $\alpha=1$ and saves at timesteps $dt=0.1$
 
 ---
 
@@ -153,30 +165,32 @@ Due to $E\geq \Ekin(p_y)+\Epot(y)$ we can obtain a boundary of our plot for our 
 This can be used to gain make sure the initial conditions match the energy constraint.
 
 
-We can compare the trajectories and surface sections for various energies
+We can compare the trajectories and surface sections for various energies...
 
 ---
 
-::: {layout-ncol=2}
-![](/figures/henon-heiles/explore/traj-0.083-0.0--0.12-0.0.png)
+I would like to reproduce this trajectory
 
-![](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.12-0.0.png)
+::: {layout-ncol=2}
+![traj-0.083-0.0--0.12-0.0.png](/figures/henon-heiles/explore/traj-0.083-0.0--0.12-0.0.png)
+
+![surf_of_sec-0.083-0.0--0.12-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.12-0.0.png)
 :::
 
 ---
 
 ::: {layout-ncol=2}
-![](/figures/henon-heiles/explore/traj-0.083-0.0--0.32-0.0.png)
+![traj-0.083-0.0--0.32-0.0.png](/figures/henon-heiles/explore/traj-0.083-0.0--0.32-0.0.png)
 
-![](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.32-0.0.png)
+![surf_of_sec-0.083-0.0--0.32-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.32-0.0.png)
 :::
 
 ---
 
 ::: {layout-ncol=2}
-![](/figures/henon-heiles/explore/traj-0.0481-0.0-0.02-0.14.png)
+![traj-0.0481-0.0-0.02-0.14.png](/figures/henon-heiles/explore/traj-0.0481-0.0-0.02-0.14.png)
 
-![](/figures/henon-heiles/explore/surf_of_sec-0.0481-0.0-0.02-0.14.png)
+![surf_of_sec-0.0481-0.0-0.02-0.14.png](/figures/henon-heiles/explore/surf_of_sec-0.0481-0.0-0.02-0.14.png)
 :::
 
 
@@ -184,11 +198,18 @@ We can compare the trajectories and surface sections for various energies
 ---
 
 ::: {layout-ncol=2}
-![](/figures/henon-heiles/explore/traj-0.0894-0.0--0.01-0.0.png)
+![traj-0.0894-0.0--0.01-0.0.png](/figures/henon-heiles/explore/traj-0.0894-0.0--0.01-0.0.png)
 
-![](/figures/henon-heiles/explore/surf_of_sec-0.0894-0.0--0.01-0.0.png)
+![surf_of_sec-0.0894-0.0--0.01-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.0894-0.0--0.01-0.0.png)
 :::
 
 
 ---
 
+$E= 0.1243$, $x_0=0.0$, $y_0=-0.07$, $p_{y0}=0.0$ for $T=10^5$ timesteps
+
+::: {layout-ncol=2}
+![traj-0.1243-0.0--0.07-0.0.png](/figures/henon-heiles/explore/traj-0.1243-0.0--0.07-0.0.png)
+
+![surf_of_sec-0.1243-0.0--0.07-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.1243-0.0--0.07-0.0.png)
+:::
