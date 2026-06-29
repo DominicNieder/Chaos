@@ -61,13 +61,13 @@ end
 # --- initial position & energy
 E0      =  cfg.E    
 x0      =  cfg.x0
-resolution = 128
+resolution = 256
 
 yroots= HenonHeiles.limit_of_initial_y0(E0, param)
 y_min, y_max = yroots[1], yroots[2]
 
 y0, py0 = collect(range(y_min, y_max, resolution)), 0.0
-
+println("yo\n$y0")
 # --- determening px ---
 v       = map(yi -> HenonHeiles.potential(x0, yi, param), y0)  # 
 psquare = map(v_i -> 2*param[2]*(E0 - v_i), v)  # p_y^2 if p_x=0 
@@ -114,7 +114,7 @@ with_theme(QUARTO_THEME) do
     colors = cgrad(:viridis, resolution)[range(0, 1, length=resolution)]
     for i in eachindex(results)
         println("plotting initial condition \ny0: $(simconfigs[i].y0)")
-        scatter!(ax, results[i].sec_y, results[i].sec_py, color=colors[i], markersize=0.5)
+        scatter!(ax, results[i].sec_y, results[i].sec_py, color=colors[i], markersize=3)
     end
     ylims!(ax, pylim...)
     xlims!(ax, ylim...)
