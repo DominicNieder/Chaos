@@ -1,18 +1,21 @@
 import Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
+println("run explore-Henon-Heiles.jl from ",@__DIR__)
 using GLMakie
+import CairoMakie
 using JLD2
-
-include("../models/henon_heiles.jl")
+jl_henon_heiles = joinpath(@__DIR__, "../models/henon_heiles.jl")
+include(jl_henon_heiles)
 using .HenonHeiles
-include("../styles/makie_theme.jl")
+jl_style = joinpath(@__DIR__, "../styles/makie_theme.jl")
+include(jl_style)
 
 # checking for paths
 mkpath(joinpath(@__DIR__, "../../figures/henon-heiles/explore"))
 mkpath(joinpath(@__DIR__, "../../data/henon-heiles/explore"))
 
 # --- simulation variables ---
-cfg   = load_config(joinpath(@__DIR__, "../sim_config/henon_heiles.json"))
+cfg   = HenonHeiles.load_config(joinpath(@__DIR__, "../sim_config/henon_heiles.json"))
 param = (cfg.a, cfg.m, cfg.w)
 
 
@@ -35,7 +38,7 @@ save_size       = (1200, 1200)
 # --- contour plot ---
 r      = range(-1.0, 1.0, length=120)
 levels = logrange(5.0*0.009, 6.9*0.089, 7)
-epot   = [potential(x,y, param) for x in r, y in r]
+epot   = [HenonHeiles.potential(x,y, param) for x in r, y in r]
 
 
 # --- functions ---
@@ -55,7 +58,7 @@ end
 with_theme(QUARTO_THEME) do
     init = lift(E, x0, y0, py0, T) do e, x, y, py, T
         a, m, w = param
-        v       = potential(x, y, param)  # potential energy
+        v       = HenonHeiles.potential(x, y, param)  # potential energy
         psquare = 2m*(e - v)  # p_y^2 if p_x=0 
         pmax    = sqrt(max(0.0, psquare))  # results in a maximal p_y
         py_c    = clamp(py, 0.0, pmax)  # clamp the observable py
@@ -67,8 +70,8 @@ with_theme(QUARTO_THEME) do
     # --- derived trajectory ---
     sol = lift(init) do (x, y, px, py, T)
         y_sec, py_sec = Float64[], Float64[]
-        cb  = section_callback(y_sec, py_sec)
-        s   = solve_trajectory(
+        cb  = HenonHeiles.section_callback(y_sec, py_sec)
+        s   = HenonHeiles.solve_trajectory(
                 [x, y, px, py], 
                 param,
                 (0.0, T), 
@@ -121,6 +124,8 @@ with_theme(QUARTO_THEME) do
         println("--- save trajecctory plot ---")
         println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "traj-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
+
+        CairoMakie.activate!()
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
@@ -132,6 +137,7 @@ with_theme(QUARTO_THEME) do
             ax_export.ylabel = "y"
             save(fname, fig_export, px_per_unit=2)
         end
+        GLMakie.activate!()
         println("--- done: $fname ---")
     end
 
@@ -161,6 +167,8 @@ with_theme(QUARTO_THEME) do
         println("--- save surface of section plot ---")
         println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "surf_of_sec-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
+
+        CairoMakie.activate!()
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
@@ -177,6 +185,7 @@ with_theme(QUARTO_THEME) do
             ax_export.ylabel = "p_y"
             save(fname, fig_export, px_per_unit=2)
         end
+        GLMakie.activate!()
         println("--- done: $fname ---")
     end
 
@@ -193,6 +202,7 @@ with_theme(QUARTO_THEME) do
         println("--- save xt plot ---")
         println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "xt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
+        CairoMakie.activate!()
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
@@ -203,6 +213,7 @@ with_theme(QUARTO_THEME) do
             ax_export.ylabel = "x(t)"
             save(fname, fig_export, px_per_unit=2)
         end
+        GLMakie.activate!()
         println("--- done: $fname ---")
     end
 
@@ -223,6 +234,7 @@ with_theme(QUARTO_THEME) do
         println("--- save yt plot ---")
         println("parameters:\n$(param_label[])")
         fname = joinpath(@__DIR__, "../../figures/henon-heiles/explore", "yt-$(round(E[], digits=4))-$(x0[])-$(y0[])-$(py0[]).png")
+        CairoMakie.activate!()
         with_theme(QUARTO_THEME) do
             fig_export = Figure(size=save_size)
             ax_export  = Axis(fig_export[1,1])
@@ -233,16 +245,17 @@ with_theme(QUARTO_THEME) do
             ax_export.ylabel = "y(t)"
             save(fname, fig_export, px_per_unit=2)
         end
+        GLMakie.activate!()
         println("--- done: $fname ---")
     end
 
     # === controls of initial parameters ===
     sg = SliderGrid(fig[1, 3],
-        (label="E",  range=0.01:0.0001:0.16667,   startvalue=0.083),
-        (label="x₀",        range=-1.0:0.01:1.0,    startvalue=0.0),
-        (label="y₀",        range=-0.5:0.01:1.0,    startvalue=0.0),
-        (label="py₀",       range=0.0:0.01:1.0,     startvalue=0.0),
-        (label="T",       range=500:500:100000,     startvalue=5000)
+        (label="E",  range=0.01:0.0001:0.16667,   startvalue=cfg.E),
+        (label="x₀",        range=-1.0:0.01:1.0,    startvalue=cfg.x0),
+        (label="y₀",        range=-0.5:0.01:1.0,    startvalue=cfg.y0),
+        (label="py₀",       range=0.0:0.01:1.0,     startvalue=cfg.py0),
+        (label="T",       range=500:500:100000,     startvalue=cfg.T)
     )
 
     on(sg.sliders[1].value) do v; E[]   = v; end
@@ -280,7 +293,7 @@ with_theme(QUARTO_THEME) do
             "sim_traj-T$(T[])-E$(round(E[], digits=4))-x0$(x0[])-y0$(y0[])-py0$(py0[]).jld2")
         fname2 = joinpath(@__DIR__, "../../data/henon-heiles/explore",   
             "surf_of_sec-T$(T[])-E$(round(E[], digits=4))-x0$(x0[])-y0$(y0[])-py0$(py0[]).jld2")
-        jldsave(fname1; t=sol_t[], u=sol[].u)  # saving trajectories
+        #jldsave(fname1; t=sol_t[], u=sol[].u)  # saving trajectories
         jldsave(fname2; y=y_sec_obs[], py=py_sec_obs[])  # saving surface of section
         println("--- done: $fname1 and $fname2 ---")
     end
