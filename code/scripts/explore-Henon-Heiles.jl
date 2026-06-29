@@ -146,12 +146,12 @@ with_theme(QUARTO_THEME) do
     scatter!(ax2, y_sec_obs, py_sec_obs, markersize=5)  # from trajectory
     # calculating maximum cricumfarence of phase space trajectory
     on(E; update=true) do e
-        y0_roots        = real.(filter(r -> abs(imag(r)) < 1e-10, limit_of_initial_y0(e, param)))
+        y0_roots        = real.(filter(r -> abs(imag(r)) < 1e-10, HenonHeiles.limit_of_initial_y0(e, param)))
         y0_1, y0_2 = y0_roots[1], y0_roots[2]
         dy = (y0_roots[2] - y0_roots[1])/100
         y0_range       = collect(range(y0_1, y0_2, length=100))
         y0_range_obs[] = y0_range
-        py0_range_obs[] = limit_of_initial_py0(y0_range, e, param)
+        py0_range_obs[] = HenonHeiles.limit_of_initial_py0(y0_range, e, param)
         _, p_max    = extrema(py0_range_obs[])
         dp = p_max/50
         xlims!(ax2, y0_1-dy, y0_2+dy)
