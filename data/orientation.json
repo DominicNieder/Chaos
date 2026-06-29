@@ -1,0 +1,13 @@
+{
+    "henon-heiles/": {
+        "comment": "I start off my studies of chaos by studying the henon heils model. I should considere graphs that",
+        "explore/" : {
+            "comment": ""
+
+        },
+        "simulation/": {
+            "comment": ""
+
+        }
+    }
+}

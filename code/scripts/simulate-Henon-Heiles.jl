@@ -59,9 +59,12 @@ function section_set_plot_lim(e,param, n)
 end
 
 # --- initial position & energy
-E0      =  cfg.E    
+e_min = 0.001
+e_max =  0.167
+energy_resolution=10
+E0      =  collect(range(e_min:e_max, energy_resolution))    
 x0      =  cfg.x0
-resolution = 256
+resolution = 128
 
 yroots= HenonHeiles.limit_of_initial_y0(E0, param)
 y_min, y_max = yroots[1], yroots[2]
