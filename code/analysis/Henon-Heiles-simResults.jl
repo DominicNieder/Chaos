@@ -1,14 +1,15 @@
 import Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
 using GLMakie, JLD2
+include("../styles/makie_theme.jl")
 include("../models/henon_heiles.jl")
 using .HenonHeiles
 
-SIM_DATA_DIR=joinpath(@__DIR__,"../data/henon-heiles/simulation")
-EXPL_DATA_DOR = joinpath(@__DIR__, "data/henon-heiles/explore")
-FIGURE_DIR = joinpath(@__DIR__, "../figures/henon-heiles/simulation")
+DATA_DIR=joinpath(@__DIR__,"../../data/henon-heiles/simulation")
+EXPL_DATA_DIR = joinpath(@__DIR__, "../../data/henon-heiles/explore")
+FIG_DIR = joinpath(@__DIR__, "../../figures/henon-heiles/simulation")
 
-println(isdir(SIM_DATA_DIR), isdir(EXPL_DATA_DOR), isdir(FIGURE_DIR))
+println("data directory: $(isdir(DATA_DIR)),\nexplore directory: $(isdir(EXPL_DATA_DIR)),\nfigures directory: $(isdir(FIG_DIR))")
 
 fsize=(1200,1200)
 
@@ -17,9 +18,9 @@ e = 0.1243
 param = (1,1,1)
 n=200
 function section_set_plot_lim(e,param, n)
-    sec_boundry = section_boundary_ranges(e, param, n)
+    sec_boundry = HenonHeiles.section_boundary_ranges(e, param, n)
     y_max, py_max = sec_boundry[1], sec_boundry[2]
-    boundary = section_boundary(y_max, py_max)
+    boundary = HenonHeiles.section_boundary(y_max, py_max)
     ylim = extrema(y_max)
     ydiff = (ylim[2]-ylim[1])/50
     ylim = ylim[1]-ydiff, ylim[2]+ydiff 
@@ -30,23 +31,34 @@ function section_set_plot_lim(e,param, n)
 end
 
 
-names1 =[
-    "surf_of_sec-T100000-E0.1243-x00.0-y0-0.4-py00.0.jld2",
-]
-files1 = joinpath(EXPL_DATA_DOR, "surf_of_sec-T100000-E0.1243-x00.0-y0-0.4-py00.0.jld2")
-name1 = "phase_map_E$e.png"
-fname1 = joinpath(FIGURE_DIR, name1)
-println(ispath(file1))
-sec1  = load(file1)
-py1, y1 = sec1[:py], sec1[:y]
+
+file1 = joinpath(DATA_DIR, "E0.1243-T10000.0-py0.0-n128.jld2")
+
+data  = load(file1)
+results = data["results"]
+resoltuion = length(data["results"])
+println(typeof(results), keys(results[1]))
+resolution = 128
 b1, ylim1, pylim1 = section_set_plot_lim(e,param,n)
+fname   = "E$(round(e,digits=4))-T$(10000)-py0.0-n128.png"
+outfig = joinpath(FIG_DIR, fname)
 
 with_theme(QUARTO_THEME) do
-    fig1 = Figure(size=fsize)
+    fig1 = Figure(size=(1200,1200))
     ax  = Axis(fig1[1,1], xlabel="y", ylabel="p_y")
-    scatter!(b1)
-    scatter!(r[:"y"], r[:"py"])
+    scatter!(ax, b1)
+    colors = cgrad(:viridis, resolution)[range(0, 1, length=resolution)]
+    for i in eachindex(results)
+        scatter!(ax, results[i][:sec_y], results[i][:sec_py], color=colors[i], markersize=3)
+    end
     ylims!(ax, pylim1...)
     xlims!(ax, ylim1...)
-    save(fname1, fig1, px_per_unit=2)
+    # --- save figure ---
+    save_screen = GLMakie.Screen(; visible=false)
+    display(save_screen, fig1)
+    save(outfig, fig1, px_per_unit=2)
+    close(save_screen)
+
+    display(GLMakie.Screen(), fig1)
 end
+
