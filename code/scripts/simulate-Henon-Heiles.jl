@@ -1,11 +1,13 @@
 import Pkg 
 Pkg.activate(joinpath(@__DIR__, ".."))
 using ProgressMeter, JLD2, JSON3, PolygonOps, LinearAlgebra, GLMakie, BenchmarkTools
+
 model = joinpath(@__DIR__, "../models/henon_heiles.jl")
-include(model)
-using .HenonHeiles
 jl_style = joinpath(@__DIR__, "../styles/makie_theme.jl")
 include(jl_style)
+include(model)
+using .HenonHeiles
+
 
 CONFIG_DIR      = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
 DATA_DIR        = joinpath(@__DIR__, "../../data/henon-heiles/simulation")
@@ -17,13 +19,23 @@ DATA_ORIENTATION = joinpath(DATA_DIR, "orientation.json")
 configurations      = JSON3.read(read(CONFIG_DIR, String))
 cfg                 = configurations.sim
 param               = (Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.value))
-sample_resolution   = Int64(cfg.y0.resolution)
 
+sample_resolution   = Int64(cfg.y0.resolution)
 T                   = Float64(cfg.T.value)
 dt                  = Float64[] # Float64(cfg.dt.value)
-sampling_energy     = Int64(cfg.E0.range.resolution)
-sampling            = Int64(cfg.y0.resolution)
 x0                  = Float64(cfg.x0.value)
+
+# --- initial position & energy ---
+e_min = Float64(cfg.E.range.min)                             # 0.01
+e_max =  Float64(cfg.E.range.max)                            # 0.167
+energy_resolution = Int64(cfg.E.range.resolution)          # 10
+    # 128
+# e0 = range(e_min,e_max, energy_resolution)          # Energies
+e0 = vcat(
+    logrange(e_min-0.0005, 0.1, energy_resolution),          # coarse at low E
+    range(0.1, e_max, energy_resolution)               # linear, denser at high E
+) |> unique |> sort
+E0= e0[1:2:end]
 
 # function section_grid(e, param, resolution; n_grid=60)
 #     y_range, py_range = HenonHeiles.section_boundary_ranges(e, param, resolution)
@@ -69,17 +81,7 @@ function section_set_plot_lim(e,param, n)
     (boundary, ylim, pylim)
 end
 
-# --- initial position & energy ---
-e_min = cfg.E.range.min                             # 0.01
-e_max =  cfg.E.range.max                            # 0.167
-energy_resolution = cfg.E.range.resolution          # 10
-sample_resolution = Int64(cfg.y0.resolution)        # 128
-# e0 = range(e_min,e_max, energy_resolution)          # Energies
-e0 = vcat(
-    logrange(e_min-0.0005, 0.1, energy_resolution),          # coarse at low E
-    range(0.1, e_max, energy_resolution)               # linear, denser at high E
-) |> unique |> sort
-E0= e0[1:2:end]
+
 
 function initializing_y0_sampling(E0::Float64, x0::Float64, sample_resolution::Int64, param)
     yroots= HenonHeiles.limit_of_initial_y0(E0, param)
@@ -99,7 +101,7 @@ function initializing_y0_sampling(E0::Float64, x0::Float64, sample_resolution::I
 end
 
 
-function simulate_y0_lattice1(E0::Float64, T::Float64, dt::Vector{Float64}, x0::Float64, sampling::Int64, param::NTuple{3,Float64}, DATA_DIR::String)
+function simulate_y0_lattice(E0::Float64, T::Float64, dt::Vector{Float64}, x0::Float64, sampling::Int64, param::NTuple{3,Float64}, DATA_DIR::String)
 
     u_init, data = initializing_y0_sampling(E0, x0, sampling, param)
 
@@ -124,8 +126,8 @@ end
 
 
 
-for i, e in enumerate(E0) 
-    simulate_y0_lattice(e, cfg, param, DATA_DIR)
+for (i, e) in enumerate(E0[end-4:end]) 
+    simulate_y0_lattice(e, T, dt, x0, sample_resolution, param, DATA_DIR)
 end
 
 
@@ -140,7 +142,8 @@ with_theme(QUARTO_THEME) do
     fig1 = Figure(size=(1200,1200))
     ax  = Axis(fig1[1,1], xlabel="y", ylabel="p_y")
     scatter!(ax, b)
-    colors = cgrad(:viridis, sample_resolution)[range(0, 1, length=sample_resolution)]    for i in eachindex(data)
+    colors = cgrad(:viridis, sample_resolution)[range(0, 1, length=sample_resolution)]    
+    for i in eachindex(data)
         println("plotting initial condition \ny0: $(simconfigs[i].y0)")
         scatter!(ax, data[i].sec_y, data[i].sec_py, color=colors[i], markersize=3)
     end
