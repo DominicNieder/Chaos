@@ -2,7 +2,7 @@
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "81e993dd1a10f3ee1e8e25745de6367c28548379"
+project_hash = "ddaaa235b0803089ad06ebde6be7c10a0b665095"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "bbc22a9a08a0ef6460041086d8a7b27940ed4ffd"
@@ -930,16 +930,12 @@ deps = ["FilePathsBase", "MacroTools", "Reexport"]
 git-tree-sha1 = "a1b2fbfe98503f15b665ed45b3d149e5d8895e4c"
 uuid = "8fc22ac5-c921-52a6-82fd-178b2807b824"
 version = "0.9.0"
+weakdeps = ["Glob", "URIParser", "URIs"]
 
     [deps.FilePaths.extensions]
     FilePathsGlobExt = "Glob"
     FilePathsURIParserExt = "URIParser"
     FilePathsURIsExt = "URIs"
-
-    [deps.FilePaths.weakdeps]
-    Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
-    URIParser = "30578b45-9adc-5946-b283-645ec420af67"
-    URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [[deps.FilePathsBase]]
 deps = ["Compat", "Dates"]
@@ -1126,6 +1122,11 @@ deps = ["Artifacts", "GettextRuntime_jll", "JLLWrappers", "Libdl", "Libffi_jll",
 git-tree-sha1 = "24f6def62397474a297bfcec22384101609142ed"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
 version = "2.86.3+0"
+
+[[deps.Glob]]
+git-tree-sha1 = "246c628cec062230b7d183aab88841fa94fcabe9"
+uuid = "c27321d9-0574-5035-807b-f59d2c89b15c"
+version = "1.5.0"
 
 [[deps.GracefulPkg]]
 deps = ["Compat", "Pkg", "TOML"]
