@@ -1,47 +1,104 @@
 {
-    "timestep": {
-        "value": 0.1,
-        "description": "Timestep for the numerical integration.",
-        "units": "s"
+    "sim":{
+        "dt": {
+            "value": 0.1,
+            "description": "Timestep for saving values u.",
+            "units": "s"
+        },
+        "T": {
+            "value": 10000,
+            "description": "Total time of numerical integration.",
+            "units": "s"        
+        },
+        "a": {
+            "value": 1.0,
+            "description": "non-linear coupling strength.",
+            "units": ""
+        },
+        "m": {
+            "value": 1.0,
+            "description": "mass of object",
+            "units": "kg"
+        },
+        "w": {
+            "value": 1.0,
+            "description": "Harmonic oscillation frequency term. Quantifies how strong the effect of the harmonic oscillation is.",
+            "units": "1/s"
+        },
+        "E": {
+            "value": 0.1243,
+            "range": {
+                "min": 0.001,
+                "max": 0.16,
+                "resolution": 100
+            },
+            "description": "Available energy of system.",
+            "units": "kg m^2/s^2"
+        },
+        "x0": {
+            "value": 0.0,
+            "description": "Initial x-coordinate.",
+            "units": "m"
+        },
+        "y0": {
+            "value": 0.0,
+            "resolution": 256,
+            "description": "Initial y-coordinate.",
+            "units": "m"
+        },
+        "py0": {
+            "value": 0.0,
+            "type": "Array{Float64}(sample_resolution)",
+            "description": "Initial momentum py, in y direction.",
+            "units": "kg m/s"
+        }
     },
-    "T": {
-        "value": 10000,
-        "description": "Total time of numerical integration.",
-        "units": "s"        
-    },
-    "a": {
-        "value": 1.0,
-        "description": "non-linear coupling strength.",
-        "units": ""
-    },
-    "m": {
-        "value": 1.0,
-        "description": "mass of object",
-        "units": "kg"
-    },
-    "w": {
-        "value": 1.0,
-        "description": "Harmonic oscillation frequency term. Quantifies how strong the effect of the harmonic oscillation is.",
-        "units": "1/s"
-    },
-    "E": {
-        "value": 0.1243,
-        "description": "Available energy of system.",
-        "units": "kg m^2/s^2"
-    },
-    "x0": {
-        "value": 0.0,
-        "description": "Initial x-coordinate.",
-        "units": "m"
-    },
-    "y0": {
-        "value": 0.0,
-        "description": "Initial y-coordinate.",
-        "units": "m"
-    },
-    "py0": {
-        "value": 0.0,
-        "description": "Initial momentum py, in y direction.",
-        "units": "kg m/s"
+
+    "explore": {
+        "timestep": {
+            "value": 0.1,
+            "description": "Timestep for the numerical integration.",
+            "units": "s"
+        },
+        "T": {
+            "value": 10000,
+            "description": "Total time of numerical integration.",
+            "units": "s"        
+        },
+        "a": {
+            "value": 1.0,
+            "description": "non-linear coupling strength.",
+            "units": ""
+        },
+        "m": {
+            "value": 1.0,
+            "description": "mass of object",
+            "units": "kg"
+        },
+        "w": {
+            "value": 1.0,
+            "description": "Harmonic oscillation frequency term. Quantifies how strong the effect of the harmonic oscillation is.",
+            "units": "1/s"
+        },
+        "E": {
+            "value": 0.1243,
+            "description": "Available energy of system.",
+            "units": "kg m^2/s^2"
+        },
+        "x0": {
+            "value": 0.0,
+            "description": "Initial x-coordinate.",
+            "units": "m"
+        },
+        "y0": {
+            "value": 0.0,
+            "description": "Initial y-coordinate.",
+            "units": "m"
+        },
+        "py0": {
+            "value": 0.0,
+            "description": "Initial momentum py, in y direction.",
+            "units": "kg m/s"
+        }
     }
 }
