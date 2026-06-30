@@ -14,7 +14,8 @@ struct SimConfig
 end
 
 function load_config(path)
-    cfg = JSON3.read(read(path, String))
+    cfig = JSON3.read(read(path, String))
+    cfg     = cfig.explore
     SimConfig(cfg.a.value, cfg.m.value, cfg.w.value,
               cfg.E.value, cfg.x0.value, cfg.y0.value, cfg.py0.value,
               cfg.T.value, cfg.timestep.value)
@@ -104,9 +105,10 @@ function solve_trajectory(
     solve(
         prob, 
         Vern9(), 
-        abstol=1e-10, 
-        reltol=1e-10, 
+        abstol=1e-9, 
+        reltol=1e-9, 
         saveat=dt, 
+        save_everystep=false,
         callback=callback
         )
 end
