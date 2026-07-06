@@ -13,6 +13,6 @@
 
 I am thinking of what my professor mentioned about states or orbits that are represented in the phase space. Now I am wondering, these are stable orbits, and these appear more pronounced in the quantum mechanical system description and are often known as "quantum scares". This gets me curious:
 
-- how do phase space representations of chaotic systems look? Maybe look at [@horvat2003wigner]
+- how do phase space representations of chaotic systems look? Maybe look at [@horvat2006wigner]
 - how does the higher dimensional geometry/topology compare to quantum wave-functions; here there is a naming conflict: "orbit" and "state" that are used as synonyms i.e. in atomic physics; this lets me wonder about similarities. In particular as the surface of sections look like astoundingly like sections of wave functions
 
