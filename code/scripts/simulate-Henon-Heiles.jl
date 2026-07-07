@@ -37,31 +37,6 @@ e0 = vcat(
 ) |> unique |> sort
 E0= e0[1:2:end]
 
-# function section_grid(e, param, resolution; n_grid=60)
-#     y_range, py_range = HenonHeiles.section_boundary_ranges(e, param, resolution)
-#     boundary = HenonHeiles.section_boundary(y_range, py_range)
-#     y_min, y_max = extrema(y0_range)
-#     p_max        = maximum(py0_range)
-#     # --- sampling happens here
-#     ys  = range(y_min, y_max, length=n)
-#     pys = range(-p_max, p_max, length=n)
-
-#     grid_y, grid_py = Float64[], Float64[]
-#     for y in ys, py in pys
-#         if inpolygon((y, py), boundary) != 0   # 0=outside, 1=inside, -1=on edge
-#             push!(grid_y, y)
-#             push!(grid_py, py)
-#         end
-#     end
-#     grid_y, grid_py
-# end
-
-# function probability_based_sampling(N, e, param)
-#     y_range, py_range = HenonHeiles.section_boundary_ranges(e, param, 1000)
-#     boundary = HenonHeiles.section_boundary(y_range, py_range)
-#     y_min, y_max = extrema(y0_range)
-#     p_max        = maximum(py0_range)
-# end
 
 """
 parameters: e, param, n
@@ -126,15 +101,15 @@ end
 
 
 
-for (i, e) in enumerate(E0[end-4:end]) 
-    simulate_y0_lattice(e, T, dt, x0, sample_resolution, param, DATA_DIR)
-end
+# for (i, e) in enumerate(E0[end-4:end]) 
+#     simulate_y0_lattice(e, T, dt, x0, sample_resolution, param, DATA_DIR)
+# end
 
 
 
 
 
-b, ylim, pylim  = section_set_plot_lim(E0, param,120)
+b, ylim, pylim  = section_set_plot_lim(E0, param, 120)
 fname   = "E$(round(E0,digits=4))-T$(cfg.T.value)-py$py0-n$sample_resolution.png"
 outfig = joinpath(FIG_DIR, fname)
 

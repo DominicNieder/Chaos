@@ -54,6 +54,59 @@
         }
     },
 
+    "SimSelect":{
+        "dt": {
+            "value": 0.5,
+            "description": "Timestep for saving values u.",
+            "units": "s"
+        },
+        "T": {
+            "value": 10000,
+            "description": "Total time of numerical integration.",
+            "units": "s"        
+        },
+        "a": {
+            "value": 1.0,
+            "description": "non-linear coupling strength.",
+            "units": ""
+        },
+        "m": {
+            "value": 1.0,
+            "description": "mass of object",
+            "units": "kg"
+        },
+        "w": {
+            "value": 1.0,
+            "description": "Harmonic oscillation frequency term. Quantifies how strong the effect of the harmonic oscillation is.",
+            "units": "1/s"
+        },
+        "E": {
+            "value": 0.1127,
+            "range": {
+                "min": 0.001,
+                "max": 0.16,
+                "resolution": 100
+            },
+            "description": "Available energy of system.",
+            "units": "kg m^2/s^2"
+        },
+        "x0": {
+            "value": 0.0,
+            "description": "Initial x-coordinate.",
+            "units": "m"
+        },
+        "y0": {
+            "values": [0.28984, -0.079, -0.06485, 0.0, 0.185, 0.380, 0.15, 0.282],
+            "description": "Initial y-coordinate.",
+            "units": "m"
+        },
+        "py0": {
+            "values": [0.0, 0.0, 0.0, 0.115, 0.260, 0.288, 0.382, 0.373],
+            "description": "Initial momentum py, in y direction.",
+            "units": "kg m/s"
+        }
+    },
+
     "explore": {
         "timestep": {
             "value": 0.1,

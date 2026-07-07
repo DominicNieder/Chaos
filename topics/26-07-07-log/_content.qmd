@@ -1,7 +1,36 @@
 ### To do!
 
+- [x] plot selected trajectories: $(y_0, p_{y0})_i \in \{(0.28984,0.0), (-0.079,0.0), (-0.06485,0.0), (0.0, 0.115), (0.185, 0.160), (0.38, 0.288), (0.15, 0.382)\}$
 
 ---
 
+### What I am doing
+
+- I am reading Hamiltonian Systems: Chaos and Quantization by Alfredo M. Ozorio de Almeida [@ozoriodealmeida1988hamiltonian]
+- I am trying to study the basics of chaos theory to 
+
+#### Poincaré sections & trajectories
+
+::: {#fig-combined}
+![](../../figures/henon-heiles/simulation/sections-E0.13-T2000.0-py[0.0, 0.0, 0.0, 0.115, 0.16, 0.288, 0.382, 0.0]-n8.png)
+
+Combined Poincaré section ($x = 0$, $p_x > 0$) at $E = 0.13$ for all sampled initial conditions.
+:::
+
+::: {#fig-per-ic layout-ncol=2}
+![Section: $(y_0, p_{y0}) = (0.28984, 0.0)$](../../figures/henon-heiles/simulation/section-E0.13-T2000.0-y0.28984-py0.0.png){#fig-sec1}
+
+![Trajectory: $(y_0, p_{y0}) = (0.28984, 0.0)$](../../figures/henon-heiles/simulation/trajectory-E0.13-T2000.0-y0.28984-py0.0.png){#fig-traj1}
+
+![Section: $(y_0, p_{y0}) = (-0.079, 0.0)$](../../figures/henon-heiles/simulation/section-E0.13-T2000.0-y-0.079-py0.0.png){#fig-sec2}
+
+![Trajectory: $(y_0, p_{y0}) = (-0.079, 0.0)$](../../figures/henon-heiles/simulation/trajectory-E0.13-T2000.0-y-0.079-py0.0.png){#fig-traj2}
+
+Individual sections (left) and configuration-space trajectories (right).
+:::
+
+See @fig-combined for the full section; individual orbits in @fig-per-ic.
+
+---
 
 ### Lost Wonderers Thoughts:

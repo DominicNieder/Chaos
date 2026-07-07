@@ -108,7 +108,6 @@ function solve_trajectory(
         abstol=1e-9, 
         reltol=1e-9, 
         saveat=dt, 
-        save_everystep=false,
         callback=callback
         )
 end
