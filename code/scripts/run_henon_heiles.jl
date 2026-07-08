@@ -1,17 +1,16 @@
 using GLMakie 
 using CairoMakie
 include("../models/henon_heiles.jl")
-include("../analysis/poincare.jl")
 include("../styles/makie_theme.jl")
 
 # "two-in-one" file
-savepath_2 = joinpath(@__DIR__, "../../figures/henon-heiles/potential-a$(param[1])-m$(param[2])-w$(param[3]).png")
+savepath_2 = joinpath(@__DIR__, "../../figures/henon-heiles/potential/potential-a$(param[1])-m$(param[2])-w$(param[3]).png")
 
 # contour file
-savepath_cont = joinpath(@__DIR__, "../../figures/henon-heiles/potential_contour-a$(param[1])-m$(param[2])-w$(param[3]).png")
+savepath_cont = joinpath(@__DIR__, "../../figures/henon-heiles/potential/potential_contour-a$(param[1])-m$(param[2])-w$(param[3]).png")
 
 # 3D file
-savepath_3D = joinpath(@__DIR__, "../../figures/henon-heiles/potential_3D-a$(param[1])-m$(param[2])-w$(param[3]).png")
+savepath_3D = joinpath(@__DIR__, "../../figures/henon-heiles/potential/potential_3D-a$(param[1])-m$(param[2])-w$(param[3]).png")
 
 
 # creating a plot of the potential
@@ -34,7 +33,7 @@ with_theme(QUARTO_THEME) do
     println("*dark theme")
     println("---\nmodel parameters:\na=$(param[1]),\nm=$(param[2]),\nw=$(param[3])\n---")
 
-    epot = [potential(x,y; p=param) for x in r, y in r]
+    epot = [HenonHeiles.potential(x,y, param) for x in r, y in r]
 
 
     colorscale = identity # ReversibleScale(epot -> abs(epot)^(1 / 10), epot -> abs(epot)^10)
@@ -48,7 +47,7 @@ with_theme(QUARTO_THEME) do
 
     
     mkpath(dirname(savepath_2))
-    save(savepath_2, f, px_per_unit=2)
+    save(savepath_2, f, px_per_unit=1)
 
     println("plotting contour standalone")
     f_cont = Figure(size = (800, 800))
@@ -56,7 +55,7 @@ with_theme(QUARTO_THEME) do
     contour!(a2_cont, r, r, epot, labels=true, levels=levels, colormap=set_colourmap, colorscale=colorscale)
 
     mkpath(dirname(savepath_cont))
-    save(savepath_cont, f_cont, px_per_unit=2)
+    save(savepath_cont, f_cont, px_per_unit=1)
 
     println("plotting 3D standalone")
     f_3D =   Figure(size = (800, 800))
@@ -64,7 +63,7 @@ with_theme(QUARTO_THEME) do
     contour3d!(a1_3D, r, r, epot, linewidth=3, levels=20,  colormap=set_colourmap, colorscale=colorscale)
 
     mkpath(dirname(savepath_3D))
-    save(savepath_3D, f_3D, px_per_unit=2)
+    save(savepath_3D, f_3D, px_per_unit=1)
 
 end
 

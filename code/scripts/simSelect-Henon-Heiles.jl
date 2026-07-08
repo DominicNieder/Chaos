@@ -11,7 +11,7 @@ using .HenonHeiles
 
 CONFIG_DIR      = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
 DATA_DIR        = joinpath(@__DIR__, "../../section_data/henon-heiles/simulation")
-FIG_DIR         = joinpath(@__DIR__, "../../figures/henon-heiles/simulation")
+FIG_DIR         = joinpath(@__DIR__, "../../figures/henon-heiles/simulation/08-07-sectionANDtrajectory/")
 
 FIG_ORIENTATION  = joinpath(FIG_DIR, "orientation.json")
 DATA_ORIENTATION = joinpath(DATA_DIR, "orientation.json")
@@ -97,7 +97,7 @@ with_theme(QUARTO_THEME) do
     fig1 = Figure(size=(1920, 1200))
     ax   = Axis(fig1[1,1], xlabel="y", ylabel="p_y")
     scatter!(ax, b)
-    colors = cgrad(:viridis, l_sampling)[range(0, 1, length=l_sampling)]
+    colors = cgrad(:prism, l_sampling)[range(0, 1, length=l_sampling)]
 
     for i in eachindex(y0)
         scatter!(ax, section_data[i].sec_y, section_data[i].sec_py,
@@ -114,7 +114,7 @@ with_theme(QUARTO_THEME) do
         ax3  = Axis(fig3[1,1], xlabel="y", ylabel="p_y")
         scatter!(ax3, b)
         scatter!(ax3, section_data[i].sec_y, section_data[i].sec_py,
-                 color=colors[i], markersize=4)
+                 color=colors[i], markersize=5)
         xlims!(ax3, ylim...); ylims!(ax3, pylim...)
 
         # --- save per-IC figures ---
