@@ -1,0 +1,14 @@
+### To do!
+
+- [ ] looking at symmetries at potential $\Epot(x,y)$
+- [ ] determining the dynamical map $T:\sufsec\to\sufsec$ that gets induced by the surface section (pioncaré section), $T^n(x)=x_n$ and find $T^n(x)=x$ periodic orbits
+
+---
+
+### Symmetries of the Henon-Heiles potential
+
+I am trying to find the symmetries of the Henon Heiles potential. How do I determin the symmetry groupof the Henon Heiles potential.
+
+$\Epot=\VHH$
+
+### Lost Wonderers Thoughts:

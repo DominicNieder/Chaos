@@ -1,6 +1,6 @@
 ### To do!
 
-- [x] plot selected trajectories: $(y_0, p_{y0})_i \in \{(0.28984,0.0), (-0.079,0.0), (-0.06485,0.0), (0.0, 0.115), (0.185, 0.160), (0.38, 0.288), (0.15, 0.382)\}$
+- [x] plot selected trajectories: $(y_0, p_{y0})_i \in \{(0.28984,0.0), (-0.079,0.0), (-0.06485,0.0), \dots\}$
 
 ---
 
@@ -12,25 +12,57 @@
 #### Poincaré sections & trajectories
 
 ::: {#fig-combined}
-![](../../figures/henon-heiles/simulation/sections-E0.13-T2000.0-py[0.0, 0.0, 0.0, 0.115, 0.16, 0.288, 0.382, 0.0]-n8.png)
+![](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/sections-E0.1127-T10000-n11.png)
 
-Combined Poincaré section ($x = 0$, $p_x > 0$) at $E = 0.13$ for all sampled initial conditions.
+Combined Poincaré section ($x = 0$, $p_x > 0$) at $E = 0.1127$ for all sampled initial conditions.
 :::
 
 ::: {#fig-per-ic layout-ncol=2}
-![Section: $(y_0, p_{y0}) = (0.28984, 0.0)$](../../figures/henon-heiles/simulation/section-E0.13-T2000.0-y0.28984-py0.0.png){#fig-sec1}
+![Section: $(y_0, p_{y0}) = (0.28984, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.28984-py0.0.png){#fig-sec1}
 
-![Trajectory: $(y_0, p_{y0}) = (0.28984, 0.0)$](../../figures/henon-heiles/simulation/trajectory-E0.13-T2000.0-y0.28984-py0.0.png){#fig-traj1}
+![Trajectory: $(y_0, p_{y0}) = (0.28984, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.28984-py0.0.png){#fig-traj1}
 
-![Section: $(y_0, p_{y0}) = (-0.079, 0.0)$](../../figures/henon-heiles/simulation/section-E0.13-T2000.0-y-0.079-py0.0.png){#fig-sec2}
+![Section: $(y_0, p_{y0}) = (-0.079, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.079-py0.0.png){#fig-sec2}
 
-![Trajectory: $(y_0, p_{y0}) = (-0.079, 0.0)$](../../figures/henon-heiles/simulation/trajectory-E0.13-T2000.0-y-0.079-py0.0.png){#fig-traj2}
+![Trajectory: $(y_0, p_{y0}) = (-0.079, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.079-py0.0.png){#fig-traj2}
 
-Individual sections (left) and configuration-space trajectories (right).
+![Section: $(y_0, p_{y0}) = (0.0, 0.115)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.0-py0.115.png){#fig-sec3}
+
+![Trajectory: $(y_0, p_{y0}) = (0.0, 0.115)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.0-py0.115.png){#fig-traj3}
+
+![Section: $(y_0, p_{y0}) = (0.185, 0.26)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.185-py0.26.png){#fig-sec4}
+
+![Trajectory: $(y_0, p_{y0}) = (0.185, 0.26)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.185-py0.26.png){#fig-traj4}
+
+![Section: $(y_0, p_{y0}) = (0.38, 0.288)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.38-py0.288.png){#fig-sec5}
+
+![Trajectory: $(y_0, p_{y0}) = (0.38, 0.288)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.38-py0.288.png){#fig-traj5}
+
+![Section: $(y_0, p_{y0}) = (0.15, 0.382)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.15-py0.382.png){#fig-sec6}
+
+![Trajectory: $(y_0, p_{y0}) = (0.15, 0.382)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.15-py0.382.png){#fig-traj6}
+
+![Section: $(y_0, p_{y0}) = (0.282, 0.373)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.282-py0.373.png){#fig-sec7}
+
+![Trajectory: $(y_0, p_{y0}) = (0.282, 0.373)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.282-py0.373.png){#fig-traj7}
+
+![Section: $(y_0, p_{y0}) = (0.0, 0.2375)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.0-py0.2375.png){#fig-sec8}
+
+![Trajectory: $(y_0, p_{y0}) = (0.0, 0.2375)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.0-py0.2375.png){#fig-traj8}
+
+![Section: $(y_0, p_{y0}) = (-0.352, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.352-py0.0.png){#fig-sec9}
+
+![Trajectory: $(y_0, p_{y0}) = (-0.352, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.352-py0.0.png){#fig-traj9}
+
+![Section: $(y_0, p_{y0}) = (-0.077018, 0.12995522)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.077018-py0.12995522.png){#fig-sec10}
+
+![Trajectory: $(y_0, p_{y0}) = (-0.077018, 0.12995522)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.077018-py0.12995522.png){#fig-traj10}
+
+![Section: $(y_0, p_{y0}) = (-0.0935, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.0935-py0.0.png){#fig-sec11}
+
+![Trajectory: $(y_0, p_{y0}) = (-0.0935, 0.0)$](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.0935-py0.0.png){#fig-traj11}
+
+Individual sections (left) and configuration-space trajectories (right) at $E = 0.1127$.
 :::
 
 See @fig-combined for the full section; individual orbits in @fig-per-ic.
-
----
-
-### Lost Wonderers Thoughts:

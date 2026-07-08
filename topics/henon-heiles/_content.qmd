@@ -6,9 +6,9 @@ $$\Epot(x,y)=\frac{m\omega^2}{2}(x^2+y^2)+\alpha(x^2y-\frac{y^3}{3})$$
 
 
 ::: {layout-ncol=2}
-![3D with contour lines.](/figures/henon-heiles/potential_3D-a1-m1-w1.png)
+![3D with contour lines.](/figures/henon-heiles/potential/potential_3D-a1.0-m1.0-w1.0.png)
 
-![Contour plot.](/figures/henon-heiles/potential_contour-a2-m1-w1.png)
+![Contour plot.](/figures/henon-heiles/potential/potential_contour-a1.0-m1.0-w1.0.png)
 :::
 
 ### Hamiltonian & equations of motion
@@ -150,66 +150,115 @@ Due to $E\geq \Ekin(p_y)+\Epot(y)$ we can obtain a boundary of our plot for our 
 
 The results presented consistently use the parameters 
 
-- $m=1$, $\omega=1$, $\alpha=1$ and saves at timesteps $dt=0.1$
-
+- $m=1$, $\omega=1$, $\alpha=1$ and saves at timesteps $dt=0.5$
+- the goal was to identify various periodic trajectories manually for $E=0.1127$
 ---
 
-::: {layout-ncol=2}
-![](/figures/henon-heiles/explore/traj-0.0833-0.0-0.0-0.47.png)
 
-![](/figures/henon-heiles/explore/surf_of_sec-0.0833-0.0-0.0-0.47.png)
+::: {#fig-ic1 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.28984-py0.0.png){#fig-ic1-sec}
+
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.28984-py0.0.png){#fig-ic1-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (0.28984, 0.0)$
 :::
 
 ---
 
-This can be used to gain make sure the initial conditions match the energy constraint.
+::: {#fig-ic9 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.352-py0.0.png){#fig-ic9-sec}
 
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.352-py0.0.png){#fig-ic9-traj}
 
-We can compare the trajectories and surface sections for various energies...
-
----
-
-I would like to reproduce this trajectory
-
-::: {layout-ncol=2}
-![traj-0.083-0.0--0.12-0.0.png](/figures/henon-heiles/explore/traj-0.083-0.0--0.12-0.0.png)
-
-![surf_of_sec-0.083-0.0--0.12-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.12-0.0.png)
+$E=0.1127,\, (y_0, p_{y0}) = (-0.352, 0.0)$
 :::
 
 ---
 
-::: {layout-ncol=2}
-![traj-0.083-0.0--0.32-0.0.png](/figures/henon-heiles/explore/traj-0.083-0.0--0.32-0.0.png)
+::: {#fig-ic2 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.079-py0.0.png){#fig-ic2-sec}
 
-![surf_of_sec-0.083-0.0--0.32-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.083-0.0--0.32-0.0.png)
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.079-py0.0.png){#fig-ic2-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (-0.079, 0.0)$
 :::
 
 ---
 
-::: {layout-ncol=2}
-![traj-0.0481-0.0-0.02-0.14.png](/figures/henon-heiles/explore/traj-0.0481-0.0-0.02-0.14.png)
+::: {#fig-ic3 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.0-py0.115.png){#fig-ic3-sec}
 
-![surf_of_sec-0.0481-0.0-0.02-0.14.png](/figures/henon-heiles/explore/surf_of_sec-0.0481-0.0-0.02-0.14.png)
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.0-py0.115.png){#fig-ic3-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (0.0, 0.115)$
 :::
-
-
 
 ---
 
-::: {layout-ncol=2}
-![traj-0.0894-0.0--0.01-0.0.png](/figures/henon-heiles/explore/traj-0.0894-0.0--0.01-0.0.png)
+::: {#fig-ic4 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.185-py0.26.png){#fig-ic4-sec}
 
-![surf_of_sec-0.0894-0.0--0.01-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.0894-0.0--0.01-0.0.png)
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.185-py0.26.png){#fig-ic4-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (0.185, 0.26)$
 :::
-
 
 ---
 
-$E= 0.1243$, $x_0=0.0$, $y_0=-0.07$, $p_{y0}=0.0$ for $T=10^5$ timesteps
+::: {#fig-ic5 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.38-py0.288.png){#fig-ic5-sec}
 
-::: {layout-ncol=2}
-![traj-0.1243-0.0--0.07-0.0.png](/figures/henon-heiles/explore/traj-0.1243-0.0--0.07-0.0.png)
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.38-py0.288.png){#fig-ic5-traj}
 
-![surf_of_sec-0.1243-0.0--0.07-0.0.png](/figures/henon-heiles/explore/surf_of_sec-0.1243-0.0--0.07-0.0.png)
+$E=0.1127,\, (y_0, p_{y0}) = (0.38, 0.288)$
+:::
+
+---
+
+::: {#fig-ic6 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.15-py0.382.png){#fig-ic6-sec}
+
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.15-py0.382.png){#fig-ic6-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (0.15, 0.382)$
+:::
+
+---
+
+::: {#fig-ic7 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.282-py0.373.png){#fig-ic7-sec}
+
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.282-py0.373.png){#fig-ic7-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (0.282, 0.373)$
+:::
+
+---
+
+::: {#fig-ic8 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y0.0-py0.2375.png){#fig-ic8-sec}
+
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y0.0-py0.2375.png){#fig-ic8-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (0.0, 0.2375)$
+:::
+
+---
+
+::: {#fig-ic10 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.077018-py0.12995522.png){#fig-ic10-sec}
+
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.077018-py0.12995522.png){#fig-ic10-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (-0.077018, 0.12995522)$
+:::
+
+---
+
+::: {#fig-ic11 layout-ncol=2}
+![Section](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/section-E0.1127-T10000-y-0.0935-py0.0.png){#fig-ic11-sec}
+
+![Trajectory](/figures/henon-heiles/simulation/08-07-sectionANDtrajectory/trajectory-E0.1127-T10000-y-0.0935-py0.0.png){#fig-ic11-traj}
+
+$E=0.1127,\, (y_0, p_{y0}) = (-0.0935, 0.0)$
 :::
