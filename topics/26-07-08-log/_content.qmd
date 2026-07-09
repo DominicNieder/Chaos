@@ -1,14 +1,79 @@
 ### To do!
 
 - [ ] looking at symmetries at potential $\Epot(x,y)$
-- [ ] determining the dynamical map $T:\sufsec\to\sufsec$ that gets induced by the surface section (pioncaré section), $T^n(x)=x_n$ and find $T^n(x)=x$ periodic orbits
+- [ ] determining the periodic orbits by use of the dynamical map $T:\sufsec\to\sufsec$ that gets induced by the surface section (pioncaré section), $T^n(x)=x_n$ and find $T^n(x)=x$ periodic orbits
 
 ---
 
+### Finding periodic orbits
+
+So, I have the dynamical equation $\dot{\textbf{x}}=f(\textbf{x})$. This results in a trajectory $\textbf{x}(\textbf{x}_0,t)$. This trajectory passes through the Pioncaré section $\sufsec$ at $\textbf{x}(\textbf{x}_0,\tau_i)\equiv\mathbf{x}_i$, for all $i\in\mathbb{N}$, let $T: \sufsec \rightarrow \sufsec$.
+
+Resulting in the equation
+$$T(\textbf{x}_i)=\mathbf{x}_{i+1},$$
+naturally, $T^n(\mathbf{x}_i)=\mathbf{x}_{i+n}$. If there exists $n\in\mathbb{N}$ such that $T^n(\textbf{x})=\mathbf{x}$ we call the trajectory periodic.
+
+So lets say we want to find all periodic orbits, what does the algorithm look like to find these?
+
+
+
 ### Symmetries of the Henon-Heiles potential
 
-I am trying to find the symmetries of the Henon Heiles potential. How do I determin the symmetry groupof the Henon Heiles potential.
+I am trying to find the symmetries of the Henon Heiles potential. How do I determine the symmetry group of the Henon Heiles potential.
 
-$\Epot=\VHH$
+$$\Epot(\textbf{x})=\VHH$$
+
+On can easily see that the parity $P_x: x \mapsto -x$ results in 
+$$P_x\Epot(x,y)=\Epot(-x,y)=\Epot(x,y)$$
+due to $x$ appearing only as quadratic contributions which leads to this symmetry transformation.
+
+The other symmetry transformations need to be varyfied, i.e. being an equilateral (also need to be varyfied).
+
+#### Equilibrium Analysis of Dynamical System
+
+So lets look at our points of equilibrium that satisfy $\dot{\mathbf{x}}=0$ resulting with the constraint $p_x=p_y=0$ as well as $\dot{p}_x=\dot{p}_y=0$
+
+$$\frac{\partial\Epot}{\partial x} \vec{e_x} + \frac{\partial\Epot}{\partial y} \vec{e_y}=0$$
+
+
+I should look at the individual terms so that I can find out if the if the potential carries the same symmetry group of an equilateral triangle ($m=1, \alpha=1, \omega=1$):
+
+$$
+\begin{align}
+\frac{\partial\Epot}{\partial x} &= x+2xy \overset{!}{=}0 \\
+\Rightarrow x&=0 \wedge y \text{ or } x \wedge y=-\frac{1}{2}
+\end{align}
+$$
+
+Let us consider $(0,y)$ in $\tfrac{\partial \Epot}{\partial y}$
+
+$$
+\begin{align}
+\frac{\partial\Epot}{\partial y} &= y+x^2-y^2 &\overset{!}{=}0 \\
+(0,y)\,\Rightarrow y-y^2 &=0 \\
+\Leftrightarrow y &=y^2 & \Rightarrow& y_{1,2}=0,1 \\
+(x, -\frac{1}{2})\Rightarrow -\frac{1}{2} + x^2 -\frac{1}{4} &=0 \\
+\Leftrightarrow x^2 &= \frac{3}{4} \\
+\Leftrightarrow x &= \pm \frac{\sqrt{3}}{2}
+\end{align}
+$$
+
+As expected our stable points for of the Hénon-Heiles potential are
+$$\mathcal{E}=\Bigg\{\vec{0}=\begin{align}\pmatrix{0\\0}, \,\vec{A}=\pmatrix{0\\1},\, \vec{B}=\pmatrix{-\frac{\sqrt{3}}{2}\\-\frac{1}{2}}, \,\vec{C}=\pmatrix{\frac{\sqrt{3}}{2}\\-\frac{1}{2}} \end{align}\Bigg\}.$$
+
+Where $\vec{0}$ is the center of our potential, by linearization of $\Epot(\mathbf{x})$ around $\vec{0}$ we obtain a 2D harmonic potential:
+
+$$T_{\mathbf{x}_i\in\mathcal{E}}[f](\mathbf{x})=f(\mathbf{x}_i)+\sum_{k=1}^4 \frac{\partial f(\mathbf{x})}{\partial \mathbf{x}(k)}\Bigg|_{\mathbf{x}=\mathbf{x}_i}\,(\mathbf{x}_{i}(k)-\mathbf{x}(k)) + \mathcal{O}(x_k x_p),$$
+with $\mathbf{x}_i\in\mathcal{E}$ being our stable points; The notation $\mathbf{x}(k)$ comes from the definition of a vector as the map from an alphabet $\mathcal{A}$ to a field $\mathbb{F}$ (commonly irrational / complex numbers $\mathbb{R}$ / $\mathbb{C}$), i.e. $\mathbf{x}:\mathcal{A}\rightarrow \mathbb{F}$. The alphabet $\mathcal{A}$ can be any kind of ordered index $\mathcal{A}=(1,2,\dots,n)_{n\in\mathbb{N}}$ or a set of unordered symbols $\mathcal{A}=(a,b,c,d)$. So if we take $\vec{A}\in\mathcal{E}$ defined above then $\mathcal{A}=\{1,2\}_{n\in\mathcal{N}}$ and $\mathbb{K}=\mathbb{R}$ results in $\mathbf{x}(1)=0$ as well as $\mathbf{x}(2)=1$ being the components of the vector labeled by the alphabet $\mathcal{A}$.
+
+
+To obtain the dynamics of our system around this point we should take our dynamical system and linearize $f(\mathbf{x})$ at $\mathbf{x}=\in \mathcal{E}$. This can be done to a later point as well. 
+
+#### Rotational Symmetry of the potential
+
+Here we want to find the discrete rotations by an angle $\varphi\in(0,2\pi)$, $R(\varphi)\Epot(\mathbf{x})=\Epot(\mathbf{x})$. 
+It seems sensible to transform into spherical coordinates $x=r\, \cos(\theta)$ and $y=r\, \sin(\theta)$, $\theta\in(0,2\pi)$ and $r\in \mathbb{R}: r\geq0$ positive real values.
+
+
 
 ### Lost Wonderers Thoughts:
