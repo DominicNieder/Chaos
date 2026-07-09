@@ -1,6 +1,7 @@
 import Pkg 
 Pkg.activate(joinpath(@__DIR__, ".."))
-using GLMakie, CairoMakie
+
+using GLMakie, CairoMakie, JSON3
 
 model = joinpath(@__DIR__, "../models/henon_heiles.jl")
 jl_style = joinpath(@__DIR__, "../styles/makie_theme.jl")
@@ -20,15 +21,6 @@ configurations      = JSON3.read(read(CONFIG_DIR, String))
 cfg                 = configurations.explore
 param               = (Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.value))
 
-T                   = Float64(cfg.T.value)
-dt                  = Float64(cfg.dt.value)
-x0                  = Float64(cfg.x0.value)
-
-# --- initial position & energy ---
-E0 = cfg.E.value
-
-y0 = Float64.(cfg.y0.values)
-py0 = Float64.(cfg.py0.values)
 
 
 # "two-in-one" file
@@ -50,8 +42,8 @@ with_theme(QUARTO_THEME) do
         r = range(-0.5, 0.5, length = 120)
         levels = logrange(0.009, 0.089, 7)
     elseif param[1] == 1.0
-        r = range(-1.0, 1.0, length = 120)
-        levels = logrange(5.0*0.009,6.9*0.089,7)
+        r = range(-1.1, 1.1, length = 120)
+        levels = logrange(5.0*0.009,6.9*0.089,13)
     else 
         r = range(-12, 12, length = 120)
         levels = logrange(4*0.009,5*0.089,30)
