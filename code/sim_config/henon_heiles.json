@@ -108,7 +108,7 @@
     },
 
     "explore": {
-        "timestep": {
+        "dt": {
             "value": 0.1,
             "description": "Timestep for the numerical integration.",
             "units": "s"

@@ -1,7 +1,35 @@
-using GLMakie 
-using CairoMakie
-include("../models/henon_heiles.jl")
-include("../styles/makie_theme.jl")
+import Pkg 
+Pkg.activate(joinpath(@__DIR__, ".."))
+using GLMakie, CairoMakie
+
+model = joinpath(@__DIR__, "../models/henon_heiles.jl")
+jl_style = joinpath(@__DIR__, "../styles/makie_theme.jl")
+include(jl_style)
+include(model)
+using .HenonHeiles
+
+
+CONFIG_DIR      = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
+DATA_DIR        = joinpath(@__DIR__, "../../section_data/henon-heiles/simulation")
+FIG_DIR         = joinpath(@__DIR__, "../../figures/henon-heiles/simulation/08-07-sectionANDtrajectory/")
+
+FIG_ORIENTATION  = joinpath(FIG_DIR, "orientation.json")
+DATA_ORIENTATION = joinpath(DATA_DIR, "orientation.json")
+
+configurations      = JSON3.read(read(CONFIG_DIR, String))
+cfg                 = configurations.explore
+param               = (Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.value))
+
+T                   = Float64(cfg.T.value)
+dt                  = Float64(cfg.dt.value)
+x0                  = Float64(cfg.x0.value)
+
+# --- initial position & energy ---
+E0 = cfg.E.value
+
+y0 = Float64.(cfg.y0.values)
+py0 = Float64.(cfg.py0.values)
+
 
 # "two-in-one" file
 savepath_2 = joinpath(@__DIR__, "../../figures/henon-heiles/potential/potential-a$(param[1])-m$(param[2])-w$(param[3]).png")
@@ -26,7 +54,7 @@ with_theme(QUARTO_THEME) do
         levels = logrange(5.0*0.009,6.9*0.089,7)
     else 
         r = range(-12, 12, length = 120)
-        levels = logrange(4*0.009,4*0.089,21)
+        levels = logrange(4*0.009,5*0.089,30)
     end
 
     println("---- Plotting the Potential----")
@@ -58,7 +86,7 @@ with_theme(QUARTO_THEME) do
     save(savepath_cont, f_cont, px_per_unit=1)
 
     println("plotting 3D standalone")
-    f_3D =   Figure(size = (800, 800))
+    f_3D =   Figure(size = (1300, 1300))
     a1_3D = Axis3(f_3D[1, 1], zlabel="E", zlabeloffset=50)
     contour3d!(a1_3D, r, r, epot, linewidth=3, levels=20,  colormap=set_colourmap, colorscale=colorscale)
 

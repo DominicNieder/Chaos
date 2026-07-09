@@ -18,7 +18,7 @@ function load_config(path)
     cfg     = cfig.explore
     SimConfig(cfg.a.value, cfg.m.value, cfg.w.value,
               cfg.E.value, cfg.x0.value, cfg.y0.value, cfg.py0.value,
-              cfg.T.value, cfg.timestep.value)
+              cfg.T.value, cfg.dt.value)
 end
 
 
