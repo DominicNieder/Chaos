@@ -1,13 +1,13 @@
 ### To do!
 
-- [ ] looking at symmetries at potential $\Epot(x,y)$
-- [ ] determining the periodic orbits by use of the dynamical map $T:\sufsec\to\sufsec$ that gets induced by the surface section (pioncaré section), $T^n(x)=x_n$ and find $T^n(x)=x$ periodic orbits
+- [ ] looking at symmetries at potential $\Epot(x,y)$, or $\HH(\x)$
+- [ ] determining the periodic orbits by use of the dynamical map $T:\sufsec\to\sufsec$ that gets induced by the surface section (poincaré section), $T^n(x)=x_n$ and find $T^n(x)=x$ periodic orbits
 
 ---
 
 ### Finding periodic orbits
 
-So, I have the dynamical equation $\dot{\textbf{x}}=f(\textbf{x})$. This results in a trajectory $\textbf{x}(\textbf{x}_0,t)$. This trajectory passes through the Pioncaré section $\sufsec$ at $\textbf{x}(\textbf{x}_0,\tau_i)\equiv\mathbf{x}_i$, for all $i\in\mathbb{N}$, let $T: \sufsec \rightarrow \sufsec$.
+So, I have the dynamical equation $\dot{\textbf{x}}=f(\textbf{x})$. This results in a trajectory $\textbf{x}(\textbf{x}_0,t)$. This trajectory passes through the poincaré section $\sufsec$ at $\textbf{x}(\textbf{x}_0,\tau_i)\equiv\mathbf{x}_i$, for all $i\in\mathbb{N}$, let $T: \sufsec \rightarrow \sufsec$.
 
 Resulting in the equation
 $$T(\textbf{x}_i)=\mathbf{x}_{i+1},$$
@@ -17,7 +17,7 @@ So lets say we want to find all periodic orbits, what does the algorithm look li
 
 
 
-### Symmetries of the Henon-Heiles potential
+### Discrete Symmetries of the Henon-Heiles potential
 
 I am trying to find the symmetries of the Henon Heiles potential. How do I determine the symmetry group of the Henon Heiles potential.
 
@@ -74,6 +74,17 @@ To obtain the dynamics of our system around this point we should take our dynami
 Here we want to find the discrete rotations by an angle $\varphi\in(0,2\pi)$, $R(\varphi)\Epot(\mathbf{x})=\Epot(\mathbf{x})$. 
 It seems sensible to transform into spherical coordinates $x=r\, \cos(\theta)$ and $y=r\, \sin(\theta)$, $\theta\in(0,2\pi)$ and $r\in \mathbb{R}: r\geq0$ positive real values.
 
+This results in the following potential that can be simplified as well, 
+
+$$\begin{align}\Epot(r,\theta)&=\tfrac{r^2}{2}+r^3\Big(\cos^2(\theta)\sin(\theta)+\tfrac{1}{3}\sin^3(\theta)\Big), \\
+&= \tfrac{r^2}{2}+\tfrac{r^3}{4}\Big(\sin(3\theta)+\sin(\theta)+\tfrac{1}{3}(\sin(3\theta)+\sin(\theta))\Big).
+\end{align}$$
+
+Now we require $R(\varphi)\Epot(r,\theta)=\Epot(r,\theta')\overset{!}{=}\Epot(r,\theta)$.
 
 
 ### Lost Wonderers Thoughts:
+
+- on "entanglement and equations of motion"
+So during my talk with Andreas, we discussed *integrals of motion* and how integrable systems emerge from continuous symmetries; when a defined dynamical system can be transformed so that the one obtains dynamical system that are piecewise disjunct from another I referred loosely to this as *entangled* Andreas mentioned that there *might be a connection*
+

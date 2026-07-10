@@ -1,0 +1,7 @@
+---
+title: "Theory"
+description: ""
+date: last-modified
+---
+
+{{< include _content.qmd >}}

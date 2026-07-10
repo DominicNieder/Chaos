@@ -11,9 +11,10 @@
 -- Styling lives in styles/custom.scss under .gloss-term / .gloss-tooltip.
 
 local terms = {
-  ["diffeomorphism"] = "A continuously differentiable map $f: N \\to M$ between two manifolds, such that $f^{-1}: M \\to N$ is also differentiable. If $f$ is $r$-times differentiable it is called a $C^r$-diffeomorphism.",
+  ["homeomorphism"] = "A continuous one-to-one map $f:A\\righarow B$ meaning f is injective and surjective, thus $f$ is bijective and $f^{-1}$ exists.",
+  ["diffeomorphism"] = "A continuously differentiable map $f: N \\to M$ between two manifolds, such that $f^{-1}: M \\rightarrow N$ is also differentiable. If $f$ is $r$-times differentiable it is called a $C^r$-diffeomorphism.",
   ["hyper surfaces"] = "Coming from the analogy of a surface in 3D space is a 2D object. An geometric object that lives in a $n$–dimensional space, though itself is a $n-1$–dimensinal object. ",
-  ["dynamical system"] = "A set of $N$ first order differential equations in $N$ variables $\\textbf{x}=(x_1, x_2, \\dots, x_N) which solve the first order differential equation $\\dot{x}=\\textbf{f}(\\textbf{x},t)$.",
+  ["dynamical system"] = "Or sometimes called a Flow, is a set of $N$ first order differential equations in $N$ variables $\\textbf{x}=(x_1, x_2, \\dots, x_N) which solve the first order differential equation $\\dot{\\mathbf{x}}=\\mathbf{f}(\\mathbf{x}_0,t)$ with $\\mathbf{f}\\in \\phi_t:\\mathbb{R}^N \\rightarrow \\mathbb{R}^N$.",
   ["trajectory"] = "A mathematical 1 dimensional object, that describes a dynamics of a initial point of phase space.",
   ["ergodic trajectory"] = "A trajectory that will fill th whole volume of the accessible phase space. Thus $\\textbf{x}(\\textbf{x}_0,t_1)=\\textbf{x}(\\textbf{x}_0,t_2) \\Rightarrow t_1=t_2$.",
   ["critical point"] = "A point in state-space, for which a continuous transition between two states exists.",
@@ -22,7 +23,7 @@ local terms = {
   ["potential energy"] = "Is the energy that is stored in the interaction that the particles obey. It carries the potential to transform it into kinetic energy i.e. movement.",
   ["surface of section"] = "A surface cutting through the phase space. This registers the trajectory that passes through it. This can have constraints i.e. in a 4D phase space $x=0$ and $p_x\\geq 0$-",
   ["configuration space"] = "The space of all possible positions $\\vec{x}_i \\in \\mathbb{R}^3$, for all $N$ particles $1\\leq i \\leq N$. I am wondering, what about time?",
-  ["phase space"] = "The space of all possible dynamical degrees of freedom $N\\in\\mathbb{N}$, a point of this space defined by a vector $\\textbf{x}\\in\\mathbb{R}^N$. For a Hamiltonian system, these correspond to canonical variables $(\\textbf{p},\\textbf{q})$ with $\\{q_i | 1\\leq i \\leq N\\} = \\textbf{q}$ and momentum $\\{p_i | 1\\leq i \\leq N\\} = \\textbf{p}$.",
+  ["phase space"] = "The space of all possible dynamical degrees of freedom $N\\in\\mathbb{N}$, a point of this space defined by a vector $\\mathbf{x}\\in\\mathbb{R}^N$. For a Hamiltonian system, these correspond to canonical variables $(\\textbf{p},\\textbf{q})$ with $\\{q_i | 1\\leq i \\leq N\\} = \\textbf{q}$ and momentum $\\{p_i | 1\\leq i \\leq N\\} = \\textbf{p}$.",
   ["state"] = "Describes a system dialectically. One state can become another. Often 'state' can be used to describe synonymously to 'mode' or a 'function-type' of a system. The state is determined by boundary–, including initial-conditions.",
   ["orbit"] = "Similar to a state (i.e. in QM). Only that this is referred to trajectories. Or when the system is a dynamical system itself, (i.e. configuration space, phase space). ",
   ["hénon-heiles potential"] = "Two-dimensional potential: $U = \\tfrac{m \\omega^2}{2}(x^2+y^2)+\\alpha(x^2y-\\tfrac{1}{3}y^3)$. It is a model describing stellar motion in a galaxy and is used to study chaos.",

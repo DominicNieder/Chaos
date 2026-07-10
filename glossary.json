@@ -2,8 +2,8 @@
   "linear": {
     "def": "",
     "date": "2026-05-26",
-    "macro": null,
-    "latex": null
+    "macro": "Linear",
+    "latex": "L"
   },
 
   "non-linear": {
@@ -13,8 +13,15 @@
     "latex": null
   },
 
+  "homeomorphism":{
+    "def": "A continuous one-to-one map $f:A\\righarow B$ meaning f is injective and surjective, thus $f$ is bijective and $f^{-1}$ exists.",
+    "date": "2026-07-10",
+    "macro": null,
+    "latex": null
+  },
+
   "diffeomorphism": {
-    "def": "A continuously differentiable map $f: N \\to M$ between two manifolds, such that $f^{-1}: M \\to N$ is also differentiable. If $f$ is $r$-times differentiable it is called a $C^r$-diffeomorphism.",
+    "def": "A continuously differentiable map $f: N \\to M$ between two manifolds, such that $f^{-1}: M \\rightarrow N$ is also differentiable. If $f$ is $r$-times differentiable it is called a $C^r$-diffeomorphism.",
     "date": "2026-05-27",
     "macro": null,
     "latex": null
@@ -42,7 +49,7 @@
   },
 
   "dynamical system":{
-    "def": "A set of $N$ first order differential equations in $N$ variables $\\textbf{x}=(x_1, x_2, \\dots, x_N) which solve the first order differential equation $\\dot{x}=\\textbf{f}(\\textbf{x},t)$.",
+    "def": "Or sometimes called a Flow, is a set of $N$ first order differential equations in $N$ variables $\\textbf{x}=(x_1, x_2, \\dots, x_N) which solve the first order differential equation $\\dot{\\mathbf{x}}=\\mathbf{f}(\\mathbf{x}_0,t)$ with $\\mathbf{f}\\in \\phi_t:\\mathbb{R}^N \\rightarrow \\mathbb{R}^N$.",
     "date": "2026-06-20",
     "macro": "dynmSyst",
     "latex": "\\frac{d\\textbf{x}}{dt}=\\textbf{f}(\\textbf{x}, t)"
@@ -58,6 +65,13 @@
   "ergodic trajectory": {
     "def": "A trajectory that will fill th whole volume of the accessible phase space. Thus $\\textbf{x}(\\textbf{x}_0,t_1)=\\textbf{x}(\\textbf{x}_0,t_2) \\Rightarrow t_1=t_2$.",
     "date": "2026-05-28",
+    "macro": null,
+    "latex": null
+  },
+
+  "Hamiltonian Flow" : {
+    "def": "",
+    "date": "2026-07-10",
     "macro": null,
     "latex": null
   },
@@ -108,15 +122,15 @@
   "configuration space": {
     "def": "The space of all possible positions $\\vec{x}_i \\in \\mathbb{R}^3$, for all $N$ particles $1\\leq i \\leq N$. I am wondering, what about time?",
     "date": "2026-06-17",
-    "macro": "ps",
-    "latex": "(\\vec{x}_i, \\vec{p})"
+    "macro": "conf",
+    "latex": "\\mathcal{C}\\mathcal{o}"
   },
 
   "phase space": {
-    "def": "The space of all possible dynamical degrees of freedom $N\\in\\mathbb{N}$, a point of this space defined by a vector $\\textbf{x}\\in\\mathbb{R}^N$. For a Hamiltonian system, these correspond to canonical variables $(\\textbf{p},\\textbf{q})$ with $\\{q_i | 1\\leq i \\leq N\\} = \\textbf{q}$ and momentum $\\{p_i | 1\\leq i \\leq N\\} = \\textbf{p}$.",
+    "def": "The space of all possible dynamical degrees of freedom $N\\in\\mathbb{N}$, a point of this space defined by a vector $\\mathbf{x}\\in\\mathbb{R}^N$. For a Hamiltonian system, these correspond to canonical variables $(\\textbf{p},\\textbf{q})$ with $\\{q_i | 1\\leq i \\leq N\\} = \\textbf{q}$ and momentum $\\{p_i | 1\\leq i \\leq N\\} = \\textbf{p}$.",
     "date": "2026-06-17",
-    "macro": "ps",
-    "latex": "(\\textbf{q}, \\textbf{p})"
+    "macro": "x",
+    "latex": "\\mathbf{x}"
   },
 
   "state": {

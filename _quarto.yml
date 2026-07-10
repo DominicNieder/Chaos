@@ -20,6 +20,7 @@ website:
       - topics/day-logs/index.qmd
       - section: "Topics"
         contents:
+          - topics/Theory/index.qmd
           - topics/henon-heiles/index.qmd
           - topics/self-organized-criticallity/index.qmd
       - section: "Logs"
