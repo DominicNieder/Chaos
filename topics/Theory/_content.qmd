@@ -1,0 +1,25 @@
+We should start by stating the mathematical preliminaries. 
+
+## Linear Algebra 
+Even though in general we do not have linear equations vector spaces are elemental do understanding dynamical systems and their behavior. 
+
+We define a vector space $\mathcal{V}$ by the object that contains all maps from an *alphabet* $\Sigma$ to a *field* $\mathbb{F}$, $v:\mathcal{A}\rightarrow \mathbb{F}$; Thus we write $v\in \mathbb{F}^\mathcal{A}$. 
+
+An alphabet $\mathcal{A}$ can be an arbitrary set, like $\Sigma=\{1,2,\dots,n\}_{n\in\mathbb{N}}$ or a set of unordered symbols $\Sigma=\{a,b,c,d,\dots,z\}$ of the Latin alphabet. All maps $v,u\in\mathbb{F}^\Sigma$ and all $a\in\Sigma$ need to satisfy
+
+1) *completeness of addition*, meaning that the vector $u+v\in\mathbb{F}^\Sigma$ defined by the equation $u(a)+v(a)=(u+v)(a)$ and
+2) *completeness of scalar multiplication*, such that for any $\alpha\in\mathbb{F}$, $\alpha v\in\mathbb{F}$ the equation $(\alpha v)(a)=\alpha\, v(a)$ holds.
+
+
+The dimension of the vector space is given by the number of elements in the alphabet $|\Sigma| =n$ which defines a one-to-one map, $f:\{1,2,\dots,n\}_{n\in\mathbb{N}} \rightarrow \Sigma$. The vector space is then commonly referred to as $\mathbb{F}^n$. 
+
+## Dynamical systems
+
+A dynamical system defined by a set of $N$ fist order differential equations
+
+$$\frac{d}{dt}\x\equiv \dot{\x}=\mathbf{f}(\x).$$
+
+The function $\mathbf{f}:\R^N\rightarrow \R^N$ takes $\x\in\R^N$ to its tangentspace $\dot{\x}\in\R^N$ and defines all possible *trajectories* $\x(\x_0,t)$ for initial conditions $\x_0$ parameterized by the time $t\in I$. 
+
+## Lagrange to Hamilton
+

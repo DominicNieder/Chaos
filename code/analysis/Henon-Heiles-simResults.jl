@@ -1,12 +1,12 @@
 import Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
-using GLMakie, JLD2
+using GLMakie, JLD2, JSON3
 include("../styles/makie_theme.jl")
 include("../models/henon_heiles.jl")
 using .HenonHeiles
 
 DATA_DIR        = joinpath(@__DIR__, "../../data/henon-heiles/simulation")
-FIG_DIR         = joinpath(@__DIR__, "../../figures/henon-heiles/simulation")
+FIG_DIR         = joinpath(@__DIR__, "../../figures/henon-heiles/simulation/simn-256-py0")
 
 FIG_ORIENTATION  = joinpath(FIG_DIR, "orientation.json")
 DATA_ORIENTATION = joinpath(DATA_DIR, "orientation.json")
@@ -46,13 +46,13 @@ end
 
 
 
-file1 = joinpath(DATA_DIR, "E0.1243-T10000.0-py0.0-n128.jld2")
+file1 = joinpath(DATA_DIR, "E0.1127-T10000.0-py0.0-n256.jld2")
 data  = load(file1)
 results = data["results"]
 resoltuion = length(data["results"])
 println(typeof(results), keys(results[1]))
 resolution = 128
-fname   = "E$(round(e,digits=4))-T$(10000)-py0.0-n128.png"
+fname   = "E0.1127-T10000.0-py0.0-n256.png"
 outfig = joinpath(FIG_DIR, fname)
 
 function plot_phasespaceof!(ax, e, param, data, fig_size)
@@ -66,9 +66,11 @@ function plot_phasespaceof!(ax, e, param, data, fig_size)
 
 end
 
+
+
+
 with_theme(QUARTO_THEME) do
     fig1 = Figure(size=fig_size)
-    ax  = Axis(fig1[1,1], xlabel="y", ylabel="p_y")
     scatter!(ax, b1)
     plot_phasespaceof!(ax, e, param, data, fig_size=(1200,1200))    
     # --- save figure ---

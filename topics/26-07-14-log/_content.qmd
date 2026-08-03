@@ -1,0 +1,45 @@
+### To do!
+
+- [ ] Poincaré Map $T(x)$, find roots of $T^n(x_0)-x_0=0$
+
+---
+
+### Poincaré Map
+
+The Poincaré Map, that brings elements of a Poincaré section $T:\sufsec \rightarrow \sufsec$.
+
+From our equations of motion, that I numerically compute I can find an expression for this map. We derive by numerical integration the approximation of the trajectory $\mathbf{x}(\mathbf{x}_0, t)$. The trajectory is a continuouse curve, which gets approximated by a set of discrete positions $\mathbf{x}(\mathbf{x}_0, t)\approx\{\mathbf{x}(\mathbf{x}_0, 0),\dots, \mathbf{x}(\mathbf{x}_0, t'),\mathbf{x}(\mathbf{x}_0, t'+\delta t),\dots\}$. The  For this we define a numerical integration, the integration over small steps $\delta t$. Together with iteration function $\mathbf{iter}:\R^n \times I \rightarrow \R^n\times I$ which gives the next position
+
+$$\mathbf{iter}(\mathbf{x}(t'),\delta t)=\mathbf{x}(t'+\delta t).$$
+
+Allowing the set approximating the trajectory to take the form of $\mathbf{x}(\mathbf{x}_0, t)\approx\{\mathbf{iter}^k(\mathbf{x}_0) | \,k\in\N\}$.
+
+The integration with the iteration represents the numerical integration method, in the abstract (i.e. the Runge–Kutta algorithm), every iteration results in a position of the trajectory of the initial conditions. The integration function for an small timestep $\delta t$ reads
+
+$$\mathbf{I}(\mathbf{x}(t'),\delta t) = \int_{t'}^{t'+\delta t} \mathbf{f}(\mathbf{x}(t))dt,$$ 
+
+Thus the iteration function becomes
+
+$$\mathbf{iter}(\mathbf{x}(t'),\delta t)= \big(\mathbb{1}+\mathbf{I}(\cdot,\delta t)\big)(\mathbf{x}(t))=\mathbf{x}(t')+\mathbf{I}(\mathbf{x}(t'),\delta t)=\mathbf{x}(t'+\delta t).$$
+
+So how does the k-fold composition of $\mathbf{iter}^k$ look like, i.e. $k=2$ $\mathbf{iter}^2=\mathbf{iter}\circ\mathbf{iter}$
+
+$$\begin{align}
+(\mathbf{iter}\circ \mathbf{iter})(\mathbf{x}(t'), \delta t)&=  \mathbf{iter}\Big(\mathbf{iter}\big(\,\mathbf{x}(t'),\delta t\big), \delta t \Big)\\
+&=\mathbf{iter}\Big(\,\mathbf{x}(t')+\mathbf{I}\big(\,\mathbf{x}(t'),\delta t\big), \delta t\Big)\\
+&= \underbrace{\mathbf{iter}(\mathbf{x}(t'))}_{=\mathbf{x}(t'+\delta t)} + \mathbf{iter}\Big(\,\mathbf{I}\big(\mathbf{x}(t'),\delta t\big), \delta t\Big) \\
+&=\underbrace{\mathbf{x}(t')+\mathbf{I}\big(\mathbf{x}(t'),\delta t\big) }_{=\mathbf{x}(t'+\delta t)} + \mathbf{I}\big(\mathbf{x}(t'), \delta t\big) + (\mathbf{I}\circ\mathbf{I})(\mathbf{x}(t'),\delta t) \\
+&= \mathbf{x}(t'+\delta t) + \mathbf{I}\big(\mathbf{x}(t'), \delta t\big) + \mathbf{I}\Big(\,\mathbf{I}\big(\,x(t'),\delta t\big), \delta t\Big) \\
+&= \mathbf{x}(t'+\delta t) + \mathbf{x}(t'+\delta t) - \mathbf{x}(t') + \mathbf{I}\Big(\,\mathbf{x}(t'+\delta t)-\mathbf{x}(t'),\delta t\Big) \\
+&= \mathbf{x}(t'+\delta t) + \mathbf{x}(t'+\delta t) - \mathbf{x}(t') + \mathbf{I}\Big(\,\mathbf{x}(t'+\delta t) -\mathbf{x}(t')\Big) \\
+&= \mathbf{x}(t'+\delta t) + \mathbf{x}(t'+\delta t) - \mathbf{x}(t') + \mathbf{I}\Big(\,\mathbf{x}(t'+\delta t)\Big) -\mathbf{I}\Big(\mathbf{x}(t') \Big) \\
+&= \mathbf{x}(t'+\delta t) + \mathbf{x}(t'+\delta t) - \mathbf{x}(t') + \mathbf{x}(t'+2\delta t)-\mathbf{x}(t'+\delta t) -\Big(\mathbf{x}(t'+\delta t)-\mathbf{x}(t') \Big) \\
+&= \mathbf{x}(t'+2\delta t)
+\end{align}$$
+
+With this I can define the Poincaré Map 
+
+$$T(\mathbf{x})= \mathbf{iter}^k(\mathbf{x}(t_0))$$
+
+
+### Lost Wonderers Thoughts:

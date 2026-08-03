@@ -21,7 +21,7 @@ function section_set_plot_lim(e,param,n)
 end
 
 DATA_DIR        = joinpath(@__DIR__, "../../data/henon-heiles/simulation")
-FIG_DIR         = joinpath(@__DIR__, "../../figures/henon-heiles/simulation")
+FIG_DIR         = joinpath(@__DIR__, "../../data/henon-heiles/simulation/simn-y256-py0.jdl2")
 
 FIG_ORIENTATION  = joinpath(FIG_DIR, "orientation.json")
 DATA_ORIENTATION = joinpath(DATA_DIR, "orientation.json")

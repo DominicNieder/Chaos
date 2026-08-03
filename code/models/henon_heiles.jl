@@ -79,7 +79,7 @@ function section_callback(section_q, section_p)
             push!(section_p, integrator.u[4])
         end
     end
-    ContinuousCallback(condition, affect!)
+    ContinuousCallback(condition, affect!, nothing)
 end
 
 
