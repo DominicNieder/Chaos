@@ -109,7 +109,7 @@ end
 # example
 # ----------------------------------------------------------------------
  
-p = (C     = 1.0,
+p = (C     = 2.0,
      m1    = 1.0,
      m2    = 1.0,
      boxes = ((-2.0, -1.0), (1.0, 2.0)))
@@ -162,7 +162,7 @@ lines!(ax3, sol.t, drift)
 save_screen = GLMakie.Screen(; visible=false)
 display(save_screen, fig)
 
-name = "explore2_particles_in_box04.png"
+name = "interaction$(p.C)06.png"
 savename=joinpath("../../../figures/1D-boxed-chr-particles/explore", name)
 outfig=joinpath(@__DIR__, savename)
 save(outfig, fig, px_per_unit=1)
