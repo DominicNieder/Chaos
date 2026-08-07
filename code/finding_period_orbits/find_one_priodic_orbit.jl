@@ -96,7 +96,7 @@ function find_orbit(pmap, v0, n, E, p;
     v       = collect(float.(v0))
     history = zeros(2, N_max)
     in_section(v, E, p) ||
-        return (v = v, DT = nothing, eigen=nothing converged = false, orbitTime=Inf history = history[:, 1:0], resnorm = Inf, comment="inital condition out of bounds!")
+        return (v = v, DT = nothing, eigen=nothing, converged = false, orbitTime=Inf, history = history[:, 1:0], resnorm = Inf, comment="inital condition out of bounds!")
 
     JT = zeros(2, 2)
     rn = Inf
@@ -117,7 +117,7 @@ function find_orbit(pmap, v0, n, E, p;
 
         vnew = v .- damping .* (JT \ r)  # iteration
         in_section(vnew, E, p) ||
-            return (v = v, DT = nothing, eigen=nothing converged = false, orbitTime=Inf, history = history[:, 1:i], resnorm = rn, comment="not in section")  # check for bounds pf section
+            return (v = v, DT = nothing, eigen=nothing, converged = false, orbitTime=Inf, history = history[:, 1:i], resnorm = rn, comment="not in section")  # check for bounds pf section
         v = vnew  # iterate
     end
     (v = v, DT = JT+ I, eigen=nothing , converged = false, orbitTime=Inf, history = history, resnorm = rn, comment="$N_max iteratrions passed")
@@ -203,7 +203,7 @@ scatter!(ax, boundary, color=C_CREAM)
 scatterlines!(ax, res.history[1, :], color=C_PURPLE, res.history[2, :])
 scatterlines!(ax, res2.history[1, :], color=C_PURPLE, res2.history[2, :])
 
-scatter!(ax, [res.v[1]], [res.v[2]], marker=:cross, markersize = 20, color=C_CREAM, label=-1)
+scatter!(ax, [res.v[1]], [res.v[2]], marker=:cross, markersize = 20, color=C_CREAM, label="-1")
 scatter!(ax, [res2.v[1]], [res2.v[2]], marker=:cross, markersize = 20, color=:blue, label="+1")
 
 save_screen = GLMakie.Screen(; visible=false)
