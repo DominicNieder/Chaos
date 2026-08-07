@@ -83,9 +83,9 @@ end
 Fres(v, p) = Tn(p.pmap, v, p.n, p.E, p.p) .- v     
 
 
-function jacobian_get!(JT, pmap, v, n, E, p, d)
-    JT[:, 1] = (Fres(pmap, [v[1]+d, v[2]], n, E, p) .- Fres(pmap, [v[1]-d, v[2]], n, E, p)) ./ (2d)
-    JT[:, 2] = (Fres(pmap, [v[1], v[2]+d], n, E, p) .- Fres(pmap, [v[1], v[2]-d], n, E, p)) ./ (2d)
+function jacobian_get!(JT, v, p, d)
+    JT[:, 1] = (Fres( [v[1]+d, v[2]], p) .- Fres([v[1]-d, v[2]], p)) ./ (2d)
+    JT[:, 2] = (Fres([v[1], v[2]+d], p) .- Fres([v[1], v[2]-d], p)) ./ (2d)
 end
 # --- Newton iteration method ---
 
@@ -93,6 +93,7 @@ get_eigenvalues(DT)= tr(DT)^2/4+sqrt(tr(DT)^2/4-det(DT)), tr(DT)^2/4-sqrt(tr(DT)
 
 function find_orbit(pmap, v0, n, E, p;
                     N_max = 50, d = 1e-6, damping = 1.0, tol = 1e-9)
+    fres_param = (pmap=pmap, n=n, E=E, p=p)
     v       = collect(float.(v0))
     history = zeros(2, N_max)
     in_section(v, E, p) ||
@@ -102,12 +103,12 @@ function find_orbit(pmap, v0, n, E, p;
     rn = Inf
     for i in 1:N_max
         history[:, i] = v  # save section crossings to find roots
-        r  = Fres(pmap, v, n, E, p)     # is sought to be zero
+        r  = Fres(v, fres_param)     # is sought to be zero
         rn = norm(r)                    # under this tolerance
 
         rn < tol && return (v = v, DT = JT+I, eigen=get_eigenvalues(JT+I), converged = true, orbitTime=current_time(pmap), history = history[:, 1:i], resnorm = rn, comment="$rn < $tol")
 
-        jacobian_get!(JT, pmap, v, n, E, p, d)  #  jacobian to move toward Fres()=0
+        jacobian_get!(JT, v, fres_param, d)  #  jacobian to move toward Fres()=0
 
         for (indx_f, f) in enumerate(JT)
             if abs(f) < 1e-11
@@ -129,7 +130,7 @@ function opt_perObits(pmap, u0, n, E, p;
     v       = collect(float.(u0))
     param = (pmap=pmap, n=n, E=E, p=p)
     in_section(v, E, p) ||
-        return (v = v, DT = nothing, eigen=nothing converged = false, orbitTime=Inf history = history[:, 1:0], resnorm = Inf, comment="inital condition out of bounds!")
+        return (v = v, DT = nothing, eigen=nothing, converged = false, orbitTime=Inf, history = history[:, 1:0], resnorm = Inf, comment="inital condition out of bounds!")
     prob = NonlinearProblem(Fres, v, param)
     sol = solve(prob,
             TrustRegion(autodiff = AutoFiniteDiff(fdtype = Val(:central)));
@@ -155,8 +156,9 @@ res2 = find_orbit(pmap2, [y0, py0], n, E0, param, N_max=2000, damping=0.1,tol=1e
 
 
 
-println(res.converged ? "converged: v = $(res.v),time for reoccurence $(res.orbitTime). distance $(res.resnorm), comment: $(res.comment)" : "no convergence, $(res.resnorm), comment: $(res.comment)")
-println(res2.converged ? "converged: v = $(res2.v), time for reoccurence $(res2.orbitTime), distance $(res2.resnorm), comment: $(res2.comment)" : "no convergence, $(res2.resnorm), comment: $(res2.comment)")
+println(res.converged ? "converged: v = $(res.v),\n time for reoccurence $(res.orbitTime), distance to root: $(res.resnorm), \ncomment: $(res.comment)" : "no convergence,\n $(res.resnorm), \ncomment: $(res.comment)")
+println("\n --- \n")
+println(res2.converged ? "converged: v = $(res2.v),\n time for reoccurence $(res2.orbitTime), distance $(res2.resnorm), \ncomment: $(res2.comment)" : "no convergence, $(res2.resnorm), \ncomment: $(res2.comment)")
 
 
 
@@ -171,12 +173,12 @@ println("eigen values: $((τ/2)^2+sqrt((τ/2)^2-det(DT))), $((τ/2)^2-sqrt((τ/2
 u01     = [1e-10, res.v[1], px_from_E(res.v[1], res.v[2], E0, param), res.v[2]]
 y_sec, py_sec = Float64[], Float64[]
 cb = HenonHeiles.section_callback(y_sec, py_sec)
-s = HenonHeiles.solve_trajectory(u01, param, (0.0, 1000), dt; callback=cb)
+s = HenonHeiles.solve_trajectory(u01, param, (0.0, 1.0), dt; callback=cb)
 
 u02     = [1e-10, res2.v[1], px_from_E(res2.v[1], res2.v[2], E0, param), res2.v[2]]
 y_sec2, py_sec2 = Float64[], Float64[]
 cb2 = HenonHeiles.section_callback(y_sec2, py_sec2)
-s1 = HenonHeiles.solve_trajectory(u02, param, (0.0, 1000), dt; callback=cb2)
+s1 = HenonHeiles.solve_trajectory(u02, param, (0.0, 1.0), dt; callback=cb2)
 
 # contours of potential
 r      = range(-1.0, 1.0, length=120)
