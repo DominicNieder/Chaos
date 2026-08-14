@@ -71,12 +71,13 @@ hamiltonian(x, y, px, py, p) = kinetic(px, py, p) + potential(x,y, p)
 """
 makes a function that filters the surface of section values whilst solving the ODE
 """
-function section_callback(section_q, section_p)
+function section_callback(section_q, section_p; section_t=nothing)
     condition(u, t, integrator) = u[1]
     affect!(integrator) = begin
         if integrator.u[3] >= 0
             push!(section_q, integrator.u[2])
             push!(section_p, integrator.u[4])
+            section_t === nothing || push!(section_t, integrator.t) 
         end
     end
     ContinuousCallback(condition, affect!, nothing)
