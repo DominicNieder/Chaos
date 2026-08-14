@@ -5,6 +5,7 @@
 - [ ] write about the classification on periodic orbits in theory
 - [ ] finish implementing the self written code for finding periodic orbits
 - [ ] read and work toward @HenonHeiles_toBifrication_periodic_times (see downloads)
+- [ ] monodromy matrix 
 
 ---
 
@@ -14,6 +15,7 @@
 - using @pal2024nonlinearsolve I can use a julia precoded from NonlinearSolve.jl
 - also I wrote my own code on finding periodic orbits, the classification seemd important to understand what happend
 - I was findng unstable points, though why? – I dont know
+- symplectic dynamical systems $\dot{\mathbf{x}}=\mathbf{f}(\mathbf{x})$ have $\Delta=det(\mathbf{Df}|_{x=x_0})=1$, such that their phase volume does not change
 
 ---
 
