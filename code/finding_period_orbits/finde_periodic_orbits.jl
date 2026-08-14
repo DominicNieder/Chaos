@@ -27,11 +27,13 @@ for d in data
 end
 
 const EPS_OFF = 1e-9
-E0 = 0.1127
 
 
 px2(y, py, E, p)    = 2p[2] * (E - HenonHeiles.potential(0.0, y, p)) - py^2
 in_section(v, E, p) = px2(v[1], v[2], E, p) > 0
+
+
+
 
 "Lift (y, py) to a 4D state. Offset follows sign(px) -> no phantom t=0 crossing."
 function lift(v, E, p; sgn = +1)
@@ -46,7 +48,7 @@ function section_trj(v, prm)
 
     y_sec, py_sec, t_sec = Float64[], Float64[], Float64[]
     cb = HenonHeiles.section_callback(y_sec, py_sec, section_t=t_sec)
-    prob = ODEProblem(HenonHeiles.equations!, u0, (0, 2_000), prm.p)
+    prob = ODEProblem(HenonHeiles.equations!, u0, (0.0, 2000.0), prm.p)
     sol = solve(prob, Vern9(), 
         abstol=1e-14, 
         reltol=1e-14, 
@@ -54,37 +56,45 @@ function section_trj(v, prm)
         callback=cb
         )
 
-    return sol.u, permutedims([y_sec py_sec]), t_sec
+    return  sol, permutedims([y_sec py_sec]), t_sec
 end
 
 function minPeriodicity(v, prm; tol = 1e-8)
-    u, trace, ts = section_trj(v, prm)
+    sol, trace, ts = section_trj(v, prm)
     for i in axes(trace, 2)
-        println(norm(v.-trace[:,i]))
-        ((norm(v .- trace[:, i]) < tol) & (i>1)) && return (u, trace[:,1:i], i-1, ts[i])
+        if (norm(v .- trace[:, i]) < tol)  &  (i>1) 
+            k = searchsortedfirst(sol.t, ts[i])
+            return (sol.u[1:k], trace[:,1:i], i, ts[i])
+        end
     end
     return (u, trace, nothing, nothing)
 end
 
+function creat_integrator(p; tmax=2000.0)
+    y, py , ts = Float64[], Float64[], Float64[]
+    cb = HenonHeiles.section_callback(y, py; section_t = ts)
+    prob = ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p)
+    integ = init(prob, Vern9();
+                abstol = 1e-14, reltol = 1e-14,
+                save_everystep = false, save_start = false,
+                callback = cb)
+    return (; integ, y, py, ts)
+end
 
-"prm= (; pmap, n, E, p, sgn)"
+"prm= (; integ, n, E, p)"
 function Tn(v, prm)
     u0 = lift(v, prm.E, prm.p)
-    tmax =2_000
+
     u0 === nothing && error("point $v outside energy boundary")
     # init problem 
-    y_sec, py_sec = Float64[], Float64[]
-    cb = HenonHeiles.section_callback(y_sec, py_sec)
-    prob = ODEProblem(HenonHeiles.equations!, u0, (0, tmax), prm.p)
-    sol = solve(prob, Vern9(), abstol=1e-9, 
-        reltol=1e-9, 
-        saveat=dt, 
-        callback=cb
-        )
-    length(y_sec) < prm.n &&
-        error("only $(length(y_sec)) crossings in t < $tmax (need $(prm.n))")
+    empty!(prm.y); empty!(prm.py); empty!(prm.ts)
+    reinit!(prm.integ, u0)
+    solve!(prm.integ)
 
-    return [y_sec[prm.n], py_sec[prm.n]]
+    length(prm.y) < prm.n &&
+        error("only $(length(prm.y)) crossings in t < $tmax (need $(prm.n))")
+
+    return [prm.y[prm.n], prm.py[prm.n]]
 end
 
 
@@ -110,11 +120,11 @@ function jacobian!(J, v, prm, d)
 end
 
 
-function find_orbit(v0, n, E, p;
-                    N_max = 100, d = 1e-7, tol = 1e-11, sgn = +1,
+function find_orbit(v0, prm;
+                    N_max = 100, d = 1e-7, tol = 1e-11, 
                     max_backtrack = 30, dmax = 0.05, verbose = false)
 
-    prm  = (;n, E, p)
+
     v    = collect(float.(v0))
     hist = zeros(2, N_max)
     J    = zeros(2, 2)
@@ -122,7 +132,7 @@ function find_orbit(v0, n, E, p;
     fail(i, rn, msg) = (v = v, DT = nothing, eigen = nothing, converged = false,
                         history = hist[:, 1:max(i, 0)], resnorm = rn, comment = msg)
 
-    in_section(v, E, p) || return fail(0, Inf, "seed outside energy boundary")
+    in_section(v, prm.E, prm.p) || return fail(0, Inf, "seed outside energy boundary")
 
     r  = Fres(v, prm)
     rn = norm(r)
@@ -149,7 +159,7 @@ function find_orbit(v0, n, E, p;
         λ, accepted = 1.0, false              # MUST start false
         for _ in 1:max_backtrack
             vnew = v .- λ .* step
-            rnew = in_section(vnew, E, p) ? Fres(vnew, prm) : nothing
+            rnew = in_section(vnew, prm.E, prm.p) ? Fres(vnew, prm) : nothing
             if rnew !== nothing && norm(rnew) < rn
                 v, r, rn, accepted = vnew, rnew, norm(rnew), true
                 break
@@ -163,30 +173,43 @@ function find_orbit(v0, n, E, p;
 end
 
 
-function Orbit_finder(y0, py0, n, E;
-    psection_bg = (y_all, py_all))
+function Orbit_finder(v0, n, E;
+    psection_bg = (y_all, py_all), tmax=2_000.0, )
     println("=== NEW SIM ===")
 
-    v0= [y0, py0]
-    p= (1.0, 1.0, 1.0)
-    prm=(;E=E, p=p, n=n)
-    res = find_orbit(v0, n, E, p)
+
+    p       =   (1.0, 1.0, 1.0)
+
+    bff = creat_integrator(p; tmax=2000.0)
+
+    prm     =   (;integ=bff.integ,  y=bff.y, py=bff.py , ts=bff.ts, E=E, p=p, n=n)
+
+    res     =   find_orbit(v0, prm)
+    orbit   =   minPeriodicity(res.v, prm; tol = 1e-8)
+    u, sec, prime, t_sec    =  orbit
 
     if res.converged 
-        println("CONVERGED   v = $(res.v)")
+        τ = tr(res.DT)
+        kind = abs(τ) < 2  ? "elliptic (stable)"        :
+                τ >  2      ? "hyperbolic (unstable)"     :
+                τ < -2      ? "inverse hyperbolic (unstable, reflection)" :
+                     "parabolic (marginal)"
+        println("CONVERGED")   
+        println("   v         = $(res.v)")
         println("  |r|        = $(res.resnorm)")
         println("  det(DT)    = $(det(res.DT))     (must be ~1)")
-        println("  tr(DT)     = $(tr(res.DT))")
         println("  eigen      = $(res.eigen)")
+        println("  type       = $kind   (tr = $τ, compare τ ~ 2)")
+        println("iterations n = $prime")
+        println("orbit period = $t_sec")
     else
         println("did not converge: $(orbit.comment)")
     end
-        # find period time and orbit and section trajectory
-    orbit=minPeriodicity(res.v, prm; tol = 1e-8)
-    u, sec, prime, t_sec =orbit
-    println("========")
-    println("On the orbit:\nT^nv=v, n=$prime")
-    println("Orbit Period: T=$t_sec")
+    
+
+
+    println("=== plotting ===")
+
     
     x = [x[1] for x in u]
     y = [x[2] for x in u]
@@ -216,12 +239,13 @@ function Orbit_finder(y0, py0, n, E;
                     color = C_GOLD, markersize = 6, label = "Newton path")
     scatter!(ax_p, sec[1,:], sec[2,:], color= C_GREEN ,markersize = 5, label="periodic orbit")
     display(GLMakie.Screen(), fig_p)
-    return (;pfig=(fig_p,ax_p), cfig=(fig_conf,ax_conf), res=res, orbit=orbit)
+    return (;pfig=(fig_p,ax_p), cfig=(fig_conf,ax_conf), res=res, orbit=orbit, prm=prm)
 end
 
-
-n=2
-y0= 0.275
-py0=0.23
-sol=Orbit_finder(y0, py0, n, E0)
+E0 = 0.1127
+n  = 10
+y0 = -0.12
+py0= 0.23
+v0 = [y0,py0]
+sol=Orbit_finder(v0, n, E0)
 
