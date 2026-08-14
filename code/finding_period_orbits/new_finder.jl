@@ -37,7 +37,7 @@ in_section(v, E, p) = px2(v[1], v[2], E, p) > 0
 function lift(v, E, p; sgn = +1)
     a = px2(v[1], v[2], E, p)
     a <= 0 && return nothing
-    return [sgn*EPS_OFF, v[1], sgn * sqrt(a), v[2]]
+    return [EPS_OFF, v[1], sgn * sqrt(a), v[2]]
 end
 
 function section_trj(v, prm)
@@ -60,7 +60,8 @@ end
 function minPeriodicity(v, prm; tol = 1e-8)
     u, trace, ts = section_trj(v, prm)
     for i in axes(trace, 2)
-        norm(v .- trace[:, i]) < tol && return (u, trace, i, ts[i])
+        println(norm(v.-trace[:,i]))
+        ((norm(v .- trace[:, i]) < tol) & (i>1)) && return (u, trace[:,1:i], i-1, ts[i])
     end
     return (u, trace, nothing, nothing)
 end
@@ -164,11 +165,11 @@ end
 
 function Orbit_finder(y0, py0, n, E;
     psection_bg = (y_all, py_all))
-
+    println("=== NEW SIM ===")
 
     v0= [y0, py0]
     p= (1.0, 1.0, 1.0)
-    prm=(E=E, p=p, n=n)
+    prm=(;E=E, p=p, n=n)
     res = find_orbit(v0, n, E, p)
 
     if res.converged 
@@ -181,8 +182,12 @@ function Orbit_finder(y0, py0, n, E;
         println("did not converge: $(orbit.comment)")
     end
         # find period time and orbit and section trajectory
-    (u, sec, prime, t_sec)=minPeriodicity(res.v, prm; tol = 1e-8)
-
+    orbit=minPeriodicity(res.v, prm; tol = 1e-8)
+    u, sec, prime, t_sec =orbit
+    println("========")
+    println("On the orbit:\nT^nv=v, n=$prime")
+    println("Orbit Period: T=$t_sec")
+    
     x = [x[1] for x in u]
     y = [x[2] for x in u]
 
@@ -209,13 +214,14 @@ function Orbit_finder(y0, py0, n, E;
     scatter!(ax_p, boundary, color = C_CREAM, markersize = 4)
     scatterlines!(ax_p, res.history[1, :], res.history[2, :],
                     color = C_GOLD, markersize = 6, label = "Newton path")
-    scatter!(ax_p, sec[:,1], sec[:,2], color= C_GREEN ,markersize = 5, label="periodic orbit")
+    scatter!(ax_p, sec[1,:], sec[2,:], color= C_GREEN ,markersize = 5, label="periodic orbit")
     display(GLMakie.Screen(), fig_p)
-    
+    return (;pfig=(fig_p,ax_p), cfig=(fig_conf,ax_conf), res=res, orbit=orbit)
 end
 
 
-n=7
-y0= -0.075
-py0=0.13
+n=2
+y0= 0.275
+py0=0.23
 sol=Orbit_finder(y0, py0, n, E0)
+
