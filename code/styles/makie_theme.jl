@@ -24,7 +24,7 @@ const QUARTO_THEME = Theme(
         spinecolor  = CREAM,
     ),
     Legend = (
-        bgcolor          = BG,
+        backgroundcolor  = BG,
         framecolor       = RGBAf(1,1,1,0.15),
         labelcolor       = CREAM,
         titlecolor       = CREAM,
