@@ -127,7 +127,7 @@ limit_of_initial_y0(E::Float64, p) = roots(
 
 
 function limit_of_initial_py0(y::Real, E::Float64, p)
-   sqrt(max(0.0, 2*(E - potential(0.0, y, p))))
+   sqrt(max(0.0, 2*p[2]*(E - potential(0.0, y, p))))
 end
 
 function limit_of_initial_py0(y::AbstractVector{<:Real}, E::Float64, p)
