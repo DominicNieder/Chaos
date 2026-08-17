@@ -1,0 +1,17 @@
+### To do!
+
+#### On period orbits
+- [ ] optimisation, in regard of (1) $H(p,q)=H(-p,q)$, (2) multi-core processing
+- [ ] Mondromody Formulism
+- [ ] write down findings till now 
+
+#### Other...
+- [ ] on characterizing periodic orbits: show that $det(A)=1$ for $A$ symplectic
+
+---
+
+
+
+
+
+### Lost Wonderers Thoughts:
