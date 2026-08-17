@@ -2,16 +2,27 @@
 
 #### On period orbits
 - [ ] optimisation, in regard of (1) $H(p,q)=H(-p,q)$, (2) multi-core processing
+- [ ] identifying orbit type, based on the tr
 - [ ] Mondromody Formulism
 - [ ] write down findings till now 
 
 #### Other...
 - [ ] on characterizing periodic orbits: show that $det(A)=1$ for $A$ symplectic
 
+#### Questions
+- 
+
 ---
 
 
+### On Poincaré sections
 
+A special kind of poincaré section are the surface of sections. These take a $N$-dimensional phase space $\x$ and cut it by a $(N-1)$-dimensional plane or manifold $\Sigma$. The first return of to $\Sigma$ defines a diffeomorphism, $T:\Sigma \rightarrow \Sigma$, $T(\x_0)=\x(\x_0,\tau)$, where $\tau$ is the return time.
 
+*Periodic orbits* are then defined by the condition 
+$$T^n(\x_0)=\x_0$$
+they are fixed points to the diffeomorphism $T^n$. We can linearize $T^n \rightarrow DT^n$ at a given $\x_0$ approximating the diffeomorphism in the small, open area $U\subset\Sigma$ around $\x_0\in U$. This gives the possibility to identify a stability matrix $M$ to $DT^n$ which is associated to the *flow* $M=\exp(At)$ or $A\ln(M)\,|t=1$ at $t=1$; The eigenvalues $\lambda$ of M correspond through $\gamma=\ln(\lambda)$ to the eigenvalues of $A$ as well as shared eigenvectors.
+
+With the Hartman - Grobman theorem, we know that the linear approximation $DT^n$ around the stable points $\x_e$ are topologically equivalent to the $T$ around $\x_e$ itself
 
 ### Lost Wonderers Thoughts:

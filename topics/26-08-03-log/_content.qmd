@@ -3,7 +3,7 @@
 - [x] find myself back into my 
 - [ ] look into the two "electrons each in boxes" 1D version
 - [ ] write about the classification on periodic orbits in theory
-- [ ] finish implementing the self written code for finding periodic orbits
+- [x] finish implementing the self written code for finding periodic orbits
 - [ ] read and work toward @HenonHeiles_toBifrication_periodic_times (see downloads)
 - [ ] monodromy matrix 
 
