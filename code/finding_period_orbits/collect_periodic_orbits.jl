@@ -20,6 +20,18 @@ param          = [Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.valu
 dt             = Float64(cfg.dt.value)
 x0             = Float64(cfg.x0.value)
 
+const Row = @NamedTuple begin
+    E::Float64; n::Int
+    seed_y::Float64; seed_py::Float64
+    y::Float64; py::Float64
+    prime::Int; T::Float64
+    trace::Float64; detDT::Float64
+    resnorm::Float64; iters::Int
+    sec::Vector{Vector{Float64}}
+    history::Matrix{Float64}
+    traj_x::Vector{Float64}; traj_y::Vector{Float64}
+end
+
 # --- background section ---
 data = load(data_file, "results")
 y_all, py_all = Float32[], Float32[]
@@ -95,7 +107,7 @@ end
 
 
 
-function creat_integrator(p; tmax = 2000.0, nmax = Ref(1))
+function creat_integrator(p; tmax = 20_000.0, nmax = Ref(1))
     y, py, ts = Float64[], Float64[], Float64[]
     condition(u, t, integ) = u[1]
     affect!(integ) = begin
@@ -109,8 +121,31 @@ function creat_integrator(p; tmax = 2000.0, nmax = Ref(1))
     return (; integ, y, py, ts, nmax)
 end
 
+function create_integrators(p; tmax = 20_000.0, nmax = Ref(1))
+    # fast: for residual evaluations, no trajectory saved
+    yf, pyf, tsf = Float64[], Float64[], Float64[]
+    condition(u, t, integ) = u[1]
+    affect!(integ) = begin
+        push!(y, integ.u[2]); push!(pyf, integ.u[4]); push!(tsf, integ.t)
+        length(yf) ≥ nmax[] && terminate!(integ)
+    end
+    cbf = ContinuousCallback(condition, affect!, nothing; abstol = 1e-13)
+    integ_fast = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
+                      Vern9(); abstol = 1e-14, reltol = 1e-14,
+                      save_everystep = false, save_start = false, callback = cbf)
+
+    # dense: for plotting
+    yd, pyd, tsd = Float64[], Float64[], Float64[]
+    cbd = HenonHeiles.section_callback(yd, pyd; section_t = tsd)
+    integ_dense = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
+                       Vern9(); abstol = 1e-14, reltol = 1e-14,
+                       saveat = dt, callback = cbd)
+
+    return (; integ_fast, yf, pyf, tsf, integ_dense, yd, pyd, tsd)
+end
+
 "prm= (; integ, n, E, p)"
-function Tn(v, prm)
+function T(v,n, prm)
     u0 = lift(v, prm.E, prm.p)
 
     u0 === nothing && error("point $v outside energy boundary")
@@ -119,27 +154,32 @@ function Tn(v, prm)
     reinit!(prm.integ, u0)
     solve!(prm.integ)
 
-    length(prm.y) < prm.n &&
-        error("only $(length(prm.y)) crossings in t < $(prm.tmax) (need $(prm.n))")
+    length(prm.y) < n &&
+        error("only $(length(prm.y)) crossings in t < $(prm.tmax) (need $(n))")
 
-    return [prm.y[prm.n], prm.py[prm.n]]
+    return [prm.y[n], prm.py[n]]
 end
 
 
-Fres(v, prm) = Tn(v, prm) - v
+Fres(v, n, prm) = T(v, n, prm) - v
 
+function Fres_safe(v, n, prm)
+    a = px2(v[1], v[2], prm.E, prm.p)
+    a <= 0 && return fill(1.0 + 100*sqrt(-a), 2)   # penalty scales with violation
+    return Fres(v, n, prm)
+end
 
-function jacobian!(J, v, prm, d)
+function jacobian!(J, v, n, prm, d)
     E, p = prm.E, prm.p
     for (j, e) in enumerate(([d, 0.0], [0.0, d]))
         vp, vm = v .+ e, v .- e
         okp, okm = in_section(vp, E, p), in_section(vm, E, p)
         if okp && okm
-            J[:, j] = (Fres(vp, prm) .- Fres(vm, prm)) ./ (2d)
+            J[:, j] = (Fres(vp, n, prm) .- Fres(vm, n, prm)) ./ (2d)
         elseif okp
-            J[:, j] = (Fres(vp, prm) .- Fres(v, prm)) ./ d       # forward
+            J[:, j] = (Fres(vp, n, prm) .- Fres(v, n, prm)) ./ d       # forward
         elseif okm
-            J[:, j] = (Fres(v,  prm) .- Fres(vm, prm)) ./ d      # backward
+            J[:, j] = (Fres(v, n, prm) .- Fres(vm, n, prm)) ./ d      # backward
         else
             error("both probes outside boundary at $v — step too large or v on the edge")
         end
@@ -147,9 +187,13 @@ function jacobian!(J, v, prm, d)
     return J
 end
 
-function jacobian(v,prm,d)
+function jacobian(v,n,prm,d)
     J    = zeros(2, 2)
-    jacobian!(J,v,prm,d)
+    jacobian!(J,v,n,prm,d)
+end
+
+function get_DT(v,n,prm; d=1e-7)
+    I+jacobian(v,n,prm, d) 
 end
 
 function find_orbit(v0, prm;
@@ -229,6 +273,22 @@ function section_grid(E, p; ny = 10, npy = 10, margin = 0.03)
         end
     end
     seeds
+end
+
+function analyse_seed(v0, prm)::Union{Row,Nothing}
+    res = find_orbit(v0, prm)
+    res.converged || return nothing
+    orb = minPeriodicity(res.v, prm; tol = 1e-8)
+    orb.Nperiod === nothing && return nothing
+    return (; E = prm.E, n = prm.n, seed_y = v0[1], seed_py = v0[2],
+              y = res.v[1], py = res.v[2],
+              prime = orb.Nperiod, T = orb.Tperiod,
+              trace = tr(get_DT(res.v, orb.Nperiod, prm)),
+              detDT = det(get_DT(res.v, orb.Nperiod, prm)),
+              resnorm = res.resnorm, iters = size(res.history, 2),
+              sec = [Vector(c) for c in eachcol(orb.pMap)],
+              history = res.history,
+              traj_x = [u[1] for u in orb.traj], traj_y = [u[2] for u in orb.traj])
 end
 
 function sweep!(df, seeds, prm; tol_min = 1e-8)
@@ -435,28 +495,8 @@ end
 
 # === Data Types ===
 
-orbit_table() = DataFrame(
-    E = Float64[], n = Int[],
-    seed_y = Float64[], seed_py = Float64[],
-    y = Float64[], py = Float64[],
-    prime = Int[], T = Float64[],
-    trace = Float64[], detDT = Float64[],
-    resnorm = Float64[], iters = Int[],
-    sec = Vector{Vector{Float64}}[],
-    history = Matrix{Float64}[],
-    traj_x = Vector{Float64}[], traj_y=Vector{Float64}[]
-)
-const Row = @NamedTuple begin
-    E::Float64; n::Int
-    seed_y::Float64; seed_py::Float64
-    y::Float64; py::Float64
-    prime::Int; T::Float64
-    trace::Float64; detDT::Float64
-    resnorm::Float64; iters::Int
-    sec::Vector{Vector{Float64}}
-    history::Matrix{Float64}
-    traj_x::Vector{Float64}; traj_y::Vector{Float64}
-end
+orbit_table() = DataFrame(Row[])
+
 
 orbit_table(rows) = DataFrame(filter(!isnothing, rows))
 

@@ -1,7 +1,7 @@
 import Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
 using DynamicalSystems, OrdinaryDiffEq, LinearAlgebra, GLMakie, Random, JSON3, JLD2,
-      NonlinearSolve, ADTypes
+      NonlinearSolve, ADTypes, DataFrames, Dates, ProgressMeter, Printf
 include("../styles/makie_theme.jl")
 set_theme!(QUARTO_THEME)
 include("../models/henon_heiles.jl")
@@ -17,6 +17,18 @@ cfg            = configurations.explore
 param          = [Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.value)]
 dt             = Float64(cfg.dt.value)
 x0             = Float64(cfg.x0.value)
+
+const Row = @NamedTuple begin
+    E::Float64; n::Int
+    seed_y::Float64; seed_py::Float64
+    y::Float64; py::Float64
+    prime::Int; T::Float64
+    trace::Float64; detDT::Float64
+    resnorm::Float64; iters::Int
+    sec::Vector{Vector{Float64}}
+    history::Matrix{Float64}
+    traj_x::Vector{Float64}; traj_y::Vector{Float64}
+end
 
 # --- background section ---
 data = load(data_file, "results")
@@ -79,6 +91,7 @@ function minPeriodicity(v, prm; tol = 1e-8)
             return (;traj=sol.u[1:k], pMap=trace[:,1:i], Nperiod=i, Tperiod=ts[i])
         end
     end
+    @warn "no minimal periodic orbit found!"
     return (;traj=sol.u, pMap=trace, Nperiod=nothing, Tperiod=nothing)
 end
 
@@ -148,6 +161,8 @@ function get_DT(v,n,prm; d=1e-7)
     I+jacobian(v,n,prm, d) 
 end
 
+
+
 function find_orbit(v0, prm;
                     N_max = 100, d = 1e-7, tol = 1e-11, 
                     max_backtrack = 30, dmax = 0.05, verbose = false)
@@ -157,7 +172,7 @@ function find_orbit(v0, prm;
     hist = zeros(2, N_max)
     J    = zeros(2, 2)
 
-    fail(i, rn, msg) = (v = v, DT = nothing, eigen = nothing, converged = false,
+    fail(i, rn, msg) = (v = v, DT = nothing, converged = false,
                         history = hist[:, 1:max(i, 0)], resnorm = rn, comment = msg)
 
     in_section(v, prm.E, prm.p) || return fail(0, Inf, "seed outside energy boundary")
@@ -171,7 +186,7 @@ function find_orbit(v0, prm;
         if rn < tol
             jacobian!(J, v, prm.n, prm, d)          # evaluated AT the root
             DT = J + I
-            return (v = v, DT = DT, eigen = eigvals(DT), converged = true,
+            return (v = v, DT = DT, converged = true,
                     history = hist[:, 1:i], resnorm = rn,
                     comment = "|r| = $rn  det(DT) = $(det(DT))")
         end
@@ -203,7 +218,7 @@ end
 function solve_orbit(v0, prm; tol = 1e-11, maxiters = 300)
     v = collect(float.(v0))
     in_section(v, prm.E, prm.p) ||
-        return (v = v, DT = nothing, eigen = nothing, converged = false,
+        return (v = v, DT = nothing, converged = false,
                 resnorm = Inf, history = zeros(2,0), comment = "seed outside boundary")
 
     prob = NonlinearProblem((w, q) -> Fres_safe(w, q.n, q), v, prm)    
@@ -211,12 +226,12 @@ function solve_orbit(v0, prm; tol = 1e-11, maxiters = 300)
                  abstol = tol, maxiters)
 
     ok = SciMLBase.successful_retcode(sol) && in_section(sol.u, prm.E, prm.p)
-    ok || return (v = sol.u, DT = nothing, eigen = nothing, converged = false,
+    ok || return (v = sol.u, DT = nothing, converged = false,
                   resnorm = norm(sol.resid), history = zeros(2,0),
                   comment = "$(sol.retcode)")
 
     DT = jacobian!(zeros(2,2), sol.u, prm.n, prm, 1e-7) + I
-    return (v = sol.u, DT = DT, eigen = eigvals(DT), converged = true,
+    return (v = sol.u, DT = DT, converged = true,
             resnorm = norm(sol.resid), history = zeros(2,0),
             comment = "$(sol.retcode)  det(DT) = $(det(DT))")
 end
@@ -230,6 +245,24 @@ function sym_py(sec; tol = 1e-6)
     return true
 end
 
+S(v)=[v[1], -v[2]]
+
+
+"rotate momenta and position by an angle θ"
+function rotate_space(v, θ)
+    c, s = cos(θ) ,sin(θ)
+    return [c -s; s c]*v 
+end
+
+function rotate_state(u, θ)
+    c, s = cos(θ) ,sin(θ)
+    return [c*u[1]-s*u[2], s*u[1]+c*u[2], c*u[3]-s*u[4], s*u[3]+c*u[4]]
+end
+
+
+orbit_table() = DataFrame(Row[])
+
+
 function Orbit_finder(v0, n, E;
     psection_bg = (y_all, py_all), tmax=20_000.0)
     println("=== NEW SIM ===")
@@ -242,25 +275,25 @@ function Orbit_finder(v0, n, E;
     prm = (; integ = bff.integ, y = bff.y, py = bff.py, ts = bff.ts,
                  E, p, n, tmax)
 
-    res     =   find_orbit(v0, prm)
-    orbit   =   minPeriodicity(res.v, prm; tol = 1e-8)
-    u, sec, prime, t_sec    =  (orbit.traj, orbit.pMap, orbit.Nperiod, orbit.Tperiod)   # (;traj=sol.u, pMap=trace, Nperiod=nothing, Tperiod=nothing)
-    
-
+    res0     =   find_orbit(v0, prm; tol=1e-14,)
+    res      =   solve_orbit(res0.v, prm; tol=2e-11)
+    orbit   =   minPeriodicity(res.v, prm; tol = 1e-6)
+    u, sec, prime, t_sec    =  (orbit.traj, orbit.pMap, orbit.Nperiod, orbit.Tperiod)  
     # res.DT =DT
     if res.converged 
         DT=get_DT(res.v, prime, prm)
-
+ # (;traj=sol.u, pMap=trace, Nperiod=nothing, Tperiod=nothing)
+    
+        prime === nothing && error("no return within tol at $(res.v) — raise tmax or loosen tol")
         println("found periodic orbit... symmetrizing...")
         if !sym_py(sec) # this returns the symmetrized section map
-            sym_v = copy(res.v) .* [1,-1]
-            sym_orbit= minPeriodicity(sym_v, prm; tol=1e-8)
+            sym_v = S(res.v)# rotate_space(res.v, pi/3) # .* [1,-1]
+            sym_res = solve_orbit(sym_v, prm; tol=1e-14)
+            sym_orbit= minPeriodicity(sym_res.v, prm; tol=1e-8)
             sym_u, sym_sec, sym_prime, sym_t_sec = (sym_orbit.traj, sym_orbit.pMap, sym_orbit.Nperiod, sym_orbit.Tperiod)
+            tra_u, tra_sec = map(ui -> rotate_state(ui,-2*pi/3),u), sec .* [1,-1]
             DT_sym=get_DT(sym_v, prime, prm)
-            println("symmertrized orbit!")
-            println("comparing DT_sym:\n$(DT_sym)")
-            println("DT:\n$(res.DT)")
-            println("sym prime: $sym_prime")
+
         else
             sym_orbit = orbit
             sym_u, sym_sec = u, sec
@@ -276,14 +309,15 @@ function Orbit_finder(v0, n, E;
         println("   v         = $(res.v)")
         println("  |r|        = $(res.resnorm)")
         println("  det(DT)    = $(det(DT)), ($(det(DT_sym)))     (must be ~1)")
-        println("  eigen      = $(res.eigen), ($(eigvals(DT_sym)))")
+        println("  eigen      = $(eigvals(DT)),\n($(eigvals(DT_sym)))")
         println("  type       = $(KIND_LABEL[kind])   ($(KIND_LABEL[kind_sym]))")
-        println("iterations n = $prime")
-        println("orbit period = $t_sec")
+        println("iterations n = $prime, ($sym_prime)")
+        println("orbit period = $t_sec, ($sym_t_sec)")
     else
-        println("did not converge: $(orbit.comment)")
+        println("did not converge: $(res.comment)")
+        return (; res, orbit, prm)
     end
-    
+        
 
 
     println("=== plotting ===")
@@ -301,9 +335,11 @@ function Orbit_finder(v0, n, E;
     ax_conf  = Axis(fig_conf[1, 1], xlabel = "x", ylabel = "y",
                 title = "config space, n = $prime", aspect = DataAspect())
     contour!(ax_conf, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
-    lines!(ax_conf, x, y, color = C_PURPLE, label = "orbit, T=$t_sec")
-    lines!(ax_conf, [x[1] for x in sym_u], [x[2] for x in sym_u], color = C_PURPLE, label = "sym. orbit, T=$t_sec")
+    lines!(ax_conf, x, y, color = C_ORANGE, label = "orbit, T=$t_sec")
+    sym_py(sec) || lines!(ax_conf, [x[1] for x in sym_u], [x[2] for x in sym_u], color = C_TEAL, linestyle = :dash, label = "sym. orbit, T=$sym_t_sec")
+    sym_py(sec) || lines!(ax_conf, [x[1] for x in tra_u], [x[2] for x in tra_u], color = C_CREAM, linestyle = :dot, label = "orbit (rotated), T=$t_sec")
 
+    Legend(fig_conf[2, 1], ax_conf; orientation = :horizontal, framevisible = false)
     display(GLMakie.Screen(), fig_conf)
 
     fig_p = Figure(size=(1400,900))
@@ -316,17 +352,24 @@ function Orbit_finder(v0, n, E;
     scatter!(ax_p, ybg, pybg, color = (:salmon, 0.5), markersize = 1.5)
     scatter!(ax_p, boundary, color = C_CREAM, markersize = 4)
     scatterlines!(ax_p, res.history[1, :], res.history[2, :],
-                    color = C_GOLD, markersize = 6, label = "Newton path")
-    scatter!(ax_p, sec[1,:], sec[2,:], color= C_GREEN ,markersize = 5, label="periodic orbit")  # 
-    scatter!(ax_p, sym_sec[1,:], sym_sec[2,:], color= C_TEAL ,markersize = 5, label="sym. periodic orbit") 
+                    color = C_GOLD, markersize = 8, label = "Newton path")
+    scatter!(ax_p, sec[1,:], sec[2,:], color= C_ORANGE ,markersize = 8, label="found orbit")  # 
+    sym_py(sec) || scatter!(ax_p, sym_sec[1,:], sym_sec[2,:], color= C_TEAL, markersize = 8, label="sym. periodic orbit") 
+    sym_py(sec) || scatter!(ax_p, tra_sec[1,:], tra_sec[2,:], color= C_CREAM, markersize = 8, label="tra. periodic orbit") 
+
+    Legend(fig_p[2, 1], ax_p; orientation = :horizontal, framevisible = false)
     display(GLMakie.Screen(), fig_p)
     return (;pfig=(fig_p,ax_p), cfig=(fig_conf,ax_conf), res=res, orbit=orbit, sym_orbit, prm=prm)
 end
 
 
+
 E0 = 0.1127
-n  = 6
-y0 = -0.012
-py0= 0.05
+n  = 4
+y0 = 0.2
+py0= 0.1
 v0 = [y0,py0]
 sol=Orbit_finder(v0, n, E0)
+
+save(joinpath(FIG_DIR, "phsp-two-orbits-by-symmery-rotation-E$(E0)3.png"), sol.pfig[1]; px_per_unit = 2)
+save(joinpath(FIG_DIR, "conf-two-orbits-by-symmery-rotation-E$(E0)3.png"), sol.cfig[1]; px_per_unit = 2)
