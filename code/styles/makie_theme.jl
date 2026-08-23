@@ -10,6 +10,7 @@ const C_GREEN  = "#9ed07a"
 const C_BLUE   = "#7ea8e8"
 const C_PINK   = "#e88ec5"
 const C_GREY   = "#b6bcc6"
+# const COLOR_SCHEME   = [C_RED, C_PURPLE, C_CREAM, C_TEAL, C_ORANGE, C_GOLD,C_GREEN, C_BLUE,C_PINK,C_GREY]
 
 const QUARTO_THEME = Theme(
     backgroundcolor = BG,

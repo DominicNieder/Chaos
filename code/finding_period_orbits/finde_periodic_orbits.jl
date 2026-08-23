@@ -18,6 +18,18 @@ param          = [Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.valu
 dt             = Float64(cfg.dt.value)
 x0             = Float64(cfg.x0.value)
 
+struct SectionParams{IF, ID, P}
+    integ_fast  :: IF
+    yf :: Vector{Float64};  pyf :: Vector{Float64};  tsf :: Vector{Float64}
+    integ_dense :: ID
+    yd :: Vector{Float64};  pyd :: Vector{Float64};  tsd :: Vector{Float64}
+    nmax_fast  :: Base.RefValue{Int}
+    nmax_dense :: Base.RefValue{Int}
+    E    :: Float64
+    p    :: P
+    tmax :: Float64
+end
+
 const Row = @NamedTuple begin
     E::Float64; n::Int
     seed_y::Float64; seed_py::Float64
@@ -25,9 +37,11 @@ const Row = @NamedTuple begin
     prime::Int; T::Float64
     trace::Float64; detDT::Float64
     resnorm::Float64; iters::Int
-    sec::Vector{Vector{Float64}}
-    history::Matrix{Float64}
+    sec_y::Vector{Float64}; sec_py::Vector{Float64}
+    history_y::Vector{Float64}; history_py::Vector{Float64}
     traj_x::Vector{Float64}; traj_y::Vector{Float64}
+    class::String; index::Int
+    id::Int
 end
 
 # --- background section ---
@@ -65,66 +79,97 @@ function lift(v, E, p; sgn = +1)
     return [EPS_OFF, v[1], sgn * sqrt(a), v[2]]
 end
 
+"return sol, pMap, tsd"
 function section_trj(v, prm)
     u0 = lift(v, prm.E, prm.p)
     u0 === nothing && error("point $v outside energy boundary")
 
-    y_sec, py_sec, t_sec = Float64[], Float64[], Float64[]
-    cb = HenonHeiles.section_callback(y_sec, py_sec, section_t=t_sec)
-    prob = ODEProblem(HenonHeiles.equations!, u0, (0.0, 2000.0), prm.p)
-    sol = solve(prob, Vern9(), 
-        abstol=1e-14, 
-        reltol=1e-14, 
-        saveat=dt, 
-        callback=cb
-        )
 
-    return  sol, permutedims([y_sec py_sec]), t_sec
+    empty!(prm.yd); empty!(prm.pyd); empty!(prm.tsd)
+    reinit!(prm.integ_dense, u0)
+    solve!(prm.integ_dense)
+    sol = prm.integ_dense.sol
+    return sol, permutedims([prm.yd prm.pyd]), copy(prm.tsd)
 end
 
-"returns named tuple (;traj, pMap, Nperiod, Tperiod)"
-function minPeriodicity(v, prm; tol = 1e-8)
+"Find the smallest k with |T^k v - v| < tol.
+
+returns named tuple (;traj, pMap, Nperiod, Tperiod)"
+function minPeriodicity(v, prm; tol = 1e-8, search = 40)
+    prm.nmax_dense[] = search          # dense integrator only — no interference with T
+
     sol, trace, ts = section_trj(v, prm)
+
     for i in axes(trace, 2)
-        if (norm(v .- trace[:, i]) < tol)   
+        if norm(v .- trace[:, i]) < tol
             k = searchsortedfirst(sol.t, ts[i])
-            return (;traj=sol.u[1:k], pMap=trace[:,1:i], Nperiod=i, Tperiod=ts[i])
+            return (; traj = sol.u[1:k], pMap = trace[:, 1:i],
+                      Nperiod = i, Tperiod = ts[i])
         end
     end
-    @warn "no minimal periodic orbit found!"
-    return (;traj=sol.u, pMap=trace, Nperiod=nothing, Tperiod=nothing)
+
+    @warn "no closure within $search crossings" v tol
+    return (; traj = sol.u, pMap = trace, Nperiod = nothing, Tperiod = nothing)
 end
 
-function creat_integrator(p; tmax = 2000.0, nmax = Ref(1))
-    y, py, ts = Float64[], Float64[], Float64[]
+# function creat_integrator(p; tmax = 2000.0, nmax = Ref(1))
+#     y, py, ts = Float64[], Float64[], Float64[]
+#     condition(u, t, integ) = u[1]
+#     affect!(integ) = begin
+#         push!(y, integ.u[2]); push!(py, integ.u[4]); push!(ts, integ.t)
+#         length(y) ≥ nmax[] && terminate!(integ)
+#     end
+#     cb = ContinuousCallback(condition, affect!, nothing; abstol = 1e-13)
+#     prob = ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p)
+#     integ = init(prob, Vern9(); abstol = 1e-14, reltol = 1e-14,
+#                  save_everystep = false, save_start = false, callback = cb)
+#     return (; integ, y, py, ts, nmax)
+# end
+
+"Two integrators, one for finding periodic orbit (integ_fast) and another (integ_dense) of for finding minimal periodicity and finding the trajectories of the orbit.
+
+return (; integ_fast, yf, pyf, tsf, integ_dense, yd, pyd, tsd)"
+function create_integrators(p; tmax = 20_000.0, nmax = Ref(1))
+    # fast: for residual evaluations, no trajectory saved
+    yf, pyf, tsf = Float64[], Float64[], Float64[]
     condition(u, t, integ) = u[1]
     affect!(integ) = begin
-        push!(y, integ.u[2]); push!(py, integ.u[4]); push!(ts, integ.t)
-        length(y) ≥ nmax[] && terminate!(integ)
+        push!(yf, integ.u[2]); push!(pyf, integ.u[4]); push!(tsf, integ.t)
+        length(yf) ≥ nmax[] && terminate!(integ)
     end
-    cb = ContinuousCallback(condition, affect!, nothing; abstol = 1e-13)
-    prob = ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p)
-    integ = init(prob, Vern9(); abstol = 1e-14, reltol = 1e-14,
-                 save_everystep = false, save_start = false, callback = cb)
-    return (; integ, y, py, ts, nmax)
+    cbf = ContinuousCallback(condition, affect!, nothing; abstol = 1e-13)
+    integ_fast = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
+                      Vern9(); abstol = 1e-14, reltol = 1e-14,
+                      save_everystep = false, save_start = false, callback = cbf)
+
+    # dense: for plotting
+    yd, pyd, tsd = Float64[], Float64[], Float64[]
+    affect2!(integ) = begin
+        push!(yd, integ.u[2]); push!(pyd, integ.u[4]); push!(tsd, integ.t)
+        length(yd) ≥ nmax[] && terminate!(integ)
+    end
+    cbd = ContinuousCallback(condition, affect2!, nothing; abstol = 1e-13)
+    integ_dense = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
+                       Vern9(); abstol = 1e-14, reltol = 1e-14,
+                       saveat = dt, callback = cbd)
+
+    return (; integ_fast, yf, pyf, tsf, integ_dense, yd, pyd, tsd)
 end
 
-"prm= (; integ, n, E, p)"
-function T(v,n, prm)
+
+""
+function T(v, n::Int, prm::SectionParams)
     u0 = lift(v, prm.E, prm.p)
+    u0 === nothing && @warn "point $v outside energy boundary"
+    
+    n > prm.nmax_fast[] && (prm.nmax_fast[] = n)     # raise the cap if this n needs more
 
-    u0 === nothing && error("point $v outside energy boundary")
-    # init problem 
-    empty!(prm.y); empty!(prm.py); empty!(prm.ts)
-    reinit!(prm.integ, u0)
-    solve!(prm.integ)
-
-    length(prm.y) < n &&
-        error("only $(length(prm.y)) crossings in t < $(prm.tmax) (need $(n))")
-
-    return [prm.y[n], prm.py[n]]
+    empty!(prm.yf); empty!(prm.pyf); empty!(prm.tsf)
+    reinit!(prm.integ_fast, u0)
+    solve!(prm.integ_fast)
+    length(prm.yf) < n && error("only $(length(prm.yf)) crossings (need $n)")
+    return [prm.yf[n], prm.pyf[n]]
 end
-
 
 Fres(v, n, prm) = T(v, n, prm) - v
 
@@ -146,7 +191,7 @@ function jacobian!(J, v, n, prm, d)
         elseif okm
             J[:, j] = (Fres(v, n, prm) .- Fres(vm, n, prm)) ./ d      # backward
         else
-            error("both probes outside boundary at $v — step too large or v on the edge")
+            @warn ("both probes outside boundary at $v — step too large or v on the edge")
         end
     end
     return J
@@ -163,7 +208,7 @@ end
 
 
 
-function find_orbit(v0, prm;
+function find_orbit(v0, n, prm;
                     N_max = 100, d = 1e-7, tol = 1e-11, 
                     max_backtrack = 30, dmax = 0.05, verbose = false)
 
@@ -177,21 +222,21 @@ function find_orbit(v0, prm;
 
     in_section(v, prm.E, prm.p) || return fail(0, Inf, "seed outside energy boundary")
 
-    r  = Fres(v, prm.n, prm)
+    r  = Fres(v, n, prm)
     rn = norm(r)
 
     for i in 1:N_max
         hist[:, i] = v
 
         if rn < tol
-            jacobian!(J, v, prm.n, prm, d)          # evaluated AT the root
+            jacobian!(J, v, n, prm, d)          # evaluated AT the root
             DT = J + I
             return (v = v, DT = DT, converged = true,
                     history = hist[:, 1:i], resnorm = rn,
                     comment = "|r| = $rn  det(DT) = $(det(DT))")
         end
 
-        jacobian!(J, v, prm.n, prm, d)
+        jacobian!(J, v, n, prm, d)
         κ = cond(J)
         κ > 1e12 && @warn "ill-conditioned Jacobian" iterate=i cond=κ
 
@@ -202,7 +247,7 @@ function find_orbit(v0, prm;
         λ, accepted = 1.0, false              # MUST start false
         for _ in 1:max_backtrack
             vnew = v .- λ .* step
-            rnew = in_section(vnew, prm.E, prm.p) ? Fres(vnew, prm.n, prm) : nothing
+            rnew = in_section(vnew, prm.E, prm.p) ? Fres(vnew, n, prm) : nothing
             if rnew !== nothing && norm(rnew) < rn
                 v, r, rn, accepted = vnew, rnew, norm(rnew), true
                 break
@@ -230,14 +275,14 @@ function solve_orbit(v0, prm; tol = 1e-11, maxiters = 300)
                   resnorm = norm(sol.resid), history = zeros(2,0),
                   comment = "$(sol.retcode)")
 
-    DT = jacobian!(zeros(2,2), sol.u, prm.n, prm, 1e-7) + I
+    DT = jacobian!(zeros(2,2), sol.u, n, prm, 1e-7) + I
     return (v = sol.u, DT = DT, converged = true,
             resnorm = norm(sol.resid), history = zeros(2,0),
             comment = "$(sol.retcode)  det(DT) = $(det(DT))")
 end
 
 "Is the orbit invariant under S(y,py) = (y,-py)?"
-function sym_py(sec; tol = 1e-6)
+function is_sym(sec; tol = 1e-6)
     Ssec = sec .* [1.0, -1.0]
     for j in axes(Ssec, 2)
         any(i -> norm(Ssec[:, j] - sec[:, i]) < tol, axes(sec, 2)) || return false
@@ -245,7 +290,9 @@ function sym_py(sec; tol = 1e-6)
     return true
 end
 
-S(v)=[v[1], -v[2]]
+P_py(v) = [v[1], -v[2]]
+P_pypx(u) = [u[1], u[2], -u[3], -u[4]]
+P_x(u) = [-u[1], u[2], -u[3], u[4]]
 
 
 "rotate momenta and position by an angle θ"
@@ -259,27 +306,61 @@ function rotate_state(u, θ)
     return [c*u[1]-s*u[2], s*u[1]+c*u[2], c*u[3]-s*u[4], s*u[3]+c*u[4]]
 end
 
+function is_rot_sym(sec, E, p; tol = 1e-6)
+    Ssec = rotate_state(lift(sec, E, p))
+    for j in axes(Ssec, 2)
+        any(i -> norm(Ssec[:, j] - sec[:, i]) < tol, axes(sec, 2)) || return false
+    end
+    return true
+end
 
+function rotated_root(v, prm, θ)
+    u_rot = rotate_state(lift(v, prm.E, prm.p), θ)
+    empty!(prm.yd); empty!(prm.pyd); empty!(prm.tsd)
+    reinit!(prm.integ_dense, u_rot)
+    solve!(prm.integ_dense)
+    isempty(prm.yd) && error("rotated state never crossed the section")
+    return [prm.yd[1], prm.pyd[1]]
+end
+
+" 
+E::Float64; n::Int
+seed_y::Float64; seed_py::Float64
+y::Float64; py::Float64
+prime::Int; T::Float64
+trace::Float64; detDT::Float64
+resnorm::Float64; iters::Int
+sec_y::Vector{Float64}; sec_py::Vector{Float64}
+history_y::Vector{Float64}; history_py::Vector{Float64}
+traj_x::Vector{Float64}; traj_y::Vector{Float64}
+"
 orbit_table() = DataFrame(Row[])
 
+"returns a row to the orbit"
+function analyse_seed(v0, n, prm; id=0)::Union{Row,Nothing}
+    res = find_orbit(v0, n, prm)
+    res.converged || return nothing
+    orb = minPeriodicity(res.v, prm; tol = 1e-8)
+    orb.Nperiod === nothing && return nothing
+    DT=get_DT(res.v, orb.Nperiod, prm)
+    trace=tr(DT); detDT=det(DT)
+    index =  kind_index(trace; ε = 1e-6)
+    return (; E = prm.E, n = n, seed_y = v0[1], seed_py = v0[2],
+                     y = res.v[1], py = res.v[2],
+                     prime = orb.Nperiod, T = orb.Tperiod,
+                     trace = trace, detDT = detDT,
+                     resnorm = res.resnorm, iters = size(res.history, 2),
+                     sec_y = orb.pMap[1,:], sec_py=orb.pMap[2,:],
+                     history_y = res.history[1,:], history_py = res.history[2,:],
+                     traj_x = [u[1] for u in orb.traj], traj_y = [u[2] for u in orb.traj],
+                     class = KIND_LABEL[index], index=index, id=id)
+end
 
-function Orbit_finder(v0, n, E;
-    psection_bg = (y_all, py_all), tmax=20_000.0)
-    println("=== NEW SIM ===")
 
 
-    p       =   (1.0, 1.0, 1.0)
-
-    bff     =   creat_integrator(p; tmax=tmax, nmax=Ref(n))
-
-    prm = (; integ = bff.integ, y = bff.y, py = bff.py, ts = bff.ts,
-                 E, p, n, tmax)
-
-    res0     =   find_orbit(v0, prm; tol=1e-14,)
-    res      =   solve_orbit(res0.v, prm; tol=2e-11)
-    orbit   =   minPeriodicity(res.v, prm; tol = 1e-6)
-    u, sec, prime, t_sec    =  (orbit.traj, orbit.pMap, orbit.Nperiod, orbit.Tperiod)  
-    # res.DT =DT
+function Orbit_finder(orbit;
+    psection_bg = (y_all, py_all), tmax=20_000.0, theta=2/3)
+    
     if res.converged 
         DT=get_DT(res.v, prime, prm)
  # (;traj=sol.u, pMap=trace, Nperiod=nothing, Tperiod=nothing)
@@ -288,10 +369,11 @@ function Orbit_finder(v0, n, E;
         println("found periodic orbit... symmetrizing...")
         if !sym_py(sec) # this returns the symmetrized section map
             sym_v = S(res.v)# rotate_space(res.v, pi/3) # .* [1,-1]
-            sym_res = solve_orbit(sym_v, prm; tol=1e-14)
-            sym_orbit= minPeriodicity(sym_res.v, prm; tol=1e-8)
+            # sym_res = solve_orbit(sym_v, prm; tol=1e-14)
+            sym_res = find_orbit(sym_v, prm; tol=1e-14)
+            sym_orbit= minPeriodicity(sym_res.v, prm; tol=1e-6)
             sym_u, sym_sec, sym_prime, sym_t_sec = (sym_orbit.traj, sym_orbit.pMap, sym_orbit.Nperiod, sym_orbit.Tperiod)
-            tra_u, tra_sec = map(ui -> rotate_state(ui,-2*pi/3),u), sec .* [1,-1]
+            tra_u, tra_sec = map(ui -> rotate_state(ui,theta*pi),u), sec .* [1,-1]
             DT_sym=get_DT(sym_v, prime, prm)
 
         else
@@ -337,7 +419,7 @@ function Orbit_finder(v0, n, E;
     contour!(ax_conf, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
     lines!(ax_conf, x, y, color = C_ORANGE, label = "orbit, T=$t_sec")
     sym_py(sec) || lines!(ax_conf, [x[1] for x in sym_u], [x[2] for x in sym_u], color = C_TEAL, linestyle = :dash, label = "sym. orbit, T=$sym_t_sec")
-    sym_py(sec) || lines!(ax_conf, [x[1] for x in tra_u], [x[2] for x in tra_u], color = C_CREAM, linestyle = :dot, label = "orbit (rotated), T=$t_sec")
+    sym_py(sec) || lines!(ax_conf, [x[1] for x in tra_u], [x[2] for x in tra_u], color = C_CREAM, linestyle = :dot, label = "rotated $theta pi, T=$t_sec")
 
     Legend(fig_conf[2, 1], ax_conf; orientation = :horizontal, framevisible = false)
     display(GLMakie.Screen(), fig_conf)
@@ -353,9 +435,9 @@ function Orbit_finder(v0, n, E;
     scatter!(ax_p, boundary, color = C_CREAM, markersize = 4)
     scatterlines!(ax_p, res.history[1, :], res.history[2, :],
                     color = C_GOLD, markersize = 8, label = "Newton path")
-    scatter!(ax_p, sec[1,:], sec[2,:], color= C_ORANGE ,markersize = 8, label="found orbit")  # 
-    sym_py(sec) || scatter!(ax_p, sym_sec[1,:], sym_sec[2,:], color= C_TEAL, markersize = 8, label="sym. periodic orbit") 
-    sym_py(sec) || scatter!(ax_p, tra_sec[1,:], tra_sec[2,:], color= C_CREAM, markersize = 8, label="tra. periodic orbit") 
+    scatter!(ax_p, sec[1,:], sec[2,:], color= C_ORANGE ,markersize = 8, label="found orbit $(KIND_LABEL[kind]))")  # 
+    sym_py(sec) || scatter!(ax_p, sym_sec[1,:], sym_sec[2,:], color= C_TEAL, markersize = 8, label="sym. periodic orbit $(KIND_LABEL[kind_sym])") 
+    sym_py(sec) || scatter!(ax_p, tra_sec[1,:], tra_sec[2,:], color= C_CREAM, markersize = 8, label="rotate by $theta pi $(KIND_LABEL[kind_sym])") 
 
     Legend(fig_p[2, 1], ax_p; orientation = :horizontal, framevisible = false)
     display(GLMakie.Screen(), fig_p)
@@ -364,12 +446,114 @@ end
 
 
 
-E0 = 0.1127
-n  = 4
-y0 = 0.2
-py0= 0.1
-v0 = [y0,py0]
-sol=Orbit_finder(v0, n, E0)
+p       =   (1.0, 1.0, 1.0)
+E0      =   0.1127
+nmax_search = 40
+nmax        =   1
+tmax    =   20_000.0
+y0, py0, c0 =    0.0, 0.2, C_TEAL
+y1, py1, c1 =   -0.35, 0.0, C_ORANGE
+y2, py2, c2 =    0.27, 0.3, C_GREEN
+y3, py3, c3 =    0.3, 0.0, C_PURPLE
+v_init      =   [[y0, py0], [y1, py1], [y2, py2], [y3, py3]] #, 
+color_scheme= [c0, c1, c2, c3]
 
-save(joinpath(FIG_DIR, "phsp-two-orbits-by-symmery-rotation-E$(E0)3.png"), sol.pfig[1]; px_per_unit = 2)
-save(joinpath(FIG_DIR, "conf-two-orbits-by-symmery-rotation-E$(E0)3.png"), sol.cfig[1]; px_per_unit = 2)
+bff = create_integrators(p; nmax=Ref(nmax_search))
+
+prm = SectionParams(bff.integ_fast, bff.yf, bff.pyf, bff.tsf,
+                         bff.integ_dense, bff.yd, bff.pyd, bff.tsd,
+                         Ref(nmax), Ref(nmax_search), E0, p, tmax)
+
+orbits = orbit_table()
+for (i,v0) in enumerate(v_init)
+    orbit = analyse_seed(v0, nmax, prm; id=i)
+    orbit === nothing || push!(orbits, orbit)
+end
+# now I want to see how the symmetry transformations effect my orbits
+
+tasks= ["Rotation_sym1", "Rotation_sym2", "Rotation_sym3"]
+
+
+
+base = collect(eachrow(orbits))
+# for i in 1:2, orb in base
+#     v1 = try
+#         rotated_root([orb.y, orb.py], prm, i*2π/3)
+#     catch e
+#         @warn "rotation failed" seed=(orb.y, orb.py) exception=e
+#         continue
+#     end
+#     @show i*2/3, norm(Fres(v1, orb.prime, prm)), orb.id
+#     new = analyse_seed(v1, 1, prm; id= orb.id)
+#     # new.id=orb.id
+#     new === nothing || push!(orbits, new)
+# end
+
+for orb in base
+    sec = permutedims([orb.sec_y orb.sec_py])     # rebuild the 2 x k matrix
+    is_sym(sec; tol = 1e-6) && continue            # already closed under S — skip
+    v1  = P_py([orb.y, orb.py])
+    new = analyse_seed(v1, orb.prime, prm; id = orb.id)
+    new === nothing || push!(orbits, new)
+end
+
+
+
+
+r      = range(-1.0, 1.0, length=120)
+levels = logrange(5.0*0.009, 6.9*0.089, 7)
+epot   = [HenonHeiles.potential(x,y, param) for x in r, y in r]
+
+fig_conf = Figure(size = (1400, 900))
+ax_conf  = Axis(fig_conf[1, 1], xlabel = "x", ylabel = "y",
+             title = "config space, n = 1", aspect = DataAspect())
+contour!(ax_conf, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
+for (j,o) in enumerate(eachrow(orbits))
+    # j >4 && lines!(ax_conf, o.traj_x, o.traj_y, color = color_scheme[o.id],
+    #        label = "T=$(round(o.T; digits=1)), $(o.class)", linestyle=KIND_LS[o.index])
+    # j==4 && lines!(ax_conf, o.traj_x, o.traj_y, color = color_scheme[o.id],
+    #        label = "T=$(round(o.T; digits=1)), $(o.class)", linestyle=(:dash))
+    lines!(ax_conf, o.traj_x, o.traj_y, color = color_scheme[o.id],
+            label = "T=$(round(o.T; digits=1)), $(o.class)", linestyle=KIND_LS[o.index])
+end #round(x; digits = 3)
+Legend(fig_conf[2, 1], ax_conf; orientation = :horizontal, framevisible = false)
+display(GLMakie.Screen(), fig_conf)
+
+fig_p = Figure(size=(1400,900))
+ax_p = Axis(fig_p[1, 1], xlabel = "y", ylabel = "p_y",
+               title = "section, n = 1, prime = 1")
+    
+
+y_max, py_max = HenonHeiles.section_boundary_ranges(E0, param, 120)
+boundary      = HenonHeiles.section_boundary(y_max, py_max) 
+scatter!(ax_p, y_all, py_all, color = (:grey, 0.5), markersize = 1.5)
+scatter!(ax_p, boundary, color = C_CREAM, markersize = 4)
+# scatterlines!(ax_p, res.history[1, :], res.history[2, :],
+                    # color = C_GOLD, markersize = 8, label = "Newton path")
+j=1
+for (j, o) in enumerate(eachrow(orbits))
+    # j>4 && scatter!(ax_p, o.sec_y, o.sec_py,
+    #          color = color_scheme[o.id], markersize = 12,
+    #          marker = KIND_MS[o.index],
+    #          label = KIND_LABEL[o.index])
+    scatter!(ax_p, o.sec_y, o.sec_py,
+             color = color_scheme[o.id], markersize = 12,
+             marker = KIND_MS[o.index],
+             label = KIND_LABEL[o.index])
+end
+Legend(fig_p[2, 1], ax_p; orientation = :horizontal, framevisible = false)
+display(GLMakie.Screen(), fig_p)
+
+
+
+
+# sol=Orbit_finder(v0, n, E0; theta=2/3)
+
+save(joinpath(FIG_DIR, "phsp-two-orbits-by-Sreflection-AndBase-$(E0)-n$nmax.png"),fig_p; px_per_unit = 2)
+save(joinpath(FIG_DIR, "conf-two-orbits-by-Sreflection-AndBase-$(E0)-n$nmax.png"), fig_conf; px_per_unit = 2)
+
+println("\n")
+for (j,o) in enumerate(eachrow(orbits))
+
+    j <= 4 && println("$j) Base orbit: $(o.id)\n y=$(o.y), py=$(o.py)\n|r|=$(o.resnorm)")
+end
