@@ -2,17 +2,211 @@
 
 #### On period orbits
 - [ ] optimisation, in regard of (1) $H(p,q)=H(-p,q)$, (2) multi-core processing
-- [ ] identifying orbit type, based on the tr
+- [x] identifying orbit type, based on the tr
 - [ ] Mondromody Formulism
-- [ ] write down findings till now 
+- [x] write down findings till now 
+- [ ] proof of concept (1) $H(p,q)=H(-p,q)$
 
 #### Other...
 - [ ] on characterizing periodic orbits: show that $det(A)=1$ for $A$ symplectic
 
+
+
 #### Questions
-- 
+- what dos it mean to be a strobocopic Map $T$?
+
 
 ---
+
+### Finding periodic Orbits
+
+- [ ] describe how the algorythme functions..
+
+The algorithm I use for finding periodic orbits initializes the integrator. Then the periodic orbit gets sought for, after which the actual periodicity is found and the trajectory in configuration space is generated.
+
+``` Julia
+p       =   (1.0, 1.0, 1.0)
+E0      =   0.1127
+nmax_search = 40
+nmax        =   1
+tmax    =   20_000.0
+y0, py0, c0 =    0.0, 0.2, C_TEAL
+y1, py1, c1 =   -0.35, 0.0, C_ORANGE
+y2, py2, c2 =    0.27, 0.3, C_GREEN
+y3, py3, c3 =    0.3, 0.0, C_PURPLE
+v_init      =   [[y0, py0], [y1, py1], [y2, py2], [y3, py3]] #, 
+color_scheme= [c0, c1, c2, c3]
+
+bff = create_integrators(p; nmax=Ref(nmax_search))
+
+prm = SectionParams(bff.integ_fast, bff.yf, bff.pyf, bff.tsf,
+                         bff.integ_dense, bff.yd, bff.pyd, bff.tsd,
+                         Ref(nmax), Ref(nmax_search), E0, p, tmax)
+
+orbits = orbit_table()
+for (i,v0) in enumerate(v_init)
+    orbit = analyse_seed(v0, nmax, prm; id=i)
+    orbit === nothing || push!(orbits, orbit)
+end
+```
+
+With the function creating the integrator for the time evolution $\dot{\x}=\mathbf{f}(\x)$ which in turn defines the poincaré map $T$ by the 'condition(u, t, integ)=u[1]' i.e. $x=0, p_x\geq0$ creates the 'affect!(integ)' of collecting $(y, p_y, t)$, the integration gets terminated if there are more than 'nmax' itersections with poincaré section. This is embedded problem to be solved ('ODEProblem') by the 'ContinuousCallback' function. The integrator gets initialized with the integration method (Runge-Kutter method, $9^{\text{th}}$ order) and can easily be reinitilized for new initial conditions $\x_0$. 
+
+``` Julia
+
+"""
+    Two integrators, one for finding periodic orbit (integ_fast) and another (integ_dense) of for finding minimal periodicity and finding the trajectories of the orbit.
+
+return (; integ_fast, yf, pyf, tsf, integ_dense, yd, pyd, tsd)
+"""
+function create_integrators(p; tmax = 20_000.0, nmax = Ref(1))
+    # fast: for residual evaluations, no trajectory saved
+    yf, pyf, tsf = Float64[], Float64[], Float64[]
+    condition(u, t, integ) = u[1]
+    affect!(integ) = begin
+        push!(yf, integ.u[2]); push!(pyf, integ.u[4]); push!(tsf, integ.t)
+        length(yf) ≥ nmax[] && terminate!(integ)
+    end
+    cbf = ContinuousCallback(condition, affect!, nothing; abstol = 1e-13)
+    integ_fast = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
+                      Vern9(); abstol = 1e-14, reltol = 1e-14,
+                      save_everystep = false, save_start = false, callback = cbf)
+
+    # dense: for plotting
+    yd, pyd, tsd = Float64[], Float64[], Float64[]
+    affect2!(integ) = begin
+        push!(yd, integ.u[2]); push!(pyd, integ.u[4]); push!(tsd, integ.t)
+        length(yd) ≥ nmax[] && terminate!(integ)
+    end
+    cbd = ContinuousCallback(condition, affect2!, nothing; abstol = 1e-13)
+    integ_dense = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
+                       Vern9(); abstol = 1e-14, reltol = 1e-14,
+                       saveat = dt, callback = cbd)
+
+    return (; integ_fast, yf, pyf, tsf, integ_dense, yd, pyd, tsd)
+end
+
+```
+
+The key analysis occurs in 'analyse_seed'. This contains the function that findes the orbit by locating the root (Newtons Method or similar). If this is converged, the root is being checked to find the minimum number of reoccurences of the orbit, (i.e. $n=6$ may find orbits with periods $p=1,2,3$ which will be reffered to as primes of the orbit). Then the orbit gets characterized by analysing the linear approximation of the Hamiltonian flow of the poincaré Map $DT$, which is a $2\times2$–Matrix and characterized by its eigenvalues, hence by the trace of the Matrix $DT$. Due to the symplectic behaviour $det(DT)\overset{!}{=}1$. 
+
+``` Julia
+"returns a row to the orbit"
+function analyse_seed(v0, n, prm; id=0)::Union{Row,Nothing}
+    res =   find_orbit(v0, n, prm)
+    res.converged || return nothing
+    orb =   minPeriodicity(res.v, prm; tol = 1e-8)
+    orb.Nperiod === nothing && return nothing
+    DT=     get_DT(res.v, orb.Nperiod, prm)
+    trace=  tr(DT); detDT=det(DT)
+    index = kind_index(trace; ε = 1e-6)
+    return (; E = prm.E, n = n, seed_y = v0[1], seed_py = v0[2],
+                     y = res.v[1], py = res.v[2],
+                     prime = orb.Nperiod, T = orb.Tperiod,
+                     trace = trace, detDT = detDT,
+                     resnorm = res.resnorm, iters = size(res.history, 2),
+                     sec_y = orb.pMap[1,:], sec_py=orb.pMap[2,:],
+                     history_y = res.history[1,:], history_py = res.history[2,:],
+                     traj_x = [u[1] for u in orb.traj], traj_y = [u[2] for u in orb.traj],
+                     class = KIND_LABEL[index], index=index, id=id)
+end
+```
+
+
+
+---
+
+So I am currently wandering about the rotation, does the rotation work the way I think it does?
+I seem to find examples where it does not work the way I expect, there seems to be a extra reflection around the $x$-axis.
+
+::: {layout-ncol=2}
+![Configuration space.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-symmery-rotation-weird_angles-E0.1127.png)
+
+![Poincaré Map](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-symmery-rotation-weird_angles-E0.1127.png)
+:::
+
+I ran a few other parameters, here
+
+::: {layout-ncol=2}
+![Configuration space.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-symmery-rotation-E0.1127.png)
+
+![Poincaré Map](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-symmery-rotation-E0.1127.png)
+:::
+
+
+::: {layout-ncol=2}
+![Configuration space.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-symmery-rotation-E0.11272.png)
+
+![Poincaré Map](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-symmery-rotation-E0.11272.png)
+:::
+
+::: {layout-ncol=2}
+![Configuration space.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-symmery-rotation-E0.11273.png)
+
+![Poincaré Map](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-symmery-rotation-E0.11273.png)
+:::
+
+I also found an error, because I only reflected the periodic point and tried to 'minPeriodicity', the trajectory which was hypebollic (unstable) turned out not to find the periodic poit, note here, the orbit had periodicity of $n=9$, so an unstable periodic orbit $T^9 \x=\x$, for $\x\in\Sigma$, need a high accuracy to the starting position, to not to diverge. The consequence I take, is that I reflect $S(y,p_y)=(y,-p_y)$ and then find the periodic orbit 'find_orbit'/'solve_orbit'.
+
+::: {layout-ncol=2}
+![Configuration space.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-symmery-error_no_rerun-E0.1127.png)
+
+![Poincaré Map, we see the trajectory can not lie on a periodic orbit.](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-symmery-error_no_rerun-E0.1127.png)
+:::
+
+---
+
+
+Here I think we can get a full fledged understanding of the effects of rotations of configuration space. We use orbits with periodicity of $n=1$, which corresponds to orbits that return with one poincaré map.
+
+
+---
+
+Here we see the periodic orbits that are initially taken to see the effects of the symmetry transformations. The periodic orbits are found at 
+$$o_i\in \{(0.0,0.237), (-0.354,0.0), (0.276, 0.296), (0.290, 0.0)\}$$
+
+---
+
+::: {layout-ncol=2}
+![Configuration space, of the base selected periodic orbits.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-base-0.1127-n1.png)
+
+![Poincaré Map, we see the trajectory of the base selected periodic orbits.](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-base-0.1127-n1.png)
+:::
+
+---
+
+::: {layout-ncol=2}
+![Configuration space, rotations.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-rotation-noBase-0.1127-n1.png)
+
+![Poincaré Map, rotated states, periodic orbits.](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-rotation-noBase-0.1127-n1.png)
+:::
+
+---
+
+::: {layout-ncol=2}
+![Configuration space, rotations.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-Sreflection-0.1127-n1.png)
+
+![Poincaré Map, rotated states, periodic orbits.](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-Sreflection-0.1127-n1.png)
+:::
+
+---
+
+::: {layout-ncol=2}
+![Configuration space, rotations.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-rotation-AndBase-0.1127-n1.png)
+
+![Poincaré Map, all orbits gained by rotations of states.](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-rotation-AndBase-0.1127-n1.png)
+:::
+
+---
+
+::: {layout-ncol=2}
+![Configuration space, all orbits through one run with reflections.](figures/henon-heiles/periodic-orbits/conf-two-orbits-by-Sreflection-AndBase-0.1127-n1.png)
+
+![Poincaré Map, all orbits obtained through one run, with reflection.](figures/henon-heiles/periodic-orbits/phsp-two-orbits-by-Sreflection-AndBase-0.1127-n1.png)
+:::
+
+
+
 
 
 ### On Poincaré sections
@@ -24,5 +218,8 @@ $$T^n(\x_0)=\x_0$$
 they are fixed points to the diffeomorphism $T^n$. We can linearize $T^n \rightarrow DT^n$ at a given $\x_0$ approximating the diffeomorphism in the small, open area $U\subset\Sigma$ around $\x_0\in U$. This gives the possibility to identify a stability matrix $M$ to $DT^n$ which is associated to the *flow* $M=\exp(At)$ or $A\ln(M)\,|t=1$ at $t=1$; The eigenvalues $\lambda$ of M correspond through $\gamma=\ln(\lambda)$ to the eigenvalues of $A$ as well as shared eigenvectors.
 
 With the Hartman - Grobman theorem, we know that the linear approximation $DT^n$ around the stable points $\x_e$ are topologically equivalent to the $T$ around $\x_e$ itself
+
+
+
 
 ### Lost Wonderers Thoughts:

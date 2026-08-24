@@ -52,9 +52,11 @@ for d in data
     append!(py_all, d.sec_py)
 end
 
-const EPS_OFF = 1e-9
+const EPS_OFF = -1e-15
 
-"returns -> 1 := elliptic, 2 := hyperbollic (stable), 3 := hyperbollic (unstable), 4 := parabolic,"
+"""
+returns -> 1 := elliptic, 2 := hyperbollic (stable), 3 := hyperbollic (unstable), 4 := parabolic
+"""
 function kind_index(τ; ε = 1e-6)
     abs(abs(τ) - 2) < ε && return 4   # parabolic
     abs(τ) < 2 && return 1            # elliptic
@@ -68,7 +70,6 @@ const KIND_LABEL = ["elliptic", "hyperbolic", "inverse hyperbolic", "parabolic"]
 
 px2(y, py, E, p)    = 2p[2] * (E - HenonHeiles.potential(0.0, y, p)) - py^2
 in_section(v, E, p) = px2(v[1], v[2], E, p) > 0
-
 
 
 
@@ -92,9 +93,11 @@ function section_trj(v, prm)
     return sol, permutedims([prm.yd prm.pyd]), copy(prm.tsd)
 end
 
-"Find the smallest k with |T^k v - v| < tol.
+"""
+    Find the smallest k with |T^k v - v| < tol.
 
-returns named tuple (;traj, pMap, Nperiod, Tperiod)"
+returns named tuple (;traj, pMap, Nperiod, Tperiod)
+"""
 function minPeriodicity(v, prm; tol = 1e-8, search = 40)
     prm.nmax_dense[] = search          # dense integrator only — no interference with T
 
@@ -112,23 +115,11 @@ function minPeriodicity(v, prm; tol = 1e-8, search = 40)
     return (; traj = sol.u, pMap = trace, Nperiod = nothing, Tperiod = nothing)
 end
 
-# function creat_integrator(p; tmax = 2000.0, nmax = Ref(1))
-#     y, py, ts = Float64[], Float64[], Float64[]
-#     condition(u, t, integ) = u[1]
-#     affect!(integ) = begin
-#         push!(y, integ.u[2]); push!(py, integ.u[4]); push!(ts, integ.t)
-#         length(y) ≥ nmax[] && terminate!(integ)
-#     end
-#     cb = ContinuousCallback(condition, affect!, nothing; abstol = 1e-13)
-#     prob = ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p)
-#     integ = init(prob, Vern9(); abstol = 1e-14, reltol = 1e-14,
-#                  save_everystep = false, save_start = false, callback = cb)
-#     return (; integ, y, py, ts, nmax)
-# end
+"""
+    Two integrators, one for finding periodic orbit (integ_fast) and another (integ_dense) of for finding minimal periodicity and finding the trajectories of the orbit.
 
-"Two integrators, one for finding periodic orbit (integ_fast) and another (integ_dense) of for finding minimal periodicity and finding the trajectories of the orbit.
-
-return (; integ_fast, yf, pyf, tsf, integ_dense, yd, pyd, tsd)"
+return (; integ_fast, yf, pyf, tsf, integ_dense, yd, pyd, tsd)
+"""
 function create_integrators(p; tmax = 20_000.0, nmax = Ref(1))
     # fast: for residual evaluations, no trajectory saved
     yf, pyf, tsf = Float64[], Float64[], Float64[]
@@ -354,94 +345,6 @@ function analyse_seed(v0, n, prm; id=0)::Union{Row,Nothing}
                      history_y = res.history[1,:], history_py = res.history[2,:],
                      traj_x = [u[1] for u in orb.traj], traj_y = [u[2] for u in orb.traj],
                      class = KIND_LABEL[index], index=index, id=id)
-end
-
-
-
-function Orbit_finder(orbit;
-    psection_bg = (y_all, py_all), tmax=20_000.0, theta=2/3)
-    
-    if res.converged 
-        DT=get_DT(res.v, prime, prm)
- # (;traj=sol.u, pMap=trace, Nperiod=nothing, Tperiod=nothing)
-    
-        prime === nothing && error("no return within tol at $(res.v) — raise tmax or loosen tol")
-        println("found periodic orbit... symmetrizing...")
-        if !sym_py(sec) # this returns the symmetrized section map
-            sym_v = S(res.v)# rotate_space(res.v, pi/3) # .* [1,-1]
-            # sym_res = solve_orbit(sym_v, prm; tol=1e-14)
-            sym_res = find_orbit(sym_v, prm; tol=1e-14)
-            sym_orbit= minPeriodicity(sym_res.v, prm; tol=1e-6)
-            sym_u, sym_sec, sym_prime, sym_t_sec = (sym_orbit.traj, sym_orbit.pMap, sym_orbit.Nperiod, sym_orbit.Tperiod)
-            tra_u, tra_sec = map(ui -> rotate_state(ui,theta*pi),u), sec .* [1,-1]
-            DT_sym=get_DT(sym_v, prime, prm)
-
-        else
-            sym_orbit = orbit
-            sym_u, sym_sec = u, sec
-            DT_sym = DT
-            println("orbit is S-invariant: S(sec) = sec")
-        end
-
-        τ = tr(DT)
-        t_sym=tr(DT_sym)
-        kind = kind_index(τ; ε = 1e-6)         
-        kind_sym=kind_index(t_sym; ε = 1e-6)
-        println("CONVERGED")   
-        println("   v         = $(res.v)")
-        println("  |r|        = $(res.resnorm)")
-        println("  det(DT)    = $(det(DT)), ($(det(DT_sym)))     (must be ~1)")
-        println("  eigen      = $(eigvals(DT)),\n($(eigvals(DT_sym)))")
-        println("  type       = $(KIND_LABEL[kind])   ($(KIND_LABEL[kind_sym]))")
-        println("iterations n = $prime, ($sym_prime)")
-        println("orbit period = $t_sec, ($sym_t_sec)")
-    else
-        println("did not converge: $(res.comment)")
-        return (; res, orbit, prm)
-    end
-        
-
-
-    println("=== plotting ===")
-
-    
-    x = [x[1] for x in u]
-    y = [x[2] for x in u]
-
-    # trajectory config space
-    r      = range(-1.0, 1.0, length=120)
-    levels = logrange(5.0*0.009, 6.9*0.089, 7)
-    epot   = [HenonHeiles.potential(x,y, param) for x in r, y in r]
-
-    fig_conf = Figure(size = (1400, 900))
-    ax_conf  = Axis(fig_conf[1, 1], xlabel = "x", ylabel = "y",
-                title = "config space, n = $prime", aspect = DataAspect())
-    contour!(ax_conf, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
-    lines!(ax_conf, x, y, color = C_ORANGE, label = "orbit, T=$t_sec")
-    sym_py(sec) || lines!(ax_conf, [x[1] for x in sym_u], [x[2] for x in sym_u], color = C_TEAL, linestyle = :dash, label = "sym. orbit, T=$sym_t_sec")
-    sym_py(sec) || lines!(ax_conf, [x[1] for x in tra_u], [x[2] for x in tra_u], color = C_CREAM, linestyle = :dot, label = "rotated $theta pi, T=$t_sec")
-
-    Legend(fig_conf[2, 1], ax_conf; orientation = :horizontal, framevisible = false)
-    display(GLMakie.Screen(), fig_conf)
-
-    fig_p = Figure(size=(1400,900))
-    ax_p = Axis(fig_p[1, 1], xlabel = "y", ylabel = "p_y",
-               title = "section, n = $n, prime = $(prime)")
-    
-    ybg, pybg = psection_bg
-    y_max, py_max = HenonHeiles.section_boundary_ranges(E0, param, 120)
-    boundary      = HenonHeiles.section_boundary(y_max, py_max) 
-    scatter!(ax_p, ybg, pybg, color = (:salmon, 0.5), markersize = 1.5)
-    scatter!(ax_p, boundary, color = C_CREAM, markersize = 4)
-    scatterlines!(ax_p, res.history[1, :], res.history[2, :],
-                    color = C_GOLD, markersize = 8, label = "Newton path")
-    scatter!(ax_p, sec[1,:], sec[2,:], color= C_ORANGE ,markersize = 8, label="found orbit $(KIND_LABEL[kind]))")  # 
-    sym_py(sec) || scatter!(ax_p, sym_sec[1,:], sym_sec[2,:], color= C_TEAL, markersize = 8, label="sym. periodic orbit $(KIND_LABEL[kind_sym])") 
-    sym_py(sec) || scatter!(ax_p, tra_sec[1,:], tra_sec[2,:], color= C_CREAM, markersize = 8, label="rotate by $theta pi $(KIND_LABEL[kind_sym])") 
-
-    Legend(fig_p[2, 1], ax_p; orientation = :horizontal, framevisible = false)
-    display(GLMakie.Screen(), fig_p)
-    return (;pfig=(fig_p,ax_p), cfig=(fig_conf,ax_conf), res=res, orbit=orbit, sym_orbit, prm=prm)
 end
 
 

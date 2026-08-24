@@ -79,17 +79,11 @@ function section_trj(v, prm)
     u0 = lift(v, prm.E, prm.p)
     u0 === nothing && error("point $v outside energy boundary")
 
-    y_sec, py_sec, t_sec = Float64[], Float64[], Float64[]
-    cb = HenonHeiles.section_callback(y_sec, py_sec, section_t=t_sec)
-    prob = ODEProblem(HenonHeiles.equations!, u0, (0.0, 2000.0), prm.p)
-    sol = solve(prob, Vern9(), 
-        abstol=1e-14, 
-        reltol=1e-14, 
-        saveat=dt, 
-        callback=cb
-        )
+    empty!(prm.yd); empty!(prm.pyd); empty!(prm.tsd)
+    reinit!(prm.integ_dense, u0)
+    solve!(prm.integ_dense)
 
-    return  sol, permutedims([y_sec py_sec]), t_sec
+    return prm.integ_dense.sol.u, permutedims([prm.yd prm.pyd]), prm.tsd
 end
 
 "returns named tuple (;traj, pMap, Nperiod, Tperiod)"
@@ -319,18 +313,6 @@ function sweep!(df, seeds, prm; tol_min = 1e-8)
                    traj_x = [u[1] for u in orb.traj],
                    traj_y = [u[2] for u in orb.traj])
                    )
-        # add the symmetric orbit, if needed
-        sym_py(orb.pMap) && push!(df, (E = prm.E, n = prm.n,
-                   seed_y = v0[1], seed_py = v0[2],
-                   y = res.v[1], py = -res.v[2],
-                   prime = orb.Nperiod, T = orb.Tperiod,
-                   trace = tr(res.DT), detDT = det(res.DT),
-                   resnorm = res.resnorm, iters = size(res.history, 2),
-                   sec = [Vector(c) .* [1.0,-1.0] for c in eachcol(orb.pMap)],
-                   history = res.history,
-                   traj_x = reverse([u[1] for u in orb.traj]),
-                   traj_y = reverse([u[2] for u in orb.traj]))
-                   )
     end
     df
 end
@@ -344,7 +326,7 @@ function run_sweep(Es, ns, p; tmax = 5000.0, ny = 5, npy = 5)
         prm = (; integ = bff.integ, y = bff.y, py = bff.py, ts = bff.ts,
                  E, p, n, tmax)
         seeds = section_grid(E, p; ny, npy)
-        before = nrow(df)
+        before = nrow(df)  
         secs = @elapsed sweep!(df, seeds, prm)
         push!(timing, (E, n, length(seeds), nrow(df) - before, secs))
     end
