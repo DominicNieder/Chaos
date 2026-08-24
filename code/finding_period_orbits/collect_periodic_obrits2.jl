@@ -7,9 +7,13 @@ set_theme!(QUARTO_THEME)
 include("../models/henon_heiles.jl")
 using .HenonHeiles
 
+BLAS.set_num_threads(1)          # your linear algebra is 2x2; BLAS threads only compete
+
 const CONFIG_DIR = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
 const DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/simulation/simn-y256-py0/")
 const FIG_DIR    = joinpath(@__DIR__, "../../figures/henon-heiles/periodic-orbits/")
+const SAVE_DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/periodic-orbits/")
+
 data_file        = joinpath(DATA_DIR, "E0.1127-T10000.0-py0.0-n256.jld2")
 
 configurations = JSON3.read(read(CONFIG_DIR, String))
@@ -18,6 +22,9 @@ param          = [Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.valu
 dt             = Float64(cfg.dt.value)
 x0             = Float64(cfg.x0.value)
 
+const RGRID  = range(-1.0, 1.0, length = 240)
+const EPOT   = [HenonHeiles.potential(x, y, param) for x in RGRID, y in RGRID]
+const LEVELS = collect(logrange(5.0*0.009, 6.9*0.089, 7))
 
 struct SectionParams{IF, ID, P}
     integ_fast  :: IF
@@ -70,12 +77,12 @@ orbit_table() = DataFrame(Row[])
 
 
 # --- background section ---
-data = load(data_file, "results")
-y_all, py_all = Float32[], Float32[]
-for d in data
-    append!(y_all,  d.sec_y)
-    append!(py_all, d.sec_py)
-end
+# data = load(data_file, "results")
+# y_all, py_all = Float32[], Float32[]
+# for d in data
+#     append!(y_all,  d.sec_y)
+#     append!(py_all, d.sec_py)
+# end
 
 const EPS_OFF = 1e-15
 
@@ -427,21 +434,50 @@ function sweep!(df, seeds, n, prm; tol = 1e-11, verbose = false)
 end
 
 
-function run_sweep(Es, ns, p; tmax = 5000.0, ny = 5, npy = 5)
-    df = orbit_table()
+"""
+Sweep all periods 1:nmax at one energy. Serial by construction: the n loop
+shares a df so that `already_found` can reject rediscoveries, and low-n orbits
+must be catalogued before high-n so the divisor filter has something to match.
+"""
+function sweep_energy(E, ns, p; tmax = 5000.0, ny = 5, npy = 5,
+                      ndense = 40, symmetrise = true)
+    prm    = SectionParams(E, p; tmax, nfast = 1, ndense)
+    seeds  = section_grid(E, p; ny, npy)
+    df     = orbit_table()
     timing = DataFrame(E = Float64[], n = Int[], nseeds = Int[],
                        found = Int[], secs = Float64[])
-    for E in Es, n in ns
-        bff = create_integrators(p; tmax, nmax = Ref(n))
-        prm = (; integ = bff.integ, y = bff.y, py = bff.py, ts = bff.ts,
-                 E, p, n, tmax)
-        seeds = section_grid(E, p; ny, npy)
-        before = nrow(df)  
-        secs = @elapsed sweep!(df, seeds, prm)
+
+    for n in ns
+        before = nrow(df)
+        secs   = @elapsed sweep!(df, seeds, n, prm)
         push!(timing, (E, n, length(seeds), nrow(df) - before, secs))
     end
-    (; df, timing)
+
+    symmetrise && symmetrise!(df, prm; verify = false)
+    return (; df, timing)
 end
+
+"""
+Run `sweep_energy` across energies on all available threads.
+
+One SectionParams per task, created inside the task -- never shared, because
+the integrators and their callback buffers are mutable state.
+"""
+function run_sweep_mt(Es, ns, p; tmax = 5000.0, ny = 5, npy = 5,
+                      ndense = 40, symmetrise = true)
+    println("running sweep, parallel computation")
+    tasks = map(Es) do E
+        Threads.@spawn sweep_energy(E, ns, p; tmax, ny, npy, ndense, symmetrise)
+    end
+    results = fetch.(tasks)
+
+    df     = reduce(vcat, r.df     for r in results)
+    timing = reduce(vcat, r.timing for r in results)
+    sort!(df, [:E, :prime, :T])
+    return (; df, timing)
+end
+
+
 
 
 "cleans the data to contain no repetitions"
@@ -792,41 +828,162 @@ function plot_orbits(df, prm;
     return (; fig, ax1, ax2, alphas, info)
 end
  
+function plot_period(orbits, k; E = 0.1127, bg = nothing, cmap = :managua,
+                     show_newton = false, save_fig = false,
+                     save_dir = FIG_DIR, show = true)
+    sub_E = filter(:E => ==(E), orbits)
+    sub_n = filter(:prime => ==(k), sub_E)
+    nrow(sub_n) == 0 && return nothing
+    cols = resample_cmap(cmap, max(nrow(sub_n), 2))
+
+    # --- configuration space ---
+    fc = Figure(size = (1400, 900))
+    axc = Axis(fc[1, 1], xlabel = "x", ylabel = "y", aspect = DataAspect(),
+               title = "config space — prime = $k, $(nrow(sub_n)) orbits, E = $E")
+    contour!(axc, RGRID, RGRID, EPOT; levels = LEVELS,
+             colormap = :hsv, linewidth = 0.6)
+    for (i, row) in enumerate(eachrow(sub_n))
+        j = kind_index(row.trace)
+        lines!(axc, row.traj_x, row.traj_y;
+           color = cols[i], linewidth = 1.2, linestyle = KIND_LS[j])
+    end
+    Legend(fc[2, 1],
+       [LineElement(linestyle = s, color = C_CREAM) for s in KIND_LS],
+       KIND_LABEL; orientation = :horizontal, framevisible = false)
+
+    lo, hi = extrema(sub_n.T)
+    hi ≈ lo && (hi = lo + max(1e-9, abs(lo)*1e-6))
+    Colorbar(fc[1, 2]; limits = (lo, hi), colormap = cmap, label = "T")
+
+    # --- section ---
+    fp = Figure(size = (1400, 900))
+    axp = Axis(fp[1, 1], xlabel = "y", ylabel = "pᵧ",
+               title = "section — prime = $k")
+    if bg != nothing
+        scatter!(axp, bg...; color = C_RED, markersize = 1.5)
+    end
+    yb, pb = HenonHeiles.section_boundary_ranges(E, param, 200)
+    scatter!(axp, HenonHeiles.section_boundary(yb, pb);
+             color = C_CREAM, markersize = 3)
+    for (i, row) in enumerate(eachrow(sub_n))
+        show_newton && lines!(axp, row.history[1, :], row.history[2, :];
+                              color = (C_GOLD, 0.4), linewidth = 0.8)
+        j = kind_index(row.trace)
+        scatter!(axp, first.(row.sec), last.(row.sec);
+                 color = cols[i], markersize = 9, strokewidth = 0.5, marker = KIND_MS[j])
+    end
+    Legend(fp[2, 1],
+       [MarkerElement(marker = m, color =C_CREAM) for m in KIND_MS],
+       KIND_LABEL; orientation = :horizontal, framevisible = false)
+       
+    if save_fig
+        mkpath(save_dir)
+        tag = tag = "E$(lpad(round(E, digits=4), 6, '0'))_p$(lpad(k, 2, '0'))"
+        save(joinpath(save_dir, "config_$tag.png"), fc; px_per_unit = 2)
+        save(joinpath(save_dir, "section_$tag.png"), fp; px_per_unit = 2)
+    end
+    show && (display(GLMakie.Screen(), fc); display(GLMakie.Screen(), fp))
+    (; fc, axc, fp, axp, n = nrow(sub_n))
+
+end
+
+function plot_section_all(orbits, E; bg = nothing, ks = nothing,
+                          cmap = :managua, label = true,
+                          save_fig = false, save_dir = FIG_DIR, show = true)
+    sub = filter(row -> row.E ≈ E, orbits)
+    nrow(sub) == 0 && return nothing
+    ks = something(ks, sort(unique(sub.prime)))
+    sub = filter(row -> row.prime in ks, sub)
+    cols = resample_cmap(cmap, max(length(ks), 2))
+    cidx = Dict(k => i for (i, k) in enumerate(ks))
+
+    fp = Figure(size = (1400, 900))
+    axp = Axis(fp[1, 1], xlabel = "y", ylabel = "pᵧ",
+               title = "section — E = $(round(E, digits=4)), $(nrow(sub)) orbits")
+
+    bg !== nothing && scatter!(axp, bg...; color = C_RED, markersize = 1.5)
+    yb, pb = HenonHeiles.section_boundary_ranges(E, param, 200)
+    scatter!(axp, HenonHeiles.section_boundary(yb, pb); color = C_CREAM, markersize = 3)
+
+    for row in eachrow(sub)
+        c = cols[cidx[row.prime]]
+        j = kind_index(row.trace)
+        ys, pys = first.(row.sec), last.(row.sec)
+        scatter!(axp, ys, pys; color = c, marker = KIND_MS[j],
+                 markersize = 11, strokewidth = 0.5, strokecolor = :black)
+        if label
+            text!(axp, ys, pys; text = fill(string(row.prime), length(ys)),
+                  color = c, fontsize = 11, align = (:left, :bottom),
+                  offset = (6, 4))
+        end
+    end
+
+    Legend(fp[2, 1],
+           [MarkerElement(marker = m, color = C_CREAM) for m in KIND_MS],
+           KIND_LABEL; orientation = :horizontal, framevisible = false)
+    Colorbar(fp[1, 2]; limits = (minimum(ks) - 0.5, maximum(ks) + 0.5),
+             colormap = cgrad(cmap, length(ks); categorical = true),
+             ticks = ks, label = "prime period")
+
+    if save_fig
+        mkpath(save_dir)
+        save(joinpath(save_dir, @sprintf("sectionall_E%06.4f.png", E)), fp; px_per_unit = 2)
+    end
+    show && display(GLMakie.Screen(), fp)
+    (; fp, axp, n = nrow(sub))
+end
 
 
 
 p            = (1.0, 1.0, 1.0)
 E0           = 0.1127
 nmax         = 6              # highest period to search (2D Newton degrades past ~6)
-nmax_search  = 8              # crossings the dense integrator may take
-tmax         = 20_000.0
-ny, npy      = 10, 5
- 
-prm    = SectionParams(E0, p; tmax, nfast = 1, ndense = nmax_search)
-seeds  = section_grid(E0, p; ny, npy)
-orbits = orbit_table()
- 
-println("seeds: $(length(seeds))   periods: 1:$nmax")
-for n in 1:nmax
-    sweep!(orbits, seeds, n, prm)
-end
+nmax_search  = 10              # crossings the dense integrator may take
 
+Es           = collect(logrange(0.16,0.0001, length=Int(16*10))) 
+tmax         = 5_000.0
+ny, npy      = 8, 5
+ 
+orbit_table()
+
+res = run_sweep_mt(Es, 1:nmax, p; tmax = 10_000.0, ny = ny, npy = npy, ndense=nmax_search)
+
+
+orbits = res.df
+timing = res.timing
+
+jldsave(joinpath(SAVE_DATA_DIR, "orbits_E$(Es[1])-$(Es[end])_160.jld2");
+        orbits, timing, newton_tol = 1e-11, ode_abstol = 1e-14)
 
 # f = joinpath(SAVE_DATA_DIR, "orbits_E0.01-0.1127_20260816-0742.jld2")   
 # orbits = dedup_all(orbits)
 
+gb_orb_E = groupby(orbits, :E)
+
+for orb_E in gb_orb_E
+    e=orb_E.E
+    save_name  = "$e-no-sym.png"
+    plot_section_all(orbits,e;
+    save_fig=true, save_dir=SAVE_DATA_DIR)
+
+end
+for E in Es, k in 1:nmax
+    save_name  = "E$E-k$k-no-sym.png"
+
+    plot_period(orbits, k; E, save_fig = true, save_dir=joinpath(FIG_DIR,"20260816-0742/"), show = false)
+end
 symmetrise!(orbits, prm; tol = 1e-6, verify = true)
 
 
 # orbits = dedup_all(orbits)
 
 
-o = plot_orbits(orbits, prm;
-                     seeds     = nothing,
-                     bg        = (y_all, py_all),
-                     cmap      = :viridis,
-                     label_ids = true,
-                     click_tol = 0.02)
-o.alphas[3][] = 0.1                                  # hide orbit 3
-foreach(a -> a[] = 1.0, o.alphas)                     # show all
-display(o[1])
+# o = plot_orbits(orbits, prm;
+#                      seeds     = nothing,
+#                      bg        = (y_all, py_all),
+#                      cmap      = :viridis,
+#                      label_ids = true,
+#                      click_tol = 0.02)
+# o.alphas[3][] = 0.1                                  # hide orbit 3
+# foreach(a -> a[] = 1.0, o.alphas)                     # show all
+# display(o[1])
