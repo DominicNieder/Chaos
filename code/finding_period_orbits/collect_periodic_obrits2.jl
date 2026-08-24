@@ -53,6 +53,21 @@ const Row = @NamedTuple begin
     id::Int; origin::String
 end
  
+""" 
+    E::Float64; n::Int
+    seed_y::Float64; seed_py::Float64
+    y::Float64; py::Float64
+    prime::Int; T::Float64
+    trace::Float64; detDT::Float64
+    resnorm::Float64; iters::Int
+    sec_y::Vector{Float64}; sec_py::Vector{Float64}
+    history_y::Vector{Float64}; history_py::Vector{Float64}
+    traj_x::Vector{Float64}; traj_y::Vector{Float64}
+    class::String; index::Int
+    id::Int; origin::String
+"""
+orbit_table() = DataFrame(Row[])
+
 
 # --- background section ---
 data = load(data_file, "results")
@@ -97,7 +112,6 @@ end
 function section_trj(v, prm)
     u0 = lift(v, prm.E, prm.p)
     u0 === nothing && error("point $v outside energy boundary")
-
 
     empty!(prm.yd); empty!(prm.pyd); empty!(prm.tsd)
     reinit!(prm.integ_dense, u0)
@@ -304,6 +318,7 @@ end
 
 "True if v coincides with ANY section point of an already-catalogued orbit."
 function already_found(df, v, prime; tol = 1e-6)
+    v === nothing && return false
     for o in eachrow(df)
         o.prime == prime || continue
         any(i -> norm([o.sec_y[i], o.sec_py[i]] .- v) < tol, eachindex(o.sec_y)) &&
@@ -323,8 +338,6 @@ function is_sym(sec; tol = 1e-6)
 end
 
 P_py(v) = [v[1], -v[2]]
-P_pypx(u) = [u[1], u[2], -u[3], -u[4]]
-P_x(u) = [-u[1], u[2], -u[3], u[4]]
 
 
 "rotate momenta and position by an angle θ"
@@ -338,50 +351,37 @@ function rotate_state(u, θ)
     return [c*u[1]-s*u[2], s*u[1]+c*u[2], c*u[3]-s*u[4], s*u[3]+c*u[4]]
 end
 
-function is_rot_sym(sec, E, p; tol = 1e-6)
-    Ssec = rotate_state(lift(sec, E, p))
+function is_rot_sym(sec, E, p, θ; tol = 1e-6)
+    Ssec = rotate_state(lift(sec, E, p),θ)
     for j in axes(Ssec, 2)
         any(i -> norm(Ssec[:, j] - sec[:, i]) < tol, axes(sec, 2)) || return false
     end
     return true
 end
 
-function rotated_root(v, prm, θ)
-    u_rot = rotate_state(lift(v, prm.E, prm.p), θ)
-    empty!(prm.yd); empty!(prm.pyd); empty!(prm.tsd)
-    reinit!(prm.integ_dense, u_rot)
-    solve!(prm.integ_dense)
-    isempty(prm.yd) && error("rotated state never crossed the section")
-    return [prm.yd[1], prm.pyd[1]]
-end
 
-function report(df)
-    println("="^78)
-    @printf("%3s %5s %6s %9s %9s %11s %11s  %-20s %s\n",
-            "id", "n", "prime", "y", "py", "T", "tr(DT)", "class", "origin")
-    println("-"^78)
-    for o in eachrow(df)
-        @printf("%3d %5d %6d %9.5f %9.5f %11.4f %11.4f  %-20s %s\n",
-                o.id, o.n, o.prime, o.y, o.py, o.T, o.trace, o.class, o.origin)
+function rotated_root(v, prm, θ; search = 8, margin = 1e-8)
+    u0 = lift(v, prm.E, prm.p)
+    u0 === nothing && return nothing
+
+    old = prm.nmax_dense[]
+    prm.nmax_dense[] = search          # a few crossings, so we can be choosy
+    try
+        empty!(prm.yd); empty!(prm.pyd); empty!(prm.tsd)
+        reinit!(prm.integ_dense, rotate_state(u0, θ))
+        solve!(prm.integ_dense)
+        for i in eachindex(prm.yd)
+            w = [prm.yd[i], prm.pyd[i]]
+            px2(w[1], w[2], prm.E, prm.p) > margin && return w
+        end
+        return nothing                 # all crossings degenerate
+    finally
+        prm.nmax_dense[] = old
     end
-    println("="^78)
-    bad = filter(o -> abs(o.detDT - 1) > 1e-4, eachrow(df))
-    isempty(bad) || @warn "rows with det(DT) far from 1 -- check the FD step" ids = [o.id for o in bad]
 end
 
 
-" 
-E::Float64; n::Int
-seed_y::Float64; seed_py::Float64
-y::Float64; py::Float64
-prime::Int; T::Float64
-trace::Float64; detDT::Float64
-resnorm::Float64; iters::Int
-sec_y::Vector{Float64}; sec_py::Vector{Float64}
-history_y::Vector{Float64}; history_py::Vector{Float64}
-traj_x::Vector{Float64}; traj_y::Vector{Float64}
-"
-orbit_table() = DataFrame(Row[])
+
 
 "returns a row to the orbit"
 function analyse_seed(v0, n, prm; id = 0, origin = "seed",
@@ -514,6 +514,79 @@ function report(df)
     isempty(bad) || @warn "rows with det(DT) far from 1 -- check the FD step" ids = [o.id for o in bad]
 end
  
+
+sec_matrix(o) = permutedims([o.sec_y o.sec_py])
+ 
+"True if v coincides with ANY section point of an already-catalogued orbit."
+function already_found(df, v, prime; tol = 1e-6)
+    for o in eachrow(df)
+        o.prime == prime || continue
+        any(i -> norm([o.sec_y[i], o.sec_py[i]] .- v) < tol, eachindex(o.sec_y)) &&
+            return true
+    end
+    return false
+end
+
+"Residual norm, or NaN if v is not numerically inside the section."
+function residual_norm(v, n, prm)
+    in_section(v, prm.E, prm.p) || return NaN
+    try
+        return norm(Fres(v, n, prm))
+    catch
+        return NaN
+    end
+end
+ 
+"""
+Extend the catalogue using the symmetry group -- no Newton, one integration each.
+ 
+S costs nothing at all; each C_3 rotation costs a single flow to the section.
+Both are orders of magnitude cheaper than a fresh solve.
+"""
+function symmetrise!(df, prm; tol = 1e-6, verify = true)
+    base = collect(eachrow(df))
+    nid  = isempty(df) ? 0 : maximum(df.id)
+ 
+    for o in base
+        # --- time reversal: free ---
+        if !is_sym(sec_matrix(o); tol)
+            v1 = P_py([o.y, o.py])
+            if !already_found(df, v1, o.prime; tol)
+                verify && @printf("  S      id=%d  |F(v)| = %.2e\n",
+                                  o.id, norm(Fres(v1, o.prime, prm)))
+                new = analyse_seed(v1, o.prime, prm; id = nid + 1, origin = "S(id$(o.id))")
+                if new !== nothing
+                    nid += 1
+                    push!(df, merge(new, (; id = nid)))
+                end
+            end
+        end
+ 
+        # --- C_3 rotations: one integration each ---
+        for k in 1:2
+            v1 = try
+                rotated_root([o.y, o.py], prm, k * 2π / 3)
+            catch e
+                @warn "rotation failed" id = o.id k exception = e
+                continue
+            end
+            v1 === nothing && continue          # <-- must precede already_found
+            already_found(df, v1, o.prime; tol) && continue
+            verify && @printf("  C3^%d   id=%d  |F(v)| = %.2e\n",
+                              k, o.id, residual_norm(v1, o.prime, prm))
+            new = analyse_seed(v1, o.prime, prm;
+                               id = nid + 1, origin = "C3^$k(id$(o.id))")
+            if new !== nothing
+                nid += 1
+                push!(df, merge(new, (; id = nid)))
+            end
+        end
+    end
+    return df
+end
+
+
+
 # =====================================================================
 #  Plotting
 # =====================================================================
@@ -565,50 +638,161 @@ function plot_section(df, prm; seeds = nothing, title = "surface of section")
     return fig, ax
 end
 
-function plot_orbits(df, prm; seeds = nothing)
-    fig = Figure(size = (1800, 950))
 
+"""
+    plot_orbits(df, prm; seeds, bg, cmap, label_ids, click_tol)
+ 
+Two linked views of the catalogue: configuration space and the surface of
+section. Returns `(; fig, ax1, ax2, alphas, info)` so the selection can also be
+driven from the REPL, e.g. `o.alphas[3][] = 0.08` or
+`foreach(a -> a[] = 1.0, o.alphas)`.
+ 
+`bg` is the background section scatter as a tuple of vectors, default
+`(y_all, py_all)`; pass `nothing` to omit it.
+"""
+function plot_orbits(df, prm;
+                     seeds     = nothing,
+                     bg        = (y_all, py_all),
+                     cmap      = :viridis,
+                     label_ids = true,
+                     click_tol = 0.02)
+ 
+    isempty(df) && error("nothing to plot: the orbit table is empty")
+ 
+    fig = Figure(size = (1800, 1000))
+ 
     ax1 = Axis(fig[1, 1], xlabel = "x", ylabel = "y",
                title = "configuration space", aspect = DataAspect())
     ax2 = Axis(fig[1, 2], xlabel = "y", ylabel = "p_y",
-               title = "surface of section")
-
-    # --- backdrop ---
-    r    = range(-1.0, 1.0, length = 200)
-    epot = [HenonHeiles.potential(x, y, prm.p) for x in r, y in r]
-    contour!(ax1, r, r, epot; levels = [prm.E], color = C_CREAM, linewidth = 2)
-    scatter!(ax2, y_all, py_all; color = (:grey, 0.4), markersize = 1.5)
-    y_max, py_max = HenonHeiles.section_boundary_ranges(prm.E, prm.p, 120)
+               title = "surface of section  (E = $(round(prm.E; digits = 4)))")
+ 
+    # left-drag is rectangle zoom by default and would swallow our clicks
+    deregister_interaction!(ax1, :rectanglezoom)
+    deregister_interaction!(ax2, :rectanglezoom)
+ 
+    # -----------------------------------------------------------------
+    #  Backdrop
+    # -----------------------------------------------------------------
+ 
+    # config space: potential contours + the zero-velocity curve V = E
+    r      = range(-1.0, 1.0, length = 220)
+    epot   = [HenonHeiles.potential(x, y, prm.p) for x in r, y in r]
+    levels = logrange(5.0 * 0.009, 6.9 * 0.089, 7)
+    contour!(ax1, r, r, epot; levels, colormap = :hsv,
+             labels = true, linewidth = 0.8)
+    contour!(ax1, r, r, epot; levels = [prm.E], color = C_CREAM, linewidth = 2.5)
+ 
+    # section: background orbits from the long simulation
+    if bg !== nothing
+        scatter!(ax2, bg[1], bg[2]; color = (:grey, 0.45), markersize = 1.5)
+    end
+ 
+    # section: energy boundary
+    y_max, py_max = HenonHeiles.section_boundary_ranges(prm.E, prm.p, 200)
     scatter!(ax2, HenonHeiles.section_boundary(y_max, py_max);
              color = C_CREAM, markersize = 3)
+ 
+    # section: the seed grid, if given
     seeds === nothing || scatter!(ax2, first.(seeds), last.(seeds);
                                   color = (:white, 0.25), markersize = 4)
-
-    # --- shared colour scale on T ---
-    Ts   = df.T
-    crange = (minimum(Ts), maximum(Ts))
-    cmap   = :viridis
-
-    for o in eachrow(df)
-        c = get(colorschemes[cmap], (o.T - crange[1]) / (crange[2] - crange[1]))
-        lines!(ax1, o.traj_x, o.traj_y; color = c, linestyle = KIND_LS[o.index],
-               linewidth = 2)
-        scatter!(ax2, o.sec_y, o.sec_py; color = c, marker = KIND_MS[o.index],
-                 markersize = 14, strokewidth = 0.5, strokecolor = :black)
+ 
+    # -----------------------------------------------------------------
+    #  Colour scale on T
+    # -----------------------------------------------------------------
+ 
+    lo, hi = extrema(df.T)
+    hi ≈ lo && (hi = lo + 1)                       # single orbit / degenerate range
+    tcol(T) = get(colorschemes[cmap], (T - lo) / (hi - lo))
+ 
+    # -----------------------------------------------------------------
+    #  Orbits (drawn ONCE, colour bound to an observable alpha)
+    # -----------------------------------------------------------------
+ 
+    alphas = [Observable(1.0) for _ in 1:nrow(df)]
+ 
+    for (j, o) in enumerate(eachrow(df))
+        b   = tcol(o.T)
+        col = @lift(RGBAf(b.r, b.g, b.b, $(alphas[j])))
+ 
+        lines!(ax1, o.traj_x, o.traj_y;
+               color = col, linestyle = KIND_LS[o.index], linewidth = 2)
+ 
+        scatter!(ax2, o.sec_y, o.sec_py;
+                 color = col, marker = KIND_MS[o.index], markersize = 14,
+                 strokewidth = 0.5, strokecolor = (:black, 0.6))
+ 
+        if label_ids
+            i0 = argmax(o.sec_py)                  # topmost point: labels spread out
+            text!(ax2, o.sec_y[i0], o.sec_py[i0];
+                  text = string(o.id), color = col, fontsize = 13,
+                  offset = (8, 8), align = (:left, :bottom))
+        end
     end
-
-    Colorbar(fig[1, 3]; limits = crange, colormap = cmap, label = "period T")
-
-    # --- legend for the categorical channel only ---
+ 
+    Colorbar(fig[1, 3]; limits = (lo, hi), colormap = cmap,
+             label = "orbit period T")
+ 
+    # -----------------------------------------------------------------
+    #  Legend for the categorical channel
+    # -----------------------------------------------------------------
+ 
     kinds = sort(unique(df.index))
-    elems = [[LineElement(linestyle = KIND_LS[k], linewidth = 2),
+    elems = [[LineElement(linestyle = KIND_LS[k], linewidth = 2, color = :white),
               MarkerElement(marker = KIND_MS[k], markersize = 12, color = :white)]
              for k in kinds]
-    Legend(fig[2, 1:3], elems, KIND_LABEL[kinds], "stability";
-           orientation = :horizontal, framevisible = false)
+    Legend(fig[2, 1:2], elems, KIND_LABEL[kinds], "stability class";
+           orientation = :horizontal, framevisible = false, tellheight = true)
+ 
+    # -----------------------------------------------------------------
+    #  Selection
+    # -----------------------------------------------------------------
+ 
+    info = Observable("click a trajectory or a section point to select an orbit")
+    Label(fig[3, 1:3], info; tellwidth = false, fontsize = 15, font = :regular)
+ 
+    Button(fig[2, 3], label = "show all").clicks |> btn ->
+        on(_ -> foreach(a -> a[] = 1.0, alphas), btn)
+ 
+    toggle!(j) = (alphas[j][] = alphas[j][] > 0.5 ? 0.08 : 1.0)
+ 
+    function nearest(pos, xs, ys)
+        best, bestd = 0, Inf
+        for (j, o) in enumerate(eachrow(df))
+            X, Y = xs(o), ys(o)
+            for i in eachindex(X)
+                d = hypot(X[i] - pos[1], Y[i] - pos[2])
+                d < bestd && ((best, bestd) = (j, d))
+            end
+        end
+        return best, bestd
+    end
+    function attach(ax, xs, ys)
+        on(events(ax.scene).mousebutton) do ev
+            (ev.button == Mouse.left && ev.action == Mouse.press) || return
+            pos  = mouseposition(ax.scene)
+            tol  = click_tol * maximum(widths(ax.finallimits[]))  # scales with zoom
+            j, d = nearest(pos, xs, ys)
+            (j > 0 && d < tol) || return
+            toggle!(j)
+            o = df[j, :]
+            info[] = "id $(o.id)   prime = $(o.prime) (n = $(o.n))   " *
+                     "T = $(round(o.T; digits=4))   tr = $(round(o.trace; digits=4))   " *
+                     "$(o.class)   v = ($(round(o.y; digits=6)), $(round(o.py; digits=6)))   " *
+                     "|r| = $(o.resnorm)   det = $(round(o.detDT; digits=6))   [$(o.origin)]"
 
-    return fig, ax1, ax2
+        end
+    end
+
+ 
+    attach(ax1, o -> o.traj_x, o -> o.traj_y)      # click a trajectory
+    attach(ax2, o -> o.sec_y,  o -> o.sec_py)      # click a section point
+ 
+    rowsize!(fig.layout, 1, Relative(0.85))
+ 
+    return (; fig, ax1, ax2, alphas, info)
 end
+ 
+
 
 
 p            = (1.0, 1.0, 1.0)
@@ -629,95 +813,20 @@ end
 
 
 # f = joinpath(SAVE_DATA_DIR, "orbits_E0.01-0.1127_20260816-0742.jld2")   
+# orbits = dedup_all(orbits)
 
-res = dedup_all(orbits)
-
-base = collect(eachrow(res))
-# for i in 1:2, orb in base
-#     v1 = try
-#         rotated_root([orb.y, orb.py], prm, i*2π/3)
-#     catch e
-#         @warn "rotation failed" seed=(orb.y, orb.py) exception=e
-#         continue
-#     end
-#     @show i*2/3, norm(Fres(v1, orb.prime, prm)), orb.id
-#     new = analyse_seed(v1, 1, prm; id= orb.id)
-#     # new.id=orb.id
-#     new === nothing || push!(orbits, new)
-# end
-
-@showprogress dt = 1 desc = "symmertrizing" for orb in base
-    sec = permutedims([orb.sec_y orb.sec_py])     # rebuild the 2 x k matrix
-    is_sym(sec; tol = 1e-6) && continue            # already closed under S — skip
-    v1  = [orb.y, -orb.py]
-    new = analyse_seed(v1, orb.prime, prm; id = orb.id)
-    new === nothing || push!(orbits, new)
-end
-res = dedup_all(orbits)
+symmetrise!(orbits, prm; tol = 1e-6, verify = true)
 
 
-pltorb, axorb = plot_orbits(orbits,prm)
-display(pltorb)
-# cs   = [C_RED, C_PURPLE, C_CREAM, C_TEAL, C_ORANGE, C_GOLD,C_GREEN, C_BLUE,C_PINK,C_GREY]
-
-# r      = range(-1.0, 1.0, length=120)
-# levels = logrange(5.0*0.009, 6.9*0.089, 7)
-# epot   = [HenonHeiles.potential(x,y, param) for x in r, y in r]
-
-# fig_conf = Figure(size = (1400, 900))
-# ax_conf  = Axis(fig_conf[1, 1], xlabel = "x", ylabel = "y",
-#              title = "config space, n = 1", aspect = DataAspect())
-# contour!(ax_conf, r, r, epot, labels=true, levels=levels, colormap=:hsv, colorscale=identity)
-# for (j,o) in enumerate(eachrow(orbits))
-#     # j >4 && lines!(ax_conf, o.traj_x, o.traj_y, color = color_scheme[o.id],
-#     #        label = "T=$(round(o.T; digits=1)), $(o.class)", linestyle=KIND_LS[o.index])
-#     # j==4 && lines!(ax_conf, o.traj_x, o.traj_y, color = color_scheme[o.id],
-#     #        label = "T=$(round(o.T; digits=1)), $(o.class)", linestyle=(:dash))
-#     o.primes==1 && lines!(ax_conf, o.traj_x, o.traj_y, color = cs[o.prime],
-#             label = "T=$(round(o.T; digits=1)), $(o.class)", linestyle=KIND_LS[o.index])
-# end #round(x; digits = 3)
-# Legend(fig_conf[2, 1], ax_conf; orientation = :horizontal, framevisible = false)
-# display(GLMakie.Screen(), fig_conf)
-
-# fig_p = Figure(size=(1400,900))
-# ax_p = Axis(fig_p[1, 1], xlabel = "y", ylabel = "p_y",
-#                title = "section, n = 1, prime = 1")
-    
-
-# y_max, py_max = HenonHeiles.section_boundary_ranges(E0, param, 120)
-# boundary      = HenonHeiles.section_boundary(y_max, py_max) 
-# scatter!(ax_p, y_all, py_all, color = (:grey, 0.5), markersize = 1.5)
-# scatter!(ax_p, boundary, color = C_CREAM, markersize = 4)
-# # scatterlines!(ax_p, res.history[1, :], res.history[2, :],
-#                     # color = C_GOLD, markersize = 8, label = "Newton path")
-# #scatter!(ax_p, first.(initial_search), last.(initial_search), color=C_TEAL, markersize=8)
-# for (j, o) in enumerate(eachrow(orbits))
-#     # j>4 && scatter!(ax_p, o.sec_y, o.sec_py,
-#     #          color = color_scheme[o.id], markersize = 12,
-#     #          marker = KIND_MS[o.index],
-#     #          label = KIND_LABEL[o.index])
-#     scatter!(ax_p, o.sec_y, o.sec_py,
-#              color = cs[o.prime], markersize = 12,
-#              marker = KIND_MS[o.index],
-#              label = KIND_LABEL[o.index])
-# end
-# Legend(fig_p[2, 1],
-#        [MarkerElement(marker = m, color =C_CREAM) for m in KIND_MS],
-#        KIND_LABEL; orientation = :horizontal, framevisible = false)
-# Legend(fig_p[1, 2],
-#        [MarkerElement(marker = m, color =cs) for m in KIND_MS],
-#        KIND_LABEL; orientation = :horizontal, framevisible = false)
-# display(GLMakie.Screen(), fig_p)
+# orbits = dedup_all(orbits)
 
 
-
-
-# sol=Orbit_finder(v0, n, E0; theta=2/3)
-
-# save(joinpath(FIG_DIR, "phsp-two-orbits-by-Sreflection-AndBase-$(E0)-n$nmax.png"),fig_p; px_per_unit = 2)
-# save(joinpath(FIG_DIR, "conf-two-orbits-by-Sreflection-AndBase-$(E0)-n$nmax.png"), fig_conf; px_per_unit = 2)
-
-# println("\n")
-# for (j,o) in enumerate(eachrow(orbits))
-#     j <= 4 && println("$j) Base orbit: $(o.id)\n y=$(o.y), py=$(o.py)\n|r|=$(o.resnorm)")
-# end
+o = plot_orbits(orbits, prm;
+                     seeds     = nothing,
+                     bg        = (y_all, py_all),
+                     cmap      = :viridis,
+                     label_ids = true,
+                     click_tol = 0.02)
+o.alphas[3][] = 0.1                                  # hide orbit 3
+foreach(a -> a[] = 1.0, o.alphas)                     # show all
+display(o[1])
