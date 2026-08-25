@@ -71,13 +71,13 @@ end
 orbit_table() = DataFrame(Row[])
 
 
-# --- background section ---
-data = load(data_file, "results")
-y_all, py_all = Float32[], Float32[]
-for d in data
-    append!(y_all,  d.sec_y)
-    append!(py_all, d.sec_py)
-end
+#  --- background section ---
+# data = load(data_file, "results")
+# y_all, py_all = Float32[], Float32[]
+# for d in data
+#     append!(y_all,  d.sec_y)
+#     append!(py_all, d.sec_py)
+# end
 
 const EPS_OFF = 1e-15
 
@@ -772,7 +772,7 @@ function plot_orbits(df, prm;
         info[] = "all orbits shown"
     end
     on(b_hide.clicks) do _
-        foreach(a -> a[] = 0.01, alphas)
+        foreach(a -> a[] = 0.08, alphas)
         info[] = "all orbits hidden -- click a point to bring one back"
     end
  
@@ -815,7 +815,112 @@ function plot_orbits(df, prm;
     return (; fig, ax1, ax2, alphas, info)
 end
  
+"""
+    section_slider(orbits, p; ...)
 
+Scan the surface of section across energies with a slider. One scatter series
+per stability class, so the number of orbits can vary between energies.
+"""
+function section_slider(orbits, p; cmap = :viridis, markersize = 12)
+    Es = sort(unique(orbits.E))
+    isempty(Es) && error("no energies in the table")
+
+    # ---- precompute: for each energy index, one (points, colours) pair per class
+    npts  = [[Point2f[] for _ in 1:4] for _ in eachindex(Es)]
+    ncols = [[Float64[] for _ in 1:4] for _ in eachindex(Es)]
+    ninfo = Vector{String}(undef, length(Es))
+    bnds  = Vector{Vector{Point2f}}(undef, length(Es))
+
+    Eidx = Dict(E => i for (i, E) in enumerate(Es))
+
+    for r in eachrow(orbits)
+        i, k = Eidx[r.E], r.index
+        for (y, py) in zip(r.sec_y, r.sec_py)
+            push!(npts[i][k],  Point2f(y, py))
+            push!(ncols[i][k], r.T)
+        end
+    end
+
+    for (i, E) in enumerate(Es)
+        yb, pb  = HenonHeiles.section_boundary_ranges(E, p, 200)
+        bnds[i] = HenonHeiles.section_boundary(yb, pb)
+        s = filter(:E => ==(E), orbits)
+        ninfo[i] = "E = $(round(E; digits = 5))   —   $(nrow(s)) orbits, " *
+                   "periods $(isempty(s) ? "-" : "$(minimum(s.prime))–$(maximum(s.prime))")"
+    end
+
+    # ---- plot
+    fig = Figure(size = (1500, 1000))
+    sl  = Slider(fig[2, 1], range = eachindex(Es), startvalue = 1)
+    idx = sl.value
+    title_obs = @lift(ninfo[$idx])
+    ax  = Axis(fig[1, 1], xlabel = "y", ylabel = "p_y", title = title_obs)
+
+
+    scatter!(ax, @lift(bnds[$idx]); color = C_CREAM, markersize = 3)
+
+    crange = extrema(orbits.T)
+    for k in 1:4
+        scatter!(ax, @lift(npts[$idx][k]);
+                 color = @lift(ncols[$idx][k]),
+                 colormap = cmap, colorrange = crange,
+                 marker = KIND_MS[k], markersize,
+                 strokewidth = 0.5, strokecolor = (:black, 0.5),
+                 label = KIND_LABEL[k])
+    end
+
+    
+    # ax = Axis(fig[1, 1], xlabel = "y", ylabel = "p_y", title = title_obs)
+    Colorbar(fig[1, 2]; limits = crange, colormap = cmap, label = "T")
+
+    ymax = maximum(abs, Iterators.flatten(orbits.sec_y))
+    pmax = maximum(abs, Iterators.flatten(orbits.sec_py))
+    limits!(ax, -1.1ymax, 1.1ymax, -1.1pmax, 1.1pmax)
+    limits!(ax, -1.1ymax, 1.1ymax, -1.1pmax, 1.1pmax)
+    Legend(fig[1, 3],
+           [MarkerElement(marker = KIND_MS[k], markersize = 12, color = :white)
+            for k in 1:4],
+           KIND_LABEL, "stability";
+           framevisible = false)
+    on(events(fig.scene).keyboardbutton) do ev
+        ev.action == Keyboard.press || return
+        i = sl.value[]
+        ev.key == Keyboard.right && set_close_to!(sl, min(i + 1, length(Es)))
+        ev.key == Keyboard.left  && set_close_to!(sl, max(i - 1, 1))
+    end
+
+    return (; fig, ax, slider = sl, Es)
+end
+
+
+function config_grid(orbits, prm; ncols = 5, maxpanels = 20)
+    Es = sort(orbits.E)
+    fig = Figure(size = (1600, 1000))
+    sl  = Slider(fig[2, 1], range = eachindex(Es), startvalue = 1)
+    idx = sl.value
+
+    r    = range(-1.0, 1.0, length = 160)
+    epot = [HenonHeiles.potential(x, y, prm.p) for x in r, y in r]
+
+    grid = GridLayout(fig[1, 1])
+    axs  = [Axis(grid[div(i-1, ncols)+1, mod1(i, ncols)];
+                 aspect = DataAspect(), xticksvisible = false,
+                 yticksvisible = false, xticklabelsvisible = false,
+                 yticklabelsvisible = false)
+            for i in 1:maxpanels]
+
+    for (i, a) in enumerate(axs)
+        E = @lift(Es[$idx])
+        contour!(a, r, r, epot; levels = @lift([$E]), color = (C_CREAM, 0.6))
+        pts = @lift begin
+            s = filter(:E => ==($E), orbits)
+            i <= nrow(s) ? Point2f.(s[i, :traj_x], s[i, :traj_y]) : Point2f[]
+        end
+        lines!(a, pts; color = C_ORANGE, linewidth = 1.2)
+        a.title = ""    # set via on(idx) as discussed
+    end
+    return (; fig, slider = sl, axs)
+end
 
 
 p            = (1.0, 1.0, 1.0)
@@ -827,28 +932,31 @@ ny, npy      = 10, 5
  
 prm    = SectionParams(E0, p; tmax, nfast = 1, ndense = nmax_search)
 seeds  = section_grid(E0, p; ny, npy)
-orbits = orbit_table()
+
+
+f = joinpath(SAVE_DATA_DIR, "orbits_E0.16-0.0001_160.jld2")   
+orbits, timing, newton_tol, ode_abstol = load(f, "orbits", "timing", "newton_tol", "ode_abstol")
  
-println("seeds: $(length(seeds))   periods: 1:$nmax")
-for n in 1:nmax
-    sweep!(orbits, seeds, n, prm)
-end
+gb_orb_E = groupby(orbits, :E)
 
 
-f = joinpath(SAVE_DATA_DIR, "orbits_Symm_E0.1127-nmax6.jld2")   
-df = load(f, "orbits")
+new = dedup_all(gb_orb_E[1])
+
+
+s = section_slider(orbits, p)
+display(GLMakie.Screen(), s.fig)
+
+c, cax = plot_config(new, prm; title = "configuration space")
+display(GLMakie.Screen(), c)
 
 
 
-new = dedup_all(orbits)
-
-
-o = plot_orbits(orbits, prm;
-                     seeds     = nothing,
-                     bg        = (y_all, py_all),
-                     cmap      = :viridis,
-                     label_ids = true,
-                     click_tol = 0.02)
-o.alphas[3][] = 0.1                                  # hide orbit 3
-foreach(a -> a[] = 1.0, o.alphas)                     # show all
-display(o[1])
+# o = plot_orbits(orbits, prm;
+#                      seeds     = nothing,
+#                      bg        = (y_all, py_all),
+#                      cmap      = :viridis,
+#                      label_ids = true,
+#                      click_tol = 0.02)
+# o.alphas[3][] = 0.1                                  # hide orbit 3
+# foreach(a -> a[] = 1.0, o.alphas)                     # show all
+# display(o[1])
