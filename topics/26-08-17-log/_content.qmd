@@ -3,7 +3,7 @@
 #### On period orbits
 - [ ] optimisation, in regard of (1) $H(p,q)=H(-p,q)$, (2) multi-core processing
 - [x] identifying orbit type, based on the tr
-- [ ] Mondromody Formulism
+- [ ] Mondromody Formulism (generalized mondromody method @Simonovic2003)
 - [x] write down findings till now 
 - [ ] proof of concept (1) $H(p,q)=H(-p,q)$
 
