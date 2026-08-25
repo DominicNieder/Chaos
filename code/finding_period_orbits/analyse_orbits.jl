@@ -772,7 +772,7 @@ function plot_orbits(df, prm;
         info[] = "all orbits shown"
     end
     on(b_hide.clicks) do _
-        foreach(a -> a[] = 0.08, alphas)
+        foreach(a -> a[] = 0.01, alphas)
         info[] = "all orbits hidden -- click a point to bring one back"
     end
  
@@ -835,10 +835,9 @@ for n in 1:nmax
 end
 
 
-# f = joinpath(SAVE_DATA_DIR, "orbits_E0.01-0.1127_20260816-0742.jld2")   
-# orbits = dedup_all(orbits)
+f = joinpath(SAVE_DATA_DIR, "orbits_Symm_E0.1127-nmax6.jld2")   
+df = load(f, "orbits")
 
-symmetrise!(orbits, prm; tol = 1e-6, verify = true)
 
 
 new = dedup_all(orbits)
