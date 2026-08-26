@@ -978,8 +978,8 @@ p            = (1.0, 1.0, 1.0)
 Emax         = 0.16
 Emin         = 0.0001
 nmax_search  = 10              # crossings the dense integrator may take
-lg_E         = collect(logrange(Emax,0.066, length=Int(160)))
-lin_E        = collect(range(   0.06,Emin,  length=Int(20)))
+lg_E         = collect(range(Emax, 0.066, length=Int(800)))
+lin_E        = collect(range(   0.0658, Emin,  length=Int(20)))
 Es           = vcat(lg_E,   lin_E)
 
 # res_test1 = run_sweep_mt(Es, 1:6, p; tmax = 10_000.0, ny = 2, npy = 2, ndense=nmax_search)
@@ -990,7 +990,7 @@ orbits = res.df
 timing = res.timing
 
 
-jldsave(joinpath(SAVE_DATA_DIR, "following_orbtis_at$(E0)_short.jld2");
+jldsave(joinpath(SAVE_DATA_DIR, "following_orbtis_at$(E0)_long.jld2");
          orbits, timing, newton_tol = 1e-11, ode_abstol = 1e-14)
 
 # f = joinpath(SAVE_DATA_DIR, "orbits_E0.01-0.1127_20260816-0742.jld2")   

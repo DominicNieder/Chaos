@@ -934,13 +934,13 @@ prm    = SectionParams(E0, p; tmax, nfast = 1, ndense = nmax_search)
 seeds  = section_grid(E0, p; ny, npy)
 
 
-f = joinpath(SAVE_DATA_DIR, "orbits_E0.16-0.0001_160.jld2")   
+f = joinpath(SAVE_DATA_DIR, "following_orbtis_at$(E0)_short.jld2")   # orbits_E0.16-0.0001_160.jld2
 orbits, timing, newton_tol, ode_abstol = load(f, "orbits", "timing", "newton_tol", "ode_abstol")
  
-gb_orb_E = groupby(orbits, :E)
+# gb_orb_E = groupby(orbits, :E)
 
 
-new = dedup_all(gb_orb_E[1])
+# new = dedup_all(gb_orb_E[1])
 
 
 s = section_slider(orbits, p)
