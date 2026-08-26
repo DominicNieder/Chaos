@@ -946,8 +946,8 @@ new = dedup_all(gb_orb_E[1])
 s = section_slider(orbits, p)
 display(GLMakie.Screen(), s.fig)
 
-c, cax = plot_config(new, prm; title = "configuration space")
-display(GLMakie.Screen(), c)
+# c, cax = plot_config(new, prm; title = "configuration space")
+# display(GLMakie.Screen(), c)
 
 
 

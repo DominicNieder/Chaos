@@ -84,7 +84,7 @@ orbit_table() = DataFrame(Row[])
 #     append!(py_all, d.sec_py)
 # end
 
-const EPS_OFF = 1e-15
+const EPS_OFF = 1e-9
 
 "returns -> 1 := elliptic, 2 := hyperbollic (stable), 3 := hyperbollic (unstable), 4 := parabolic,"
 function kind_index(τ; ε = 1e-6)
@@ -387,7 +387,108 @@ function rotated_root(v, prm, θ; search = 8, margin = 1e-8)
     end
 end
 
+"""
+Extend the catalogue using the symmetry group -- no Newton, one integration each.
+ 
+S costs nothing at all; each C_3 rotation costs a single flow to the section.
+Both are orders of magnitude cheaper than a fresh solve.
+"""
+function symmetrise!(df, prm; tol = 1e-6, verify = true)
+    base = collect(eachrow(df))
+    nid  = isempty(df) ? 0 : maximum(df.id)
+ 
+    for o in base
+        # --- time reversal: free ---
+        if !is_sym(sec_matrix(o); tol)
+            v1 = P_py([o.y, o.py])
+            if !already_found(df, v1, o.prime; tol)
+                verify && @printf("  S      id=%d  |F(v)| = %.2e\n",
+                                  o.id, norm(Fres(v1, o.prime, prm)))
+                new = analyse_seed(v1, o.prime, prm; id = nid + 1, origin = "S(id$(o.id))")
+                if new !== nothing
+                    nid += 1
+                    push!(df, merge(new, (; id = nid)))
+                end
+            end
+        end
+ 
+        # --- C_3 rotations: one integration each ---
+        for k in 1:2
+            v1 = try
+                rotated_root([o.y, o.py], prm, k * 2π / 3)
+            catch e
+                @warn "rotation failed" id = o.id k exception = e
+                continue
+            end
+            v1 === nothing && continue          # <-- must precede already_found
+            already_found(df, v1, o.prime; tol) && continue
+            verify && @printf("  C3^%d   id=%d  |F(v)| = %.2e\n",
+                              k, o.id, residual_norm(v1, o.prime, prm))
+            new = analyse_seed(v1, o.prime, prm;
+                               id = nid + 1, origin = "C3^$k(id$(o.id))")
+            if new !== nothing
+                nid += 1
+                push!(df, merge(new, (; id = nid)))
+            end
+        end
+    end
+    return df
+end
 
+
+"cleans the data to contain no repetitions"
+function dedup(df; tol = 1e-6)
+    keep = trues(nrow(df))
+    sec = permutedims([df.sec_y df.sec_py])
+    for i in 2:nrow(df)
+        for j in 1:i-1
+            keep[j] || continue
+            
+            if any(norm(a .- b) < tol for a in sec[i], b in sec[j])
+                keep[i] = false
+                break
+            end
+        end
+    end
+    df[keep, :]
+end
+
+"""
+    dedup_all(df; tol = 1e-6)
+
+Collapse repeated detections of the same orbit. Orbits are compared only within
+the same energy — section points at different E can coincide numerically without
+being the same orbit.
+
+Within each energy group, rows are sorted by `prime` so the shortest orbit is
+kept as the representative, and its repeats at higher `n` are dropped.
+`nhits` records how many raw rows collapsed into each entry (a proxy for basin size).
+"""
+function dedup_all(df; tol = 1e-6)
+    isempty(df) && return copy(df)
+    groups = DataFrame[]
+    for g in groupby(df, :E)
+        push!(groups, dedup(sort(DataFrame(g), [:prime, :resnorm]); tol = tol))
+    end
+    sort!(vcat(groups...), [:E, :prime, :T])
+end
+
+"creating the initial points from where the search starts from"
+function section_grid(E, p; ny = 10, npy = 10, margin = 0.03)
+    roots = real.(filter(r -> abs(imag(r)) < 1e-10, HenonHeiles.limit_of_initial_y0(E, p)))
+    sort!(roots)
+    ymin, ymax = roots[1], roots[2]      # the two turning points bounding the well
+    dy = margin * (ymax - ymin)
+    seeds = Vector{Float64}[]
+    for y in range(ymin + dy, ymax - dy, length = ny)
+        pm = pymax(y, E, p)
+        pm <= 0 && continue
+        for s in range(0 + margin, 1 - margin, length = npy)
+            push!(seeds, [y, s * pm])
+        end
+    end
+    seeds
+end
 
 
 "returns a row to the orbit"
@@ -438,11 +539,13 @@ end
 Sweep all periods 1:nmax at one energy. Serial by construction: the n loop
 shares a df so that `already_found` can reject rediscoveries, and low-n orbits
 must be catalogued before high-n so the divisor filter has something to match.
+
+returns (;df, timing)
 """
 function sweep_energy(E, ns, p; tmax = 5000.0, ny = 5, npy = 5,
-                      ndense = 40, symmetrise = true)
+                      ndense = 40, seeds=nothing)
     prm    = SectionParams(E, p; tmax, nfast = 1, ndense)
-    seeds  = section_grid(E, p; ny, npy)
+    seeds === nothing && (seeds = section_grid(E, p; ny, npy))
     df     = orbit_table()
     timing = DataFrame(E = Float64[], n = Int[], nseeds = Int[],
                        found = Int[], secs = Float64[])
@@ -452,8 +555,6 @@ function sweep_energy(E, ns, p; tmax = 5000.0, ny = 5, npy = 5,
         secs   = @elapsed sweep!(df, seeds, n, prm)
         push!(timing, (E, n, length(seeds), nrow(df) - before, secs))
     end
-
-    symmetrise && symmetrise!(df, prm; verify = false)
     return (; df, timing)
 end
 
@@ -465,76 +566,62 @@ the integrators and their callback buffers are mutable state.
 """
 function run_sweep_mt(Es, ns, p; tmax = 5000.0, ny = 5, npy = 5,
                       ndense = 40, symmetrise = true)
-    println("running sweep, parallel computation")
+    println("running sweep, parallel computation\nSymmitrise=$symmetrise\n")
+
     tasks = map(Es) do E
-        Threads.@spawn sweep_energy(E, ns, p; tmax, ny, npy, ndense, symmetrise)
+        Threads.@spawn sweep_energy(E, ns, p; tmax, ny, npy, ndense)
     end
     results = fetch.(tasks)
 
+
     df     = reduce(vcat, r.df     for r in results)
     timing = reduce(vcat, r.timing for r in results)
+
+    prm    = SectionParams(Es[1], p; tmax, nfast = 1, ndense)
+    symmetrise && symmetrise!(df, prm; verify = false)
     sort!(df, [:E, :prime, :T])
     return (; df, timing)
 end
 
 
-
-
-"cleans the data to contain no repetitions"
-function dedup(df; tol = 1e-6)
-    keep = trues(nrow(df))
-    sec = permutedims([df.sec_y df.sec_py])
-    for i in 2:nrow(df)
-        for j in 1:i-1
-            keep[j] || continue
-            
-            if any(norm(a .- b) < tol for a in sec[i], b in sec[j])
-                keep[i] = false
-                break
-            end
-        end
-    end
-    df[keep, :]
-end
-
 """
-    dedup_all(df; tol = 1e-6)
+Trace periodic orbtis for various Energies Es.
+This function starts at a given max(Es). Finds many periodic orbits.
+Then uses the found periodic orbits for the next energy to find it again.
 
-Collapse repeated detections of the same orbit. Orbits are compared only within
-the same energy — section points at different E can coincide numerically without
-being the same orbit.
-
-Within each energy group, rows are sorted by `prime` so the shortest orbit is
-kept as the representative, and its repeats at higher `n` are dropped.
-`nhits` records how many raw rows collapsed into each entry (a proxy for basin size).
+returns (;df, timing)
 """
-function dedup_all(df; tol = 1e-6)
-    isempty(df) && return copy(df)
-    groups = DataFrame[]
-    for g in groupby(df, :E)
-        push!(groups, dedup(sort(DataFrame(g), [:prime, :resnorm]); tol = tol))
+function follow_orbits(Es, ns, p; tmax = 5000.0, ny_init = 15, npy_init = 10,
+                      ndense = 40, symmetrise = true)
+    sort!(Es; rev=true)
+    println("Following periodic orbits from E=$(Es[1]) to $(Es[end])\n")
+
+    initial_sweep   =       sweep_energy(Es[1], ns, p; tmax, ny=ny_init, npy=npy_init, ndense)
+    red_init        =       dedup_all(initial_sweep.df; tol = 1e-6)
+    seeds = [[red_init.y[i], red_init.py[i]] for i in 1:nrow(red_init)]    
+
+    all_df          =       [initial_sweep.df]
+    all_timing      =       [initial_sweep.timing]
+    for e in Es[2:end]
+        r = sweep_energy(e, ns, p; tmax, ndense, seeds)
+        push!(all_df, r.df)
+        push!(all_timing, r.timing)
+        reduced = dedup_all(r.df)
+        seeds = [[reduced.y[i], reduced.py[i]] for i in 1:nrow(reduced)]    
     end
-    sort!(vcat(groups...), [:E, :prime, :T])
+    df = reduce(vcat, all_df)
+    timing =reduce(vcat,all_timing)
+
+    prm    = SectionParams(Es[1], p; tmax, nfast = 1, ndense)
+    symmetrise && symmetrise!(df, prm; verify = false)
+
+    sort!(df, [:E, :prime, :T])
+    sort!(timing, [:E])
+    return (;df, timing)
 end
 
 
 
-"creating the initial points from where the search starts from"
-function section_grid(E, p; ny = 10, npy = 10, margin = 0.03)
-    roots = real.(filter(r -> abs(imag(r)) < 1e-10, HenonHeiles.limit_of_initial_y0(E, p)))
-    sort!(roots)
-    ymin, ymax = roots[1], roots[2]      # the two turning points bounding the well
-    dy = margin * (ymax - ymin)
-    seeds = Vector{Float64}[]
-    for y in range(ymin + dy, ymax - dy, length = ny)
-        pm = pymax(y, E, p)
-        pm <= 0 && continue
-        for s in range(0 + margin, 1 - margin, length = npy)
-            push!(seeds, [y, s * pm])
-        end
-    end
-    seeds
-end
 
 function report(df)
     println("="^78)
@@ -573,54 +660,6 @@ function residual_norm(v, n, prm)
     end
 end
  
-"""
-Extend the catalogue using the symmetry group -- no Newton, one integration each.
- 
-S costs nothing at all; each C_3 rotation costs a single flow to the section.
-Both are orders of magnitude cheaper than a fresh solve.
-"""
-function symmetrise!(df, prm; tol = 1e-6, verify = true)
-    base = collect(eachrow(df))
-    nid  = isempty(df) ? 0 : maximum(df.id)
- 
-    for o in base
-        # --- time reversal: free ---
-        if !is_sym(sec_matrix(o); tol)
-            v1 = P_py([o.y, o.py])
-            if !already_found(df, v1, o.prime; tol)
-                verify && @printf("  S      id=%d  |F(v)| = %.2e\n",
-                                  o.id, norm(Fres(v1, o.prime, prm)))
-                new = analyse_seed(v1, o.prime, prm; id = nid + 1, origin = "S(id$(o.id))")
-                if new !== nothing
-                    nid += 1
-                    push!(df, merge(new, (; id = nid)))
-                end
-            end
-        end
- 
-        # --- C_3 rotations: one integration each ---
-        for k in 1:2
-            v1 = try
-                rotated_root([o.y, o.py], prm, k * 2π / 3)
-            catch e
-                @warn "rotation failed" id = o.id k exception = e
-                continue
-            end
-            v1 === nothing && continue          # <-- must precede already_found
-            already_found(df, v1, o.prime; tol) && continue
-            verify && @printf("  C3^%d   id=%d  |F(v)| = %.2e\n",
-                              k, o.id, residual_norm(v1, o.prime, prm))
-            new = analyse_seed(v1, o.prime, prm;
-                               id = nid + 1, origin = "C3^$k(id$(o.id))")
-            if new !== nothing
-                nid += 1
-                push!(df, merge(new, (; id = nid)))
-            end
-        end
-    end
-    return df
-end
-
 
 
 # =====================================================================
@@ -936,43 +975,42 @@ end
 
 
 p            = (1.0, 1.0, 1.0)
-E0           = 0.1127
-nmax         = 6              # highest period to search (2D Newton degrades past ~6)
+Emax         = 0.16
+Emin         = 0.0001
 nmax_search  = 10              # crossings the dense integrator may take
+lg_E         = collect(logrange(Emax,0.066, length=Int(160)))
+lin_E        = collect(range(   0.06,Emin,  length=Int(20)))
+Es           = vcat(lg_E,   lin_E)
 
-Es           = collect(logrange(0.16,0.0001, length=Int(16*10))) 
-tmax         = 5_000.0
-ny, npy      = 8, 5
- 
-orbit_table()
-
-res = run_sweep_mt(Es, 1:nmax, p; tmax = 10_000.0, ny = ny, npy = npy, ndense=nmax_search)
-
+# res_test1 = run_sweep_mt(Es, 1:6, p; tmax = 10_000.0, ny = 2, npy = 2, ndense=nmax_search)
+# res_test2  = follow_orbits(Es, 1:6, p; tmax = 10_000.0, ny_init = 15, npy_init = 10, ndense=nmax_search)
+res    = follow_orbits(Es, 1:6, p; tmax = 10_000.0, ny_init = 15, npy_init = 10, ndense=nmax_search)
 
 orbits = res.df
 timing = res.timing
 
-jldsave(joinpath(SAVE_DATA_DIR, "orbits_E$(Es[1])-$(Es[end])_160.jld2");
-        orbits, timing, newton_tol = 1e-11, ode_abstol = 1e-14)
+
+jldsave(joinpath(SAVE_DATA_DIR, "following_orbtis_at$(E0)_short.jld2");
+         orbits, timing, newton_tol = 1e-11, ode_abstol = 1e-14)
 
 # f = joinpath(SAVE_DATA_DIR, "orbits_E0.01-0.1127_20260816-0742.jld2")   
 # orbits = dedup_all(orbits)
 
-gb_orb_E = groupby(orbits, :E)
+# gb_orb_E = groupby(orbits, :E)
 
-for orb_E in gb_orb_E
-    e=orb_E.E
-    save_name  = "$e-no-sym.png"
-    plot_section_all(orbits,e;
-    save_fig=true, save_dir=SAVE_DATA_DIR)
+# for orb_E in gb_orb_E
+#     e=orb_E.E
+#     save_name  = "$e-no-sym.png"
+#     plot_section_all(orbits,e;
+#     save_fig=true, save_dir=SAVE_DATA_DIR)
 
-end
-for E in Es, k in 1:nmax
-    save_name  = "E$E-k$k-no-sym.png"
+# end
+# for E in Es, k in 1:nmax
+#     save_name  = "E$E-k$k-no-sym.png"
 
-    plot_period(orbits, k; E, save_fig = true, save_dir=joinpath(FIG_DIR,"20260816-0742/"), show = false)
-end
-symmetrise!(orbits, prm; tol = 1e-6, verify = true)
+#     plot_period(orbits, k; E, save_fig = true, save_dir=joinpath(FIG_DIR,"20260816-0742/"), show = false)
+# end
+# symmetrise!(orbits, prm; tol = 1e-6, verify = true)
 
 
 # orbits = dedup_all(orbits)
