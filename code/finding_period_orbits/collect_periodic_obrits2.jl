@@ -249,26 +249,27 @@ end
 
 
 
+
 function find_orbit(v0, n, prm;
                     N_max = 100, d = 1e-7, tol = 1e-11, 
                     max_backtrack = 30, dmax = 0.05, verbose = false)
-
-
+ 
+ 
     v    = collect(float.(v0))
     hist = zeros(2, N_max)
     J    = zeros(2, 2)
-
+ 
     fail(i, rn, msg) = (v = v, DT = nothing, converged = false,
                         history = hist[:, 1:max(i, 0)], resnorm = rn, comment = msg)
-
+ 
     in_section(v, prm.E, prm.p) || return fail(0, Inf, "seed outside energy boundary")
-
+ 
     r  = Fres(v, n, prm)
     rn = norm(r)
-
+ 
     for i in 1:N_max
         hist[:, i] = v
-
+ 
         if rn < tol
             jacobian!(J, v, n, prm, d)          # evaluated AT the root
             DT = J + I
@@ -276,15 +277,15 @@ function find_orbit(v0, n, prm;
                     history = hist[:, 1:i], resnorm = rn,
                     comment = "|r| = $rn  det(DT) = $(det(DT))")
         end
-
+ 
         jacobian!(J, v, n, prm, d)
         κ = cond(J)
         κ > 1e12 && @warn "ill-conditioned Jacobian" iterate=i cond=κ
-
+ 
         step = J \ r
         sn   = norm(step)
         sn > dmax && (step .*= dmax / sn)     # cap: keeps Newton local
-
+ 
         λ, accepted = 1.0, false              # MUST start false
         for _ in 1:max_backtrack
             vnew = v .- λ .* step
@@ -300,6 +301,7 @@ function find_orbit(v0, n, prm;
     end
     fail(N_max, rn, "$N_max iterations exhausted, |r| = $rn")
 end
+
 
 "NonlinearSolve variant. AutoFiniteDiff is mandatory: the ODE callback rejects Duals."
 function solve_orbit(v0, n, prm; tol = 1e-11, maxiters = 300)
@@ -393,7 +395,7 @@ Extend the catalogue using the symmetry group -- no Newton, one integration each
 S costs nothing at all; each C_3 rotation costs a single flow to the section.
 Both are orders of magnitude cheaper than a fresh solve.
 """
-function symmetrise!(df, prm; tol = 1e-6, verify = true)
+function symmetrise_E!(df, prm; tol = 1e-6, verify = true)
     base = collect(eachrow(df))
     nid  = isempty(df) ? 0 : maximum(df.id)
  
@@ -436,21 +438,37 @@ function symmetrise!(df, prm; tol = 1e-6, verify = true)
 end
 
 
+function symmetrise(df, p; tmax = 10_000.0, ndense = 40, tol = 1e-6)
+    out = orbit_table()
+    for g in groupby(df, :E)
+        sub = DataFrame(g)
+        prm_E = SectionParams(first(sub.E), p; tmax, ndense = ndense)
+        symmetrise_E!(sub, prm_E; verify = false)
+        append!(out, sub)
+    end
+    return out
+end
+
 "cleans the data to contain no repetitions"
 function dedup(df; tol = 1e-6)
     keep = trues(nrow(df))
-    sec = permutedims([df.sec_y df.sec_py])
     for i in 2:nrow(df)
         for j in 1:i-1
             keep[j] || continue
-            
-            if any(norm(a .- b) < tol for a in sec[i], b in sec[j])
+            df.prime[i] == df.prime[j] || continue
+            same = any(eachindex(df.sec_y[i])) do a
+                any(eachindex(df.sec_y[j])) do b
+                    hypot(df.sec_y[i][a] - df.sec_y[j][b],
+                          df.sec_py[i][a] - df.sec_py[j][b]) < tol
+                end
+            end
+            if same
                 keep[i] = false
                 break
             end
         end
     end
-    df[keep, :]
+    return df[keep, :]
 end
 
 """
@@ -543,10 +561,10 @@ must be catalogued before high-n so the divisor filter has something to match.
 returns (;df, timing)
 """
 function sweep_energy(E, ns, p; tmax = 5000.0, ny = 5, npy = 5,
-                      ndense = 40, seeds=nothing)
-    prm    = SectionParams(E, p; tmax, nfast = 1, ndense)
+                      ndense = 40, seeds = nothing, symmetrise = false)
+    prm = SectionParams(E, p; tmax, nfast = 1, ndense)
     seeds === nothing && (seeds = section_grid(E, p; ny, npy))
-    df     = orbit_table()
+    df  = orbit_table()
     timing = DataFrame(E = Float64[], n = Int[], nseeds = Int[],
                        found = Int[], secs = Float64[])
 
@@ -555,6 +573,8 @@ function sweep_energy(E, ns, p; tmax = 5000.0, ny = 5, npy = 5,
         secs   = @elapsed sweep!(df, seeds, n, prm)
         push!(timing, (E, n, length(seeds), nrow(df) - before, secs))
     end
+
+    symmetrise && symmetrise_E!(df, prm; verify = false)
     return (; df, timing)
 end
 
@@ -569,7 +589,7 @@ function run_sweep_mt(Es, ns, p; tmax = 5000.0, ny = 5, npy = 5,
     println("running sweep, parallel computation\nSymmitrise=$symmetrise\n")
 
     tasks = map(Es) do E
-        Threads.@spawn sweep_energy(E, ns, p; tmax, ny, npy, ndense)
+        Threads.@spawn sweep_energy(E, ns, p; tmax, ny, npy, ndense,symmetrise=symmetrise)
     end
     results = fetch.(tasks)
 
@@ -577,8 +597,7 @@ function run_sweep_mt(Es, ns, p; tmax = 5000.0, ny = 5, npy = 5,
     df     = reduce(vcat, r.df     for r in results)
     timing = reduce(vcat, r.timing for r in results)
 
-    prm    = SectionParams(Es[1], p; tmax, nfast = 1, ndense)
-    symmetrise && symmetrise!(df, prm; verify = false)
+
     sort!(df, [:E, :prime, :T])
     return (; df, timing)
 end
@@ -596,14 +615,14 @@ function follow_orbits(Es, ns, p; tmax = 5000.0, ny_init = 15, npy_init = 10,
     sort!(Es; rev=true)
     println("Following periodic orbits from E=$(Es[1]) to $(Es[end])\n")
 
-    initial_sweep   =       sweep_energy(Es[1], ns, p; tmax, ny=ny_init, npy=npy_init, ndense)
+    initial_sweep   =       sweep_energy(Es[1], ns, p; tmax, ny=ny_init, npy=npy_init, ndense, symmetrise)
     red_init        =       dedup_all(initial_sweep.df; tol = 1e-6)
     seeds = [[red_init.y[i], red_init.py[i]] for i in 1:nrow(red_init)]    
 
     all_df          =       [initial_sweep.df]
     all_timing      =       [initial_sweep.timing]
     for e in Es[2:end]
-        r = sweep_energy(e, ns, p; tmax, ndense, seeds)
+        r = sweep_energy(e, ns, p; tmax, ndense, seeds, symmetrise)
         push!(all_df, r.df)
         push!(all_timing, r.timing)
         reduced = dedup_all(r.df)
@@ -612,8 +631,6 @@ function follow_orbits(Es, ns, p; tmax = 5000.0, ny_init = 15, npy_init = 10,
     df = reduce(vcat, all_df)
     timing =reduce(vcat,all_timing)
 
-    prm    = SectionParams(Es[1], p; tmax, nfast = 1, ndense)
-    symmetrise && symmetrise!(df, prm; verify = false)
 
     sort!(df, [:E, :prime, :T])
     sort!(timing, [:E])
@@ -975,53 +992,27 @@ end
 
 
 p            = (1.0, 1.0, 1.0)
-Emax         = 0.16
+Emax         = 0.1141
 Emin         = 0.0001
 nmax_search  = 10              # crossings the dense integrator may take
-lg_E         = collect(range(Emax, 0.066, length=Int(800)))
-lin_E        = collect(range(   0.0658, Emin,  length=Int(20)))
+lg_E         = collect(range(Emax, 00.066, length=Int(600)))
+lin_E        = collect(range(   0.0658, Emin,  length=Int(40)))
 Es           = vcat(lg_E,   lin_E)
 
-# res_test1 = run_sweep_mt(Es, 1:6, p; tmax = 10_000.0, ny = 2, npy = 2, ndense=nmax_search)
-# res_test2  = follow_orbits(Es, 1:6, p; tmax = 10_000.0, ny_init = 15, npy_init = 10, ndense=nmax_search)
-res    = follow_orbits(Es, 1:6, p; tmax = 10_000.0, ny_init = 15, npy_init = 10, ndense=nmax_search)
+# res_test1    = run_sweep_mt([0.08,0.1144], 1:4, p; tmax = 10_000.0, ny = 2, npy = 2, ndense=nmax_search)
+# res_test2    = follow_orbits([0.08,0.1144], 1:2, p; tmax = 10_000.0, ny_init = 15, npy_init = 10, ndense=nmax_search)
+# println("\nmalisa testi\n")
 
-orbits = res.df
+res          = follow_orbits(Es, 1:4, p; 
+                     tmax = 10_000.0, ny_init = 15, npy_init = 10, 
+                     ndense = nmax_search, symmetrise=false)
+sym_res      = symmetrise(res.df, p)
+println("\nmaslisa analysis\n")
+
+
+orbits = sym_res
 timing = res.timing
 
 
-jldsave(joinpath(SAVE_DATA_DIR, "following_orbtis_at$(E0)_long.jld2");
+jldsave(joinpath(SAVE_DATA_DIR, "following_orbtis_at$(Es[1])_long2.jld2");
          orbits, timing, newton_tol = 1e-11, ode_abstol = 1e-14)
-
-# f = joinpath(SAVE_DATA_DIR, "orbits_E0.01-0.1127_20260816-0742.jld2")   
-# orbits = dedup_all(orbits)
-
-# gb_orb_E = groupby(orbits, :E)
-
-# for orb_E in gb_orb_E
-#     e=orb_E.E
-#     save_name  = "$e-no-sym.png"
-#     plot_section_all(orbits,e;
-#     save_fig=true, save_dir=SAVE_DATA_DIR)
-
-# end
-# for E in Es, k in 1:nmax
-#     save_name  = "E$E-k$k-no-sym.png"
-
-#     plot_period(orbits, k; E, save_fig = true, save_dir=joinpath(FIG_DIR,"20260816-0742/"), show = false)
-# end
-# symmetrise!(orbits, prm; tol = 1e-6, verify = true)
-
-
-# orbits = dedup_all(orbits)
-
-
-# o = plot_orbits(orbits, prm;
-#                      seeds     = nothing,
-#                      bg        = (y_all, py_all),
-#                      cmap      = :viridis,
-#                      label_ids = true,
-#                      click_tol = 0.02)
-# o.alphas[3][] = 0.1                                  # hide orbit 3
-# foreach(a -> a[] = 1.0, o.alphas)                     # show all
-# display(o[1])
