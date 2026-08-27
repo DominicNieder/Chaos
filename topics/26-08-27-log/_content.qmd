@@ -1,0 +1,9 @@
+### To do!
+
+- [ ] Reading @BARANGER198895, to get a better understanding of the Monodromy Matrix and the method explained
+
+---
+
+I am having issues, when trying to follow the periodic orbtis, here it seems like my symmetrization does not work as inteded...
+
+### Lost Wonderers Thoughts:
