@@ -650,6 +650,9 @@ function report(df)
                 o.id, o.n, o.prime, o.y, o.py, o.T, o.trace, o.class, o.origin)
     end
     println("="^78)
+    @printf("%3s %5s %6s %9s %9s %11s %11s  %-20s %s\n",
+            "id", "n", "prime", "y", "py", "T", "tr(DT)", "class", "origin")
+    println("-"^78)
     bad = filter(o -> abs(o.detDT - 1) > 1e-4, eachrow(df))
     isempty(bad) || @warn "rows with det(DT) far from 1 -- check the FD step" ids = [o.id for o in bad]
 end
@@ -657,15 +660,6 @@ end
 
 sec_matrix(o) = permutedims([o.sec_y o.sec_py])
  
-"True if v coincides with ANY section point of an already-catalogued orbit."
-function already_found(df, v, prime; tol = 1e-6)
-    for o in eachrow(df)
-        o.prime == prime || continue
-        any(i -> norm([o.sec_y[i], o.sec_py[i]] .- v) < tol, eachindex(o.sec_y)) &&
-            return true
-    end
-    return false
-end
 
 "Residual norm, or NaN if v is not numerically inside the section."
 function residual_norm(v, n, prm)
@@ -989,7 +983,7 @@ function plot_section_all(orbits, E; bg = nothing, ks = nothing,
     (; fp, axp, n = nrow(sub))
 end
 
-
+orbit_table()
 
 p            = (1.0, 1.0, 1.0)
 Emax         = 0.1141
@@ -1009,10 +1003,11 @@ res          = follow_orbits(Es, 1:4, p;
 sym_res      = symmetrise(res.df, p)
 println("\nmaslisa analysis\n")
 
+println(filter(o -> o.id == 1, res.df))
 
-orbits = sym_res
+orbits = res.df # sym_res
 timing = res.timing
+report((res.df))
 
-
-jldsave(joinpath(SAVE_DATA_DIR, "following_orbtis_at$(Es[1])_long2.jld2");
+jldsave(joinpath(SAVE_DATA_DIR, "following_orbtis_at$(Es[1])_notSym_long2.jld2");
          orbits, timing, newton_tol = 1e-11, ode_abstol = 1e-14)

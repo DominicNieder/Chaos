@@ -438,7 +438,7 @@ function symmetrise_E(df, prm; tol = 1e-6, verify = true)
 end
 
 
-function symmetrise(df, p; tmax = 10_000.0, ndense = 40, tol = 1e-6)
+function symmetrise(df::AbstractDataFrame, p; tmax = 10_000.0, ndense = 40, tol = 1e-6)
     out = orbit_table()
     for g in groupby(df, :E)
         sub = DataFrame(g)
@@ -710,8 +710,8 @@ function plot_section(df, prm; seeds = nothing, title = "surface of section")
     fig = Figure(size = (1400, 900))
     ax  = Axis(fig[1, 1], xlabel = "y", ylabel = "p_y", title = title)
  
-    scatter!(ax, y_all, py_all; color = (:grey, 0.5), markersize = 1.5)
-    y_max, py_max = HenonHeiles.section_boundary_ranges(prm.E, prm.p, 120)
+    # scatter!(ax, y_all, py_all; color = (:grey, 0.5), markersize = 1.5)
+    # y_max, py_max = HenonHeiles.section_boundary_ranges(prm.E, prm.p, 120)
     scatter!(ax, HenonHeiles.section_boundary(y_max, py_max);
              color = C_CREAM, markersize = 4)
  
@@ -731,22 +731,23 @@ function plot_section(df, prm; seeds = nothing, title = "surface of section")
 end
 
 
-
+orbit_table()
 # =====================================================================
 #  Plotting
 # =====================================================================
- 
-function plot_config(df, prm; title = "configuration space")
+"returns (fig, ax)"
+function plot_config(df; title = "configuration space")
     r      = range(-1.0, 1.0, length = 200)
-    epot   = [HenonHeiles.potential(x, y, prm.p) for x in r, y in r]
+    p      =(1.0,1.0,1.0)
+    epot   = [HenonHeiles.potential(x, y, p) for x in r, y in r]
     levels = logrange(5.0 * 0.009, 6.9 * 0.089, 7)
  
     fig = Figure(size = (1400, 900))
     ax  = Axis(fig[1, 1], xlabel = "x", ylabel = "y",
                title = title, aspect = DataAspect())
     contour!(ax, r, r, epot; levels, colormap = :hsv, labels = true)
-    contour!(ax, r, r, epot; levels = [prm.E], color = C_CREAM, linewidth = 2)
- 
+    # contour!(ax, r, r, epot; levels = [prm.E], color = C_CREAM, linewidth = 2)
+    
     for o in eachrow(df)
         lines!(ax, o.traj_x, o.traj_y; color = pick_color(o.id),
                linestyle = KIND_LS[o.index],
@@ -763,8 +764,8 @@ function plot_section(df, prm; seeds = nothing, title = "surface of section")
     fig = Figure(size = (1400, 900))
     ax  = Axis(fig[1, 1], xlabel = "y", ylabel = "p_y", title = title)
  
-    scatter!(ax, y_all, py_all; color = (:grey, 0.5), markersize = 1.5)
-    y_max, py_max = HenonHeiles.section_boundary_ranges(prm.E, prm.p, 120)
+    # scatter!(ax, y_all, py_all; color = (:grey, 0.5), markersize = 1.5)
+    # y_max, py_max = HenonHeiles.section_boundary_ranges(prm.E, prm.p, 120)
     scatter!(ax, HenonHeiles.section_boundary(y_max, py_max);
              color = C_CREAM, markersize = 4)
  
@@ -795,13 +796,12 @@ driven from the REPL, e.g. `o.alphas[3][] = 0.08` or
 `bg` is the background section scatter as a tuple of vectors, default
 `(y_all, py_all)`; pass `nothing` to omit it.
 """
-function plot_orbits(df, prm;
+function plot_orbits(df, E;
                      seeds     = nothing,
-                     bg        = (y_all, py_all),
                      cmap      = :viridis,
                      label_ids = true,
                      click_tol = 0.02)
- 
+    p =     (1.0, 1.0, 1.0)
     isempty(df) && error("nothing to plot: the orbit table is empty")
  
     fig = Figure(size = (1800, 1000))
@@ -809,7 +809,7 @@ function plot_orbits(df, prm;
     ax1 = Axis(fig[1, 1], xlabel = "x", ylabel = "y",
                title = "configuration space", aspect = DataAspect())
     ax2 = Axis(fig[1, 2], xlabel = "y", ylabel = "p_y",
-               title = "surface of section  (E = $(round(prm.E; digits = 4)))")
+               title = "surface of section  (E = $(round(E; digits = 4)))")
  
     # left-drag is rectangle zoom by default and would swallow our clicks
     deregister_interaction!(ax1, :rectanglezoom)
@@ -821,19 +821,19 @@ function plot_orbits(df, prm;
  
     # config space: potential contours + the zero-velocity curve V = E
     r      = range(-1.0, 1.0, length = 220)
-    epot   = [HenonHeiles.potential(x, y, prm.p) for x in r, y in r]
+    epot   = [HenonHeiles.potential(x, y, p) for x in r, y in r]
     levels = logrange(5.0 * 0.009, 6.9 * 0.089, 7)
     contour!(ax1, r, r, epot; levels, colormap = :hsv,
              labels = true, linewidth = 0.8)
-    contour!(ax1, r, r, epot; levels = [prm.E], color = C_CREAM, linewidth = 2.5)
+    contour!(ax1, r, r, epot; levels = [E], color = C_CREAM, linewidth = 2.5)
  
     # section: background orbits from the long simulation
-    if bg !== nothing
-        scatter!(ax2, bg[1], bg[2]; color = (:grey, 0.45), markersize = 1.5)
-    end
+    # if bg !== nothing
+    #     scatter!(ax2, bg[1], bg[2]; color = (:grey, 0.45), markersize = 1.5)
+    # end
  
     # section: energy boundary
-    y_max, py_max = HenonHeiles.section_boundary_ranges(prm.E, prm.p, 200)
+    y_max, py_max = HenonHeiles.section_boundary_ranges(E, p, 200)
     scatter!(ax2, HenonHeiles.section_boundary(y_max, py_max);
              color = C_CREAM, markersize = 3)
  
@@ -1075,35 +1075,46 @@ end
 
 
 p            = (1.0, 1.0, 1.0)
-E0           = 0.1127
-nmax         = 6              # highest period to search (2D Newton degrades past ~6)
-nmax_search  = 8              # crossings the dense integrator may take
-tmax         = 20_000.0
-ny, npy      = 10, 5
+Emax         = 0.1141
+Emin         = 0.0001
+nmax_search  = 10              # crossings the dense integrator may take
+lg_E         = collect(range(Emax, 00.066, length=Int(600)))
+lin_E        = collect(range(   0.0658, Emin,  length=Int(40)))
+Es           = vcat(lg_E,   lin_E)
  
 prm    = SectionParams(E0, p; tmax, nfast = 1, ndense = nmax_search)
 seeds  = section_grid(E0, p; ny, npy)
 
 
-f = joinpath(SAVE_DATA_DIR, "following_orbtis_at0.1141_test5.jld2")   # orbits_E0.16-0.0001_160.jld2
+f = joinpath(SAVE_DATA_DIR, "following_orbtis_at0.1141_notSym_long2.jld2")   # orbits_E0.16-0.0001_160.jld2
 orbits, timing, newton_tol, ode_abstol = load(f, "orbits", "timing", "newton_tol", "ode_abstol")
  
-symmetrise!(orbits,prm; verify=false)
+sym_orb  =symmetrise(orbits,p)
 
-cln = dedup_all(orbits)
-symmetrise!(cln,prm; verify=false)
+cln = dedup_all(sym_orb; tol=1e-5)
+E= lg_E[1]
+
+o1 = filter(o -> o.E == E, cln)
+o1 = filter(o -> o.prime == 4, o1)
 
 
+conf = plot_config(o1)
+display(conf[1])
 
+ptl = plot_orbits(o1, E;
+                     seeds     = nothing,
+                     cmap      = :viridis,
+                     label_ids = true,
+                     click_tol = 0.02)
 
-o1 = filter(o -> o.E == lg_E[2], eachrow(cln))
+display(ptl.fig)
 
-s = section_slider(orbits, p)
+s = section_slider(sym_orb, p)
 display(GLMakie.Screen(), s.fig)
 
-c = section_slider(cln, p)
+# c = section_slider(cln, p)
 
-display(GLMakie.Screen(), c.fig)
+# display(GLMakie.Screen(), c.fig)
 
 # c, cax = plot_config(new, prm; title = "configuration space")
 # display(GLMakie.Screen(), c)
