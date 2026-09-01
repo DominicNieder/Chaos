@@ -147,43 +147,7 @@ function minPeriodicity(v, prm; tol = 1e-8, search = 40)
     return (; traj = sol.u, pMap = trace, Nperiod = nothing, Tperiod = nothing)
 end
 
-"""
-Build the fast (residuals) and dense (trajectories) integrators.
- 
-Returns the nmax Refs as well -- always construct `SectionParams` from these
-returned Refs, never from freshly-made ones, or writes to `prm.nmax_*` will be
-invisible to the callbacks.
-"""
-function create_integrators(p; tmax = 20_000.0, nfast = 1, ndense = 40)
-    nmax_fast, nmax_dense = Ref(nfast), Ref(ndense)
-    condition(u, t, integ) = u[1]
- 
-    # --- fast: no trajectory saved, terminates as soon as n crossings are in ---
-    yf, pyf, tsf = Float64[], Float64[], Float64[]
-    affect_f!(integ) = begin
-        push!(yf, integ.u[2]); push!(pyf, integ.u[4]); push!(tsf, integ.t)
-        length(yf) ≥ nmax_fast[] && terminate!(integ)
-    end
-    integ_fast = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
-                      Vern9(); abstol = 1e-14, reltol = 1e-14,
-                      save_everystep = false, save_start = false,
-                      callback = ContinuousCallback(condition, affect_f!, nothing;
-                                                    abstol = 1e-13))
- 
-    # --- dense: saves the trajectory for plotting / period detection ---
-    yd, pyd, tsd = Float64[], Float64[], Float64[]
-    affect_d!(integ) = begin
-        push!(yd, integ.u[2]); push!(pyd, integ.u[4]); push!(tsd, integ.t)
-        length(yd) ≥ nmax_dense[] && terminate!(integ)
-    end
-    integ_dense = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
-                       Vern9(); abstol = 1e-14, reltol = 1e-14, saveat = dt,
-                       callback = ContinuousCallback(condition, affect_d!, nothing;
-                                                     abstol = 1e-13))
- 
-    return (; integ_fast, yf, pyf, tsf, nmax_fast,
-              integ_dense, yd, pyd, tsd, nmax_dense)
-end
+
 
 
 function SectionParams(E, p; tmax = 20_000.0, nfast = 1, ndense = 40)
@@ -390,6 +354,34 @@ function rotated_root(v, prm, θ; search = 8, margin = 1e-8)
 end
 
 """
+I am looking for a function that acts with the reflection symmetry
+"""
+function mirror_x(u::Vector{Float64})
+    x,y,px,py = u 
+    return [-x,y,-px,py]
+end
+
+function mirror_x(u::Vector{Vector{Flaot64}(undef,4)})
+    return [mirror_x(ui) for ui in u]
+end
+
+function mirror_x(v::Vector{Float64}, E)
+    u = lift(v, E, (1.0, 1.0, 1.0))
+    return mirror_x(u)
+end
+
+
+
+function get_orbit_mirror_x(v::Vector{Float64}, E, n; p=(1.0,1.0,1.0))::Row
+    u_m = mirror_x(v,E)  # mirrored initial condition
+    v_m = [u_m[2], u_m[4]]
+    prm = SectionParams(E, p; tmax=2000.0, nfast=n, ndense=40)
+
+    return analyse_seed(v_m, n, prm; origin="refl")
+end
+
+
+"""
 Extend the catalogue using the symmetry group -- no Newton, one integration each.
  
 S costs nothing at all; each C_3 rotation costs a single flow to the section.
@@ -511,7 +503,7 @@ end
 
 "returns a row to the orbit"
 function analyse_seed(v0, n, prm; id = 0, origin = "seed",
-                      tol = 1e-11, search = 40)
+                      tol = 1e-11, search = 40):: Row
     res = solve_orbit(v0, n, prm; tol)
     res.converged || return nothing
  
@@ -1082,8 +1074,8 @@ lg_E         = collect(range(Emax, 00.066, length=Int(600)))
 lin_E        = collect(range(   0.0658, Emin,  length=Int(40)))
 Es           = vcat(lg_E,   lin_E)
  
-prm    = SectionParams(E0, p; tmax, nfast = 1, ndense = nmax_search)
-seeds  = section_grid(E0, p; ny, npy)
+# prm    = SectionParams(E0, p; tmax, nfast = 1, ndense = nmax_search)
+# seeds  = section_grid(E0, p; ny, npy)
 
 
 f = joinpath(SAVE_DATA_DIR, "following_orbtis_at0.1141_notSym_long2.jld2")   # orbits_E0.16-0.0001_160.jld2
@@ -1095,19 +1087,15 @@ cln = dedup_all(sym_orb; tol=1e-5)
 E= lg_E[1]
 
 o1 = filter(o -> o.E == E, cln)
-o1 = filter(o -> o.prime == 4, o1)
+o1_E = filter(o -> o.prime == 4, o1)
+o1_E1 = filter(o -> o.id == 246, o1_E)
 
+m_o1_E1 = get_orbit_mirror_x([o1_E1.y[1], o1_E1.py[1]], E, 4)
 
-conf = plot_config(o1)
+conf = plot_config(o1_1)
 display(conf[1])
 
-ptl = plot_orbits(o1, E;
-                     seeds     = nothing,
-                     cmap      = :viridis,
-                     label_ids = true,
-                     click_tol = 0.02)
-
-display(ptl.fig)
+orbit_table()
 
 s = section_slider(sym_orb, p)
 display(GLMakie.Screen(), s.fig)
