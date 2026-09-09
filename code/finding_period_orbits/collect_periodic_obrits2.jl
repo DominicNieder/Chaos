@@ -177,7 +177,7 @@ function create_integrators(p; tmax = 20_000.0, nfast = 1, ndense = 40)
         length(yd) ≥ nmax_dense[] && terminate!(integ)
     end
     integ_dense = init(ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p),
-                       Vern9(); abstol = 1e-14, reltol = 1e-14, saveat = dt,
+                       Vern9(); abstol = 1e-14, reltol = 1e-14, saveat = 0.3,
                        callback = ContinuousCallback(condition, affect_d!, nothing;
                                                      abstol = 1e-13))
  
@@ -989,9 +989,8 @@ p            = (1.0, 1.0, 1.0)
 Emax         = 0.1141
 Emin         = 0.0001
 nmax_search  = 10              # crossings the dense integrator may take
-lg_E         = collect(range(Emax, 00.066, length=Int(600)))
-lin_E        = collect(range(   0.0658, Emin,  length=Int(40)))
-Es           = vcat(lg_E,   lin_E)
+Es         = collect(range(Emax, Emin, length=Int(1141*10)))
+
 
 # res_test1    = run_sweep_mt([0.08,0.1144], 1:4, p; tmax = 10_000.0, ny = 2, npy = 2, ndense=nmax_search)
 # res_test2    = follow_orbits([0.08,0.1144], 1:2, p; tmax = 10_000.0, ny_init = 15, npy_init = 10, ndense=nmax_search)
