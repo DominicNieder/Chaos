@@ -568,21 +568,30 @@ end
     Computes the eigenvalues of the monodromy matrices around the periodic orbit.
     Adds a `lambda` column to `orbits` containing these eigenvalues.
 """
-function get_monodromy_behaviour!(orbits)
-    monodromy_matrices = [monodromy(lift(o.v, o.E, p), o.T; p=p) for o in eachrow(orbits)]
-    lambda = map(get_eigenvals, monodromy_matrices)
+function get_monodromy_behaviour!(orbits; p=(1.0,1.0,1.0), verbose=false)
+    monodromy_matrices = Vector{Matrix{Float64}}(undef, nrow(orbits))
 
-    orbits.lambda = lambda
-    orbits
+    @showprogress dt=1 desc="monodromy" for (i, o) in enumerate(eachrow(orbits))
+        M = try
+            monodromy(lift(o.v, o.E, p), o.T; p=p)
+        catch err
+            verbose && @warn "monodromy failed" E=o.E str=o.str exception=err
+            fill(NaN, 4, 4)
+        end
+        monodromy_matrices[i] = M
+    end
+
+    orbits.lambda = map(get_eigenvals, monodromy_matrices)
+    return orbits
 end
 
 function main()
     p            = (1.0, 1.0, 1.0)
     E_fix        = 0.11  # this is the one I fixed
     E_max        = 10.0
-    Es_up        = collect(range(E_fix, E_max, 5000))[2:end]
+    Es_up        = collect(range(E_fix, E_max, 50000))[2:end]
     E_min        = 0.001
-    Es_down      = sort(collect(range(E_min, E_fix, 5000))[1:end-1]; rev=true)
+    Es_down      = sort(collect(range(E_min, E_fix, 50000))[1:end-1]; rev=true)
     nfast        = 1              # crossings the dense integrator may take
     ndense       = 2
     tmax         = 100_000.0
