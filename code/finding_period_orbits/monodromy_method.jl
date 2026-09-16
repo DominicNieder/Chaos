@@ -3,7 +3,7 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 using DynamicalSystems, OrdinaryDiffEq, LinearAlgebra, GLMakie, Random, JSON3, JLD2,
       NonlinearSolve, ADTypes, DataFrames, Dates, ProgressMeter, Printf, ColorSchemes
 include("../styles/makie_theme.jl")
-set_theme!(QUARTO_THEME)
+
 include("../models/henon_heiles.jl")
 using .HenonHeiles
 
@@ -124,6 +124,12 @@ function lift(v, E, p; sgn = +1)
     return [EPS_OFF, v[1], sgn * sqrt(a), v[2]]
 end
 
+function get_traj(u0, t;p=(1.0,1.0,1.0), abstol=INT_TOL, reltol=INT_TOL)
+    prob = ODEProblem(HenonHeiles.equations!, u0, (0.0, t), p)
+    sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol)
+    return sol.u
+end
+
 """
     flow ϕₜ takes u(0) to u(t)
 The equations are defined in HenonHeiles.equations!
@@ -133,13 +139,10 @@ p = (1,1,1) i.e.
     w = 1
 """
 function flow(u0, t; p=(1.0,1.0,1.0), abstol = INT_TOL, reltol = INT_TOL)
-    prob = ODEProblem(HenonHeiles.equations!, u0, (0.0, t), p)
-    sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol)
-    return sol.u[end]
+    return get_traj(u0, t; p=p, abstol = abstol, reltol = reltol)[end]
 end
 
 function monodromy(u0, t; p=(1.0,1.0,1.0), d=1e-7, abstol = INT_TOL, reltol = INT_TOL)
-    sol = flow(u0, t; p=p, abstol=abstol, reltol=reltol)
 
     M   = zeros(4, 4)
     for j in 1:4
@@ -338,7 +341,7 @@ function find_orbit(v0, n, prm;
         if rn < tol
             jacobian!(J, v, n, prm, d)          # evaluated AT the root
             DT = J + I
-            return (v = v, DT = DT, converged = true,
+            return (v = v, converged = true,
                     history = hist[:, 1:i], resnorm = rn,
                     comment = "|r| = $rn  det(DT) = $(det(DT))")
         end
@@ -368,11 +371,16 @@ function find_orbit(v0, n, prm;
 end
 
 
-"NonlinearSolve variant. AutoFiniteDiff is mandatory: the ODE callback rejects Duals."
+"""
+    return (v = sol.u, DT = nothing, converged = true, resnorm = norm(sol.resid),
+            history = zeros(2, 0), comment = (sol.retcode)  det(DT) = (det(DT)))
+
+NonlinearSolve variant. AutoFiniteDiff is mandatory: the ODE callback rejects Duals.
+"""
 function solve_orbit(v0, n, prm; tol = PMAP_ROOT_TOL, maxiters = 300)
     v = collect(float.(v0))
     in_section(v, prm.E, prm.p) ||
-        return (v = v, DT = nothing, converged = false, resnorm = Inf,
+        return (v = v, converged = false, resnorm = Inf,
                 history = zeros(2, 0), comment = "seed outside boundary")
  
     prob = NonlinearProblem((w, q) -> Fres_safe(w, n, q), v, prm)
@@ -380,13 +388,13 @@ function solve_orbit(v0, n, prm; tol = PMAP_ROOT_TOL, maxiters = 300)
                  abstol = tol, maxiters)
  
     ok = SciMLBase.successful_retcode(sol) && in_section(sol.u, prm.E, prm.p)
-    ok || return (v = sol.u, DT = nothing, converged = false,
+    ok || return (v = sol.u, converged = false,
                   resnorm = norm(sol.resid), history = zeros(2, 0),
                   comment = "$(sol.retcode)")
  
-    DT = get_DT(sol.u, n, prm)
-    return (v = sol.u, DT = DT, converged = true, resnorm = norm(sol.resid),
-            history = zeros(2, 0), comment = "$(sol.retcode)  det(DT) = $(det(DT))")
+    # DT = get_DT(sol.u, n, prm)
+    return (v = sol.u, converged = true, resnorm = norm(sol.resid),
+            history = zeros(2, 0), comment = "$(sol.retcode)")
 end
 
 """
@@ -402,7 +410,6 @@ function analyse_seed(v0, n, prm; str = "seed",
     min_period = minPeriodicity(res.v, prm; pmap_prime_tol = pmap_prime_tol, search = 40)
     min_period.Nperiod === nothing && return nothing
     T = min_period.Tperiod
-    
     return (; E = prm.E, v = res.v, str, T)
 end
 
@@ -485,8 +492,6 @@ function get_obrits_ABC(;
     show_figure=true
     )
     #seeds =  section_grid(E, p; ny = 3, npy = 3, margin = 0.03)
-
-    
     any(!,[in_section(vi, Emin, p) for vi in seeds]) && error("some seeds are outside the energy boundary")
 
     
@@ -565,40 +570,85 @@ function follow_ABC!(orbs0, Es;
 end
 
 """
-    Computes the eigenvalues of the monodromy matrices around the periodic orbit.
-    Adds a `lambda` column to `orbits` containing these eigenvalues.
+    return (;M, check)
+
+    This takes care of (NaN or Inf) ∈ M
 """
-function get_monodromy_behaviour!(orbits; p=(1.0,1.0,1.0), verbose=false)
-    monodromy_matrices = Vector{Matrix{Float64}}(undef, nrow(orbits))
+function monodrome(orbits; p = (1.0,1.0,1.0), verbose=false)
+    M    = Vector{Matrix{Float64}}(undef, nrow(orbits))
+    check = falses(nrow(orbits))
 
     @showprogress dt=1 desc="monodromy" for (i, o) in enumerate(eachrow(orbits))
-        M = try
+        Mat = try
             monodromy(lift(o.v, o.E, p), o.T; p=p)
         catch err
             verbose && @warn "monodromy failed" E=o.E str=o.str exception=err
             fill(NaN, 4, 4)
         end
-        monodromy_matrices[i] = M
+        sane     = !(any(isnan, Mat) || any(isinf, Mat)) && abs(det(Mat) - 1.0) < 0.01
+        M[i]     = sane ? Mat : fill(NaN, 4, 4)
+        check[i] = sane    
     end
 
-    orbits.lambda = map(get_eigenvals, monodromy_matrices)
-    return orbits
+    return (; M, check)
 end
 
-function main()
+
+"
+appends .M and .check to orbits
+
+    orbits.mono.M:: Matrix
+    orbits.mono.check:: Bool(sensible matrix)
+"
+function append_monodrome(orbits::DataFrame)
+    orb = copy(orbits)
+    mono = monodrome(orbits)
+    orb.M     = mono.M
+    orb.check = mono.check
+    return orb
+end
+
+
+function eigen_tr(M)
+    τ = tr(M)
+    a1= (τ-2)/2
+    return a1 .* (1,-1) .* sqrt(a1^2-1)
+end
+
+"
+    M -> Monodromy matrix
+    λ -> max(eigenvalues(M))
+    T -> period of periodic orbit
+    returns |α|T:: lyapunof exponent to λ= exp(|α|T)
+"
+get_lyapunov(M::Matrix, T)   = get_lyapunov(eigvals(M), T)
+get_lyapunov(λs::AbstractVector, T) = log(maximum(abs.(λs))) 
+
+get_phase2(M::Matrix)          = get_phase2(eigen_tr(M))
+get_phase2(λs)                 = angle(λs[2])
+
+# function get_phase(λs::AbstractVector; trivial_tol = 1e-6)
+#     transverse = filter(λ -> abs(λ - 1) > trivial_tol, λs)
+#     isempty(transverse) && return 0.0
+#     λ = argmax(imag, transverse)
+#     return angle(λ)
+# end
+# get_phase(M::Matrix) = get_phase(eigvals(M))
+
+function ABC_energy_trace(;nup=5000,ndown=5000)
     p            = (1.0, 1.0, 1.0)
     E_fix        = 0.11  # this is the one I fixed
-    E_max        = 10.0
-    Es_up        = collect(range(E_fix, E_max, 50000))[2:end]
-    E_min        = 0.001
-    Es_down      = sort(collect(range(E_min, E_fix, 50000))[1:end-1]; rev=true)
+    E_max        = 1.0
+    Es_up        = collect(range(E_fix, E_max, nup))[2:end]
+    E_min        = 0.01
+    Es_down      = sort(collect(range(E_min, E_fix, ndown))[1:end-1]; rev=true)
     nfast        = 1              # crossings the dense integrator may take
     ndense       = 2
     tmax         = 100_000.0
     seeds = [[0.0,0.23], [0.2, 0.3], [0.3, 0.0]]
     orbit_str = ["A", "B", "C"]
 
-    
+    # starting point to follow A, B and C orbit
     res = get_obrits_ABC(p = p, 
                         Emin = E_fix,
                         nfast = nfast, 
@@ -608,21 +658,166 @@ function main()
                         orbit_str = orbit_str, 
                         display_figure = false)
 
-    orb_ABC_up, orb_ABC_down=copy(res.orb.df), copy(res.orb.df)
+    orb_ABC_up, orb_ABC_down=copy(res.orb.df), copy(res.orb.df)  # copy for clean split of variables 
 
 
-
-
-    follow_ABC!(orb_ABC_down, Es_down)
-
-    follow_ABC!(orb_ABC_up, Es_up)
+    follow_ABC!(orb_ABC_down,   Es_down)  # follow to lower energy
+    follow_ABC!(orb_ABC_up,     Es_up)    # follow to higher energy
 
     all_ABC = vcat(orb_ABC_down,orb_ABC_up)
-    
-    get_monodromy_behaviour!(all_ABC)
+    sort!(all_ABC,[:E, :T])
 
-
-    return (; orbs_ABC)
+    return (; all_ABC)
 end
 
-res = main()
+
+
+
+function graphs(res::DataFrame; fsize=(1400,900))
+    df = sort(copy(res), [:E])
+    println("="^72)
+
+
+    function fig_for(label, df)
+        sub        = filter(o -> o.str == label, df)
+
+        Ms, check  = ("M" ∈ names(sub) && "check" ∈ names(sub)) ? (sub.M, sub.check) : monodrome(sub)
+        Es         = sub.E[check]
+        eigmat     = reduce(hcat, eigvals.(Ms[check]))'   # rows = energy, cols = branch j=1:4
+        lyp        = map((λs,T) -> get_lyapunov(collect(λs),T), eachrow(eigmat), sub.T[check])
+        traces      = [tr(m) for m in Ms[check]]
+        θs         = [get_phase2(collect(λs)) for λs in eachrow(eigmat)] ./2pi
+
+        fλ  = Figure(size = fsize)        
+        fΘ  = Figure(size = fsize)
+        fLy = Figure(size = fsize)
+        fTr = Figure(size = fsize)      
+
+        # Lyapunov exponents of (monodrome) Map 
+        axLy = Axis(fLy[1,1], xlabel = "E", ylabel = L"|α|T", title = "orbit $label")  
+        # trace of Monodromy
+        axTr = Axis(fTr[1,1], ylabel = "tr(M)")
+        hlines!(axLy,[1.0], color=C_CREAM, linewidth=5, linestyle = :dash)
+        lines!(axLy, Es, lyp, color = C_RED)
+        lines!(axTr, Es, traces, color= C_TEAL)
+
+        # Θ plot -> for theta = p//q, p,q∈N, bifurcation happens
+        axΘ = Axis(fΘ[1,1], xlabel = "E", ylabel = "Θ/2π", title = "orbit $label", yticklabelcolor = C_CREAM, yaxisposition = :left)
+        lines!(axΘ, Es, θs, color = C_BLUE)
+        
+        # eigenvalues λ
+        axλ = Axis(fλ[1,1], xlabel = "E", ylabel = "Re(λ) and Im(λ)", title = "orbit $label")
+        for j in axes(eigmat, 2)
+            lines!(axλ, Es, real.(eigmat[:, j]); color = pick_color(j), linewidth = 2, linestyle = :solid)
+            lines!(axλ, Es, imag.(eigmat[:, j]); color = pick_color(j), linewidth = 2, linestyle = :dash)
+
+            # text!(ax, Es[end], real(eigmat[end, j]); text = "λ$j",
+            #       color = pick_color(j), align = (:left, :center), offset = (6, 0), fontsize = 13)
+        end
+
+        style_elems  = [LineElement(color = :gray70, linestyle = :solid, linewidth = 2),
+                        LineElement(color = :gray70, linestyle = :dash,  linewidth = 2)]
+        branch_elems = [LineElement(color = pick_color(j), linewidth = 2) for j in axes(eigmat, 2)]
+
+        Legend(fλ[1,2],
+               [style_elems, branch_elems],
+               [["Re(λ)", "Im(λ)"], ["λ$j" for j in axes(eigmat, 2)]],
+               ["Component", "Branch"])
+
+        (; fλ, axλ, fLy, axLy, fΘ, axΘ, fTr, axTr)
+    end
+
+    fA, fB, fC = fig_for("A",df), fig_for("B",df), fig_for("C",df)
+    return (; fA , fB , fC)
+end
+
+
+
+"""
+    I want a function that generates the the (p,q)-orbits. It is my goal to see or visualize the torus of my preiodic orbits.
+"""
+function tori(orbits; labels = unique(orbits.str), p = (1.0, 1.0, 1.0),
+               n_periods = 1, n_unst_perido=10, n_per_shell = 4, shell_radius = 3e-3, n_shells=2,
+               colors = COLOR_SCHEME, fig_size = (1400, 1000))
+ 
+    df = sort(copy(orbits), [:E])
+ 
+    function torus_of(label)
+        sub = filter(o -> o.str == label, df)
+        isempty(sub) && error("no orbit found for label $label")
+        o = sub[1, :]                        # reference (E, T, v) for this branch
+        E, T, v = o.E, o.T, o.v
+ 
+        u0   = lift(v, E, p)
+        u0 === nothing && error("orbit $label: seed lies outside the energy boundary")
+        core = get_traj(u0, T; p = p, abstol = INT_TOL, reltol = INT_TOL)
+ 
+        shell = Vector{Vector{Float64}}[]
+        for k in 0:(n_per_shell - 1), n in 1:n_shells
+            θ   = 2π * k / n_per_shell
+            δv  = v .+ n .* shell_radius .* [cos(θ), sin(θ)]
+            in_section(δv, E, p) || continue
+            u0k = lift(δv, E, p)
+            u0k === nothing && continue
+            if "B" == label
+                push!(shell, get_traj(u0k, n_unst_perido * T; p = p, abstol = INT_TOL, reltol = INT_TOL))
+            else
+                push!(shell, get_traj(u0k, n_periods * T; p = p, abstol = INT_TOL, reltol = INT_TOL))
+            end
+        end
+ 
+        return (; label, E, T, core, shell)
+    end
+ 
+    results = [torus_of(lbl) for lbl in labels]
+ 
+    fig = Figure(size = fig_size)
+    ax  = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_y",
+                title = "Invariant tori around the periodic orbits")
+    ax = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_y",
+               title = "Invariant tori around the periodic orbits",
+               azimuth = azimuth, elevation = elevation,
+               perspectiveness = perspectiveness)
+
+    for (i, r) in enumerate(results)
+        c = colors[mod1(i, length(colors))]
+        for traj in r.shell
+            pts = Point3f.(getindex.(traj, 1), getindex.(traj, 2), getindex.(traj, 4))
+            lines!(ax, pts, color = (c, 0.9), linewidth = 1.8)
+        end
+        core_pts = Point3f.(getindex.(r.core, 1), getindex.(r.core, 2), getindex.(r.core, 4))
+        lines!(ax, core_pts, color = c, linewidth = 4,
+               label = "$(r.label)  (E=$(round(r.E, digits=3)), T=$(round(r.T, digits=3)))")
+    end
+    axislegend(ax, position = :rt)
+
+    return (; fig, ax, results)
+end
+
+res = ABC_energy_trace(nup=5000, ndown=5000).all_ABC
+
+orbits = append_monodrome(res)
+
+to = tori(orbits; labels=["A", "B", "C"], n_periods=100, n_unst_perido=1000, n_per_shell=4, n_shells=2,shell_radius = 2e-3)
+display(to.fig)
+
+
+figs = graphs(orbits)
+
+
+# display(figs.fA.fλ)
+# display(figs.fB.fλ)
+# display(figs.fC.fλ)
+
+# display(figs.fA.fLy)
+# display(figs.fB.fLy)
+# display(figs.fC.fLy)
+
+# display(figs.fA.fΘ)
+# display(figs.fB.fΘ)
+# display(figs.fC.fΘ)
+
+
+# xlims!(figs.fB.ax, -0.001, 0.1)
+# ylims!(figs.fB.ax, -0.5,3)
+# save(joinpath(FIG_DIR, "orbitA/Aeigenvalues-vs-E.png"), figs.fA.fig; px_per_unit = 2)
