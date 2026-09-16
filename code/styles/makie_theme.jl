@@ -40,3 +40,5 @@ const QUARTO_THEME = Theme(
     palette = (color = [C_RED, C_TEAL, C_GOLD, C_PURPLE, C_GREEN,
                         C_ORANGE, C_BLUE, C_PINK, C_GREY, C_CREAM],),
 )
+
+set_theme!(QUARTO_THEME)
