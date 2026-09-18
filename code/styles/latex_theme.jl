@@ -66,4 +66,4 @@ const LATEX_THEME = Theme(
     palette = (color = OKABE_ITO,),
 )
 
-set_theme!(LATEX_THEME)
+pick_color(i, cmap) = cmap[mod1(i, length(cmap))]
