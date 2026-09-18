@@ -11,7 +11,7 @@ BLAS.set_num_threads(1)          # your linear algebra is 2x2; BLAS threads only
 const CONFIG_DIR = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
 const DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/simulation/simn-y256-py0/")
 const FIG_DIR    = joinpath(@__DIR__, "../../figures/henon-heiles/sep16-latex/")
-const SAVE_DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/sep16-latex/")
+const SAVE_DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/bifurcation/")
 
 
 
@@ -37,7 +37,7 @@ end
 const CC_TOL  = 1e-13
 const INT_TOL = 1e-14
 const PMAP_ROOT_TOL = 1e-11
-const PMAP_PRIME_TOL = 1e-9
+const PMAP_PRIME_TOL = 1e-10
 const OFFSET_X_SURFACESEC = 1e-13
 
 mutable struct SectionParams1{IF, P}
@@ -399,8 +399,9 @@ function solve_orbit(v0, n, prm; tol = PMAP_ROOT_TOL, maxiters = 300)
 end
 
 """
-    returns a row to the orbit
     return (; E = prm.E, v = res.v, str, T)
+
+returns a row to the orbit
 """
 function analyse_seed(v0, n, prm; str = "seed",
                       pmap_root_tol = PMAP_ROOT_TOL, pmap_prime_tol= PMAP_PRIME_TOL, maxiters=300)
@@ -626,16 +627,9 @@ end
 get_lyapunov(M::Matrix, T)   = get_lyapunov(eigvals(M), T)
 get_lyapunov(λs::AbstractVector, T) = log(maximum(abs.(λs))) 
 
-get_phase2(M::Matrix)          = get_phase2(eigen_tr(M))
-get_phase2(λs)                 =  abs(angle(λs[1]))
+get_phase(M::Matrix)          = get_phase(eigen_tr(M))
+get_phase(λs)                 =  abs(angle(λs[1]))
 
-# function get_phase(λs::AbstractVector; trivial_tol = 1e-6)
-#     transverse = filter(λ -> abs(λ - 1) > trivial_tol, λs)
-#     isempty(transverse) && return 0.0
-#     λ = argmax(imag, transverse)
-#     return angle(λ)
-# end
-# get_phase(M::Matrix) = get_phase(eigvals(M))
 
 function ABC_energy_trace(;nup=5000,ndown=5000)
     p            = (1.0, 1.0, 1.0)
@@ -672,6 +666,106 @@ function ABC_energy_trace(;nup=5000,ndown=5000)
     return (; all_ABC)
 end
 
+"""
+    return (;v0, E_bif, T_bif)
+
+    lable = i.e. "A" / "B" / "C" etc...
+    df::DataFrame that contains orbits
+    order = Θ=p/order * 2π
+
+Where E_bif is the Energy where the bifurcation takes place and T_bif that the orbit  has when bifurcation happens
+"""
+function get_bifur_E_T(label, df, order)
+    # per orbit
+    sub        = filter(o -> o.str == label, df)
+    Ms, check  = ("M" ∈ names(sub) && "check" ∈ names(sub)) ? (sub.M, sub.check) : monodrome(sub)
+    v0s        = sub.v[check]
+    Es         = sub.E[check]
+    Ts         = sub.T[check] 
+    eigs       = [eigen_tr(M) for M in Ms[check]]
+    θs         = [get_phase(collect(λs)) for λs in eigs] ./2pi
+    is_bifurc = θs .> 1/order   # obtain point of bifurcation 0->1 or 1->0
+    bifurc_exists = any(is_bifurc)
+    # obtain period of bifurcation orbit
+    v0, E_bif, T_bif = bifurc_exists ? (first(v0s[is_bifurc]), first(Es[is_bifurc]), order*first(Ts[is_bifurc])) : (fill(NaN, 2), NaN, NaN)
+    isnan(E_bif) && println("="^72, "\nFor orbit $label, no bifurcation of order $order found!\n", "="^72)
+    return (;v0, E_bif, T_bif)
+end
+
+
+
+
+"""
+    return orbits' (that bifurcates with given 'order' of bifurcation. )
+
+Finds bifurcation at Energy E(Θ) such that Θ ≈ (n/m *2 π), m=order.  
+"""
+function get_bifur_orbit(orbits::DataFrame, order::Int; labels=["A", "B", "C"],p =(1.0,1.0,1.0))
+    df = sort(copy(orbits), [:E])
+    bi_orbs = orbit_table()
+    # get monodromy matrix of orbits
+    orbA = get_bifur_E_T(labels[1], df, order)
+    isnan(orbA.E_bif) && error("no order-$order bifurcation found on branch $(labels[1])")
+    # get ready to find the orbit that intersects 'order'-times with sirface of section
+    prm = SectionParams(orbA.E_bif, p, :both; tmax=(order + 1) * orbA.T_bif, nfast=order, ndense=order+1, save_everystep = false, save_start = false)
+    if true
+        y0, py0 = orbA.v0
+        npoint  = 200
+        yzoom   = 0.001
+        pyzoom  = 0.02                       # box size around the parent periodic orbit
+
+        y_grid  = range(y0 - yzoom,  y0 + yzoom,  npoint)
+        py_grid = range(py0 - pyzoom, py0 + pyzoom, npoint)
+
+        set_energy!(prm, orbA.E_bif)  # past the bifurcation -- AT E_bif the satellite
+                                            # has zero amplitude, nothing to see there
+        Z = [norm(Fres_safe([y, py], order, prm)) for y in y_grid, py in py_grid]
+
+        f  = Figure(size = (1300, 900))
+        ax = Axis(f[1, 1], xlabel = L"y", ylabel = L"p_y",
+                title = "log10|T^$order(v)-v| around orbit A, E=$(round(prm.E, digits=4))")
+        contour!(ax, y_grid, py_grid, log10.(Z .+ 1e-300))   # floor -- log10(0) = -Inf otherwise
+        scatter!(ax, y0, py0, color = INK, markersize = 8)
+        display(f)
+    end
+    function find_bif_orbit(v0, n, prm; str = "seed",
+                        pmap_root_tol = PMAP_ROOT_TOL, pmap_prime_tol= PMAP_PRIME_TOL, maxiters=300)
+        res = solve_orbit(v0, n, prm, tol=pmap_root_tol, maxiters=maxiters)
+        res.converged || return nothing
+
+        min_period = minPeriodicity(res.v, prm; pmap_prime_tol = pmap_prime_tol, search = 40)
+        min_period.Nperiod === nothing && return nothing
+        T = min_period.Tperiod
+        return (; E = prm.E, v = res.v, str, T), min_period
+    end   
+    orb_bi, min_period  = find_bif_orbit(orbA.v0, order, prm; str="A.$order")
+    orb_bi === nothing ?  error("The orbit sought for is not found!") : push!(bi_orbs, orb_bi)
+    println("comparing periods; A: T=$(orbA.T_bif) , A.4 T= $(orb_bi.T)")
+    println(bi_orbs)
+    Mbi = monodrome(bi_orbs)
+    println(typeof(Mbi.M[1]))
+    L_Mbi = get_lyapunov(Mbi.M[1], orb_bi.T)
+    println("Lyapunof exponent $L_Mbi")
+    if false 
+        set_style!(:dark)
+        der_rand =  boundary(orbA.E_bif, p)
+        v0       = Point2f(orbA.v0)
+        v_bi     = Point2f(orb_bi.v)
+        vpMapbi  = Point2f.(min_period.pMap)
+        f = Figure(size=(1300, 900))
+        ax= Axis(f[1,1], ylabel=L"p_y", xlabel=L"y", title="Surface of section at Bifurcation Energy $(orbA.E_bif)")
+        scatter!(ax, v0, color = pick_color(1), markersize = 6, alpha = 1)
+        map(v0i_bi->scatter!(ax, v0i_bi, color = pick_color(3), markersize = 6, alpha = 1), vpMapbi)
+        scatter!(ax, v_bi, color = pick_color(2), markersize = 6, alpha = 1)
+    
+        annotation = ["A",orb_bi.str, "period"]
+        text!(ax, [v0, v_bi, first(vpMapbi)], text=annotation, fontsize = 14, color = INK, align = (:left, :bottom), offset = (5, 5))
+        scatter!(ax, der_rand, markersize = 3, color = INK)
+        display(f)
+    end
+
+    return orb_bi
+end
 
 
 
@@ -689,7 +783,7 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME)
         eigs       = [eigen_tr(M) for M in Ms[check]]
         lyp        = map((λs,T) -> get_lyapunov(collect(λs),T), eigs, sub.T[check])
         traces      = [tr(m) for m in Ms[check]]
-        θs         = [get_phase2(collect(λs)) for λs in eigs] ./2pi
+        θs         = [get_phase(collect(λs)) for λs in eigs] ./2pi
 
         fλ  = Figure(size = fsize)        
         fΘ  = Figure(size = fsize)
@@ -705,12 +799,12 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME)
         lines!(axTr, Es, traces)
 
         # Θ plot -> for theta = p//q, p,q∈N, bifurcation happens
-        pdivq = [0,1/2, 1/3, 1/4, 1/5, 2/5, 1/6, 1/7, 2/7, 3/7]
-        yticks= ["0",L"\frac{1}{2}", L"\frac{1}{3}", L"\frac{1}{4}", L"\frac{1}{5}", L"\frac{2}{5}", L"\frac{1}{6}", L"\frac{1}{7}", L"\frac{2}{7}", L"\frac{3}{7}"]
+        pdivq = [0,1/2, 1/3, 1/4, 1/5, 2/5, 1/6]
+        yticks= ["0",L"\frac{1}{2}", L"\frac{1}{3}", L"\frac{1}{4}", L"\frac{1}{5}", L"\frac{2}{5}", L"\frac{1}{6}"]
         axΘ = Axis(fΘ[1,1], xlabel = "E", ylabel = "Θ/2π", title = "orbit $label", yticks=(pdivq,yticks), yticklabelcolor = INK, yaxisposition = :left)
         lines!(axΘ, Es, θs)
         hlines!(axΘ, pdivq[2:end], linestyle=:dot, color=INK)
-
+        label == "A" && vlines!(axΘ, get_bifur_E_T(label,sub, 6).E_bif, color=INK, linestyle=:dot)
         
         # eigenvalues λ, 1/λ
         axλ = Axis(fλ[1,1], xlabel = "E", ylabel = "Re(λ) and Im(λ)", title = "orbit $label")
@@ -741,110 +835,63 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME)
 end
 
 
-"to look inside a 3D plot"
-function mask_positive_x(pts::Vector{Point3f})
-    out = Point3f[]
-    for pt in pts
-        if pt[1] <= 0
-            push!(out, pt)
-        elseif !isempty(out) && !isnan(out[end][1])
-            push!(out, Point3f(NaN, NaN, NaN))   # lines! breaks on NaN
-        end
-    end
-    out
-end
 
-function halo_lines!(ax, pts; color, linewidth = 3.5, halo_color = (:black,0.5), halo_width = 0.5)
-    lines!(ax, pts, color = halo_color, linewidth = linewidth + halo_width)  # dark cover
-    lines!(ax, pts, color = color,      linewidth = linewidth)              # colored core
-end
-"""
-    I want a function that generates the the (p,q)-orbits. It is my goal to see or visualize the torus of my preiodic orbits.
-"""
-function tori(orbits; labels = unique(orbits.str), p = (1.0, 1.0, 1.0),
-               n_periods = 1, n_unst_perido = 10, n_per_shell = 4,
-               shell_radius = 3e-3, n_shells = 2,
-               colors = COLOR_SCHEME, fig_size = (1400, 1000),
-               azimuth = 0.0, elevation = 0.05, perspectiveness = 0.0, mask=false)
- 
-    df = sort(copy(orbits), [:E])
- 
-    function torus_of(label)
-        sub = filter(o -> o.str == label, df)
-        isempty(sub) && error("no orbit found for label $label")
-        o = sub[1, :]                        # reference (E, T, v) for this branch
-        E, T, v = o.E, o.T, o.v
-        println(o.str)
-        u0   = lift(v, E, p)
-        u0 === nothing && error("orbit $label: seed lies outside the energy boundary")
-        core = get_traj(u0, T; p = p, abstol = INT_TOL, reltol = INT_TOL)
- 
-        shell = Vector{Vector{Float64}}[]
-        for k in 0:(n_per_shell - 1), n in 1:n_shells
-            θ   = 2π * k / n_per_shell
-            δv  = v .+ n .* shell_radius .* [cos(θ), sin(θ)]
-            in_section(δv, E, p) || continue
-            u0k = lift(δv, E, p)
-            u0k === nothing && continue
-            if "B" == label
-                push!(shell, get_traj(u0k, n_unst_perido * T; p = p, abstol = INT_TOL, reltol = INT_TOL))
-            else
-                push!(shell, get_traj(u0k, n_periods * T; p = p, abstol = INT_TOL, reltol = INT_TOL))
-            end
-        end
- 
-        return (; label, E, T, core, shell)
-    end
 
-    results = [torus_of(lbl) for lbl in labels]
- 
-    fig = Figure(size = fig_size)
-    # ax  = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_y",
-    #             title = "Invariant tori around the periodic orbits")
-    ax = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_y",
-               title = "Invariant tori around the periodic orbits",
-               azimuth = azimuth, elevation = elevation,
-               perspectiveness = perspectiveness)
+# res = ABC_energy_trace(nup=5000, ndown=5000).all_ABC
+# orbits = append_monodrome(res)
+# savename = "orbitsABC.jld2"
 
-    for (i, r) in enumerate(results)
-        c = colors[mod1(i, length(colors))]
-        for traj in r.shell
-            pts = mask ?  mask_positive_x(Point3f.(getindex.(traj,1), getindex.(traj,2), getindex.(traj,4))) : Point3f.(getindex.(traj,1), getindex.(traj,2), getindex.(traj,4))
-            lines!(ax, pts; color = (c, 1))
-        end
-        core_pts = Point3f.(getindex.(r.core, 1), getindex.(r.core, 2), getindex.(r.core, 4))
-        lines!(ax, core_pts, color = c, linewidth = 4,
-               label = "$(r.label)  (E=$(round(r.E, digits=3)), T=$(round(r.T, digits=3)))")
-    end
-    axislegend(ax, position = :rt)
+# JLD2.save_object(joinpath(SAVE_DATA_DIR, savename), orbits)
+orbits = JLD2.load_object(joinpath(SAVE_DATA_DIR, savename))
 
-    return (; fig, ax, results)
+# looking at the contour around orbit that bifurcates
+p=(1.0,1.0,1.0)  #  parameters
+order=4          #  bifurcation order
+
+
+orbA = get_bifur_E_T("A", orbits, order)
+
+isnan(orbA.E_bif) && error("no order-$order bifurcation found on branch $(labels[1])")
+    # get ready to find the orbit that intersects 'order'-times with sirface of section
+prm = SectionParams(orbA.E_bif, p, :both; tmax=(order + 1) * orbA.T_bif,nfast=order, ndense=order+1, save_everystep = false, save_start = false)
+if true
+    set_style!(:print)
+    y0, py0 = orbA.v0
+    npoint  = 1000
+    yzoom   = 0.0075
+    pyzoom  = 0.003                       # box size around the parent periodic orbit
+
+    y_grid  = range(y0 - yzoom,  y0 + yzoom,  npoint)
+    py_grid = range(py0 - pyzoom, py0 + pyzoom, npoint)
+
+    set_energy!(prm, orbA.E_bif)  # past the bifurcation -- AT E_bif the satellite
+
+    Z = [norm(Fres_safe([y, py], order, prm)) for y in y_grid, py in py_grid]
+
+    f  = Figure(size = (1300, 900))
+    ax = Axis(f[1, 1], xlabel = L"y", ylabel = L"p_y",
+                title = "After bifurcation order $order @ E=$(round(prm.E, digits=4))")
+    contour!(ax, y_grid, py_grid, log10.(Z .+ 1e-300))   # floor -- log10(0) = -Inf otherwise
+    scatter!(ax, y0, py0, color = INK, markersize = 8)
+
+    
+    save(joinpath(FIG_DIR, "contour_at_bif_order$order.png"), f; px_per_unit = 2)
+    display(f)
 end
 
 
-
-res = ABC_energy_trace(nup=5000, ndown=5000).all_ABC
-orbits = append_monodrome(res)
 
 
 
 set_style!(:dark)  # :print
-to = tori(orbits; labels=["B", "C"], n_periods=1000, 
-            n_unst_perido=1000, n_per_shell=5, n_shells=1, 
-            shell_radius = 3e-3, 
-            azimuth = π, elevation = 0.05, perspectiveness = 0.0,
-            mask=true)
-display(to.fig)
-
-
 figs = graphs(orbits)
 
 
-display(figs.fA.fλ)
+# display(figs.fA.fλ)
 # display(figs.fB.fλ)
 # display(figs.fC.fλ)
 
-display(figs.fA.fLy)
+# display(figs.fA.fLy)
 # display(figs.fB.fLy)
 # display(figs.fC.fLy)
 
