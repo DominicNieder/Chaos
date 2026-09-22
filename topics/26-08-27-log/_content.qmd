@@ -1,6 +1,6 @@
 ### To do!
 
-- [ ] Reading @BARANGER198895, to get a better understanding of the Monodromy Matrix and the method explained
+- [x] Reading @BARANGER198895, to get a better understanding of the Monodromy Matrix and the method explained
 
 ---
 

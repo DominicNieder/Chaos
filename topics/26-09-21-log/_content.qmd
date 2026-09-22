@@ -1,0 +1,45 @@
+### To do!
+
+- [ ] I want to write into a LaTex file about my findings on the Hénon–Heiles Model
+- [ ] I want to start looking at my system at hand': Two trapped point particles
+- [ ] I am still curiuous to find out more about how Tori get destroyed whilst new periodic orbits are created 
+- [ ] How to determine the unitless-ness of my system
+
+---
+
+### Units of my system
+
+My hamiltoninan $H(u)=H(x_1,x_2,p_1,p_2)$ is given by the electromagnetic interaction potential $V(x_1,x_2)$, and the reflecting boundaries potnetial $V_b$, and of course the kinetic terms $T(p_i)$
+
+$$H(u)=\frac{p_1^2}{2m_1}+\frac{p_2^2}{2m_2}+\frac{\mathcal{C}}{|x_1-x_2|}+V_b(x_1)+V_b(x_2)$$
+
+Where as $V_b(x_i)$ is to be understood as a refelecting boundary $\partial \mathcal{B}$ that traps particle $i$, so $x_i\in\mathcal{B}$. So when $x_i$ crosses the boundary the conjugate momentum is inverted $p_i \to -p_i$.
+Motivated by thermodynamical settings, in which two isolated systems exchange heat, we considere a partition on $\mathcal{B}=\mathcal{B}(1) \cup \mathcal{B}(2)$, with no overlap $\mathcal{B}(1)\cap \mathcal{B}(2)=\emptyset$. We define the boundary in coordinates by an open interval $\mathcal{B}(i)=(b_i-L,b_i+L)$, with boundaries at $\partial\mathcal{B}=b_i\pm L$. The partition is created by choosing $b_1 < b_2$ sattisfying $b_1+L < b_2-L$. A result of the partitioning is a serperation distance $\delta = b_1+L- (b_2-L)=b_1-b_2+2>0$. 
+
+The boundary potential can then be defined as
+$$V_b(x_i) =\Bigg\{\begin{matrix} 0 & \text{ if } x_i \in \mathcal{B}(i),\\
+\infty & \text{ if } x_i \not\in \mathcal{B}(i).
+\end{matrix}
+$$
+
+The hamiltonian for inside the boundary $x_1,x_2 \in \mathcal{B}$, then becomes
+$$H(u)=\frac{p_1^2}{2m_1}+\frac{p_2^2}{2m_2}+\frac{C}{|x_1-x_2|}$$
+
+I want to investigate the characteristic units of my system. As my boundary defines a characteristic length scale $L$, to which the particle positions are confind to. I will write the units of the dimesion in brackets, i.e. meters $[\text{m}]$
+
+$$
+\begin{align}
+x [\text{m}] \to \hat{x}[\text{L}]&=\tfrac{x}{L} [\text{L}] \\
+\Leftrightarrow x [\text{m}] &= L\hat{x}  
+\end{align}
+$$
+
+How did this effect my Hamiltonina $H$? The interaction term gets transformed:
+$$V(x_1-x_2)= \frac{\mathcal{C}}{|x_1-x_2|}= \frac{\mathcal{C}/L}{|\hat{x}_1-\hat{x}_2|}$$
+
+This results in a natural units of energy to be given by the relation of the characteristic interaction strength $\mathcal{C}$ per characteristic length scale $L$. So we considere in relation to the $\mathcal{C}/L$: 
+$$\frac{H(u)}{\mathcal{C}/L} =  \frac{p_1^2}{2m_1\,\mathcal{C}/L}+\frac{p_2^2}{2m_2\,\mathcal{C}/L}+\frac{1}{|\hat{x}_1-\hat{x}_2|}=\frac{E}{\mathcal{C}/L}.$$
+
+With the dimensions of energy, spanning 
+
+### Lost Wonderers Thoughts:
