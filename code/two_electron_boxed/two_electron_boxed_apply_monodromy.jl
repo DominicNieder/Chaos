@@ -3,64 +3,11 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 using DynamicalSystems, OrdinaryDiffEq, LinearAlgebra, GLMakie, Random, JSON3, JLD2,
       NonlinearSolve, ADTypes, DataFrames, Dates, ProgressMeter, Printf, ColorSchemes
 include("../styles/makie_theme.jl")
-include("../models/henon_heiles.jl")
 
 
-BLAS.set_num_threads(1)          # your linear algebra is 2x2; BLAS threads only compete
+# include the integrators
+include("integrators-and-setup.jl")
 
-const CONFIG_DIR = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
-const DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/simulation/simn-y256-py0/")
-const FIG_DIR    = joinpath(@__DIR__, "../../figures/henon-heiles/periodic-orbits/")
-const SAVE_DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/periodic-orbits/")
-
-data_file        = joinpath(DATA_DIR, "E0.1127-T10000.0-py0.0-n256.jld2")
-
-configurations = JSON3.read(read(CONFIG_DIR, String))
-cfg            = configurations.explore
-param          = [Float64(cfg.a.value), Float64(cfg.m.value), Float64(cfg.w.value)]
-dt             = Float64(cfg.dt.value)
-x0             = Float64(cfg.x0.value)
-
-
-
-
-const CC_TOL  = 1e-13
-const INT_TOL = 1e-14
-const PMAP_ROOT_TOL = 1e-11
-const PMAP_PRIME_TOL = 1e-9
-
-
-mutable struct SectionParams1{IF, P}
-    integ_fast  :: IF
-    yf          :: Vector{Float64}
-    pyf         :: Vector{Float64}
-    tsf         :: Vector{Float64}
-    nmax_fast   :: Ref{Int}
- 
-    E           :: Float64
-    p           :: P
-    tmax        :: Float64
-end
-
-mutable struct SectionParams{IF, ID, P}
-    integ_fast  :: IF
-    yf          :: Vector{Float64}
-    pyf         :: Vector{Float64}
-    tsf         :: Vector{Float64}
-    nmax_fast   :: Ref{Int}
- 
-    integ_dense :: ID
-    yd          :: Vector{Float64}
-    pyd         :: Vector{Float64}
-    tsd         :: Vector{Float64}
-    nmax_dense  :: Ref{Int}
-
-    E           :: Float64
-    p           :: P
-    tmax        :: Float64
-end
-
-set_energy!(prm::SectionParams, E) =(prm.E = E) 
 
 
 
@@ -80,15 +27,8 @@ end
 orbit_table() = DataFrame(Row[])
 
 
-# --- background section ---
-# data = load(data_file, "results")
-# y_all, py_all = Float32[], Float32[]
-# for d in data
-#     append!(y_all,  d.sec_y)
-#     append!(py_all, d.sec_py)
-# end
 
-const EPS_OFF = 1e-9
+
 
 "returns -> 1 := elliptic, 2 := hyperbollic (stable), 3 := hyperbollic (unstable), 4 := parabolic,"
 function kind_index(τ; ε = 1e-6)
@@ -102,42 +42,73 @@ const KIND_MS    = [:circle, :xcross, :diamond, :utriangle]
 const KIND_LABEL = ["elliptic", "hyperbolic", "inverse hyperbolic", "parabolic"]
 
 
+# =======================================================================
+#                       Model 2 electrons in box
+# =======================================================================
+
+V_int(u,p)= p.C / abs(u[1] - u[2])  # interaction potential
+
+Kin(u,p)= u[3]^2 / (2p.m1) + u[4]^2 / (2p.m2)  # total kinetic energy
+
+energy(u, p) = Kin(u,p) + V_int(u,p)  # total energy
+
+# ----------------------------------------------------------------------
+# all possible init conditions on manningfold of energy()=E
+# ----------------------------------------------------------------------
+
+"""
+    Determening the momentum p2 (second particle)
+    p=(;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8)
+u0 = [x1,x2,p1, _]
+"""
+function init_u0(u0, E, p)
+    K = E - V_int(u0, p) - u0[4]^2/(2p.m1)
+    K ≥ 0 || error("no real p₂: energy E is below the potential + p₁ contribution")
+    [u0[1], u0[2], sqrt(2p.m2 * K), u0[4]]
+end
+
+"Box considered, in units of characteristic box lenght [L]
+
+B1(1|------|2)-B2(1|------|2)"
+get_boxes(p::NamedTuple) = ((-p.del/2-1, -p.del/2), (p.del/2, p.del/2+1))
 
 
-px2(y, py, E, p)    = 2p[2] * (E - HenonHeiles.potential(0.0, y, p)) - py^2
-in_section(v, E, p) = px2(v[1], v[2], E, p) > 0
-pymax(y, E, p) = sqrt(max(0.0, 2 * p[2] * (E - HenonHeiles.potential(0.0, y, p))))
+
+p12(x2, p2, E, p)    = 2*p.m2 * (E - V_int([0.0, x2, NaN, p2], p) - py^2/(2*p.m2)) 
+in_section(v, E, p) = p12(v[1], v[2], E ,p) > 0
+pymax(y, E, p) = sqrt(max(0.0, 2 * p[2] * (E - Pot(0.0, y, p))))
 
 
 
-boundary(E,p) = HenonHeiles.section_boundary(HenonHeiles.section_boundary_ranges(E, p, 100)...)
+
+
+const EPS_OFF = 1e-9           # offset to the surface of section
+
 
 "Lift (y, py) to a 4D state. Offset follows sign(px) -> no phantom t=0 crossing."
 function lift(v, E, p; sgn = +1)
-    a = px2(v[1], v[2], E, p)
+    a = p12(v[1], v[2], E, p)
     a <= 0 && return nothing
     return [EPS_OFF, v[1], sgn * sqrt(a), v[2]]
 end
 
-function get_traj(u0, t;p=(1.0,1.0,1.0), abstol=INT_TOL, reltol=INT_TOL)
-    prob = ODEProblem(HenonHeiles.equations!, u0, (0.0, t), p)
-    sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol)
-    return sol.u
+function get_traj(u0, t;
+    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-9), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
+    cb, pts = wall_callback(p; cc_tol=cc_tol)
+    prob = ODEProblem(eom!, u0, (0.0, t), p)
+    sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol, callback= cb)
+    return sol.u, sol.t, pts
 end
 
 """
     flow ϕₜ takes u(0) to u(t)
-The equations are defined in HenonHeiles.equations!
-p = (1,1,1) i.e. 
-    α = 1
-    m = 1
-    w = 1
+    p=(;C, m1, m2, del)
 """
-function flow(u0, t; p=(1.0,1.0,1.0), abstol = INT_TOL, reltol = INT_TOL)
+function flow(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8), abstol = INT_TOL, reltol = INT_TOL)
     return get_traj(u0, t; p=p, abstol = abstol, reltol = reltol)[end]
 end
 
-function monodromy(u0, t; p=(1.0,1.0,1.0), d=1e-7, abstol = INT_TOL, reltol = INT_TOL)
+function monodromy(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8), d=1e-7, abstol = INT_TOL, reltol = INT_TOL)
 
     M   = zeros(4, 4)
     for j in 1:4
@@ -180,81 +151,9 @@ function minPeriodicity(v, prm; pmap_prime_tol = PMAP_PRIME_TOL, search = 40)
     return (; traj = sol.u, pMap = trace, Nperiod = nothing, Tperiod = nothing)
 end
 
-"""
-Build the fast (residuals) and dense (trajectories) integrators.
- 
-Returns the nmax Refs as well -- always construct `SectionParams` from these
-returned Refs, never from freshly-made ones, or writes to `prm.nmax_*` will be
-invisible to the callbacks.
-"""
-function integrator(p; 
-    tmax = 20_000.0, kind=:fast, n = 1, cc_tol = CC_TOL, int_tol=INT_TOL, save_everystep = false, save_start = false)
-    nmax = Ref(n)
-    condition(u, t, integ) = u[1]
- 
-    # --- fast: no trajectory saved, terminates as soon as n crossings are in ---
-    y, py, ts = Float64[], Float64[], Float64[]
-    affect_f!(integ) = begin
-        push!(y, integ.u[2]); push!(py, integ.u[4]); push!(ts, integ.t)
-        length(y) ≥ n[] && terminate!(integ)
-    end
-    cont_callback   = ContinuousCallback(condition, affect_f!, nothing;
-                                                    abstol = cc_tol)
-    prob            = ODEProblem(HenonHeiles.equations!, zeros(4), (0.0, tmax), p)
-    if kind == :dense
-        integ      = init(prob, Vern9(); 
-                            abstol = 1e-14, reltol = int_tol,
-                            save_everystep = save_everystep, save_start = save_start,
-                            callback = cont_callback)
-    elseif kind == :fast
-        integ      = init(prob, Vern9();
-                            abstol = 1e-14, reltol = int_tol,
-                            save_everystep = false, save_start = false,
-                            callback = cont_callback)
-    else
-        error("kind must be :fast or :dense")
-    end
-    return (; integ, y, py, ts, nmax)
-end
-
-"""
-Build the fast (residuals) and dense (trajectories) integrators.
- 
-If you want to look at the orbits in configuration space, set save_everystep = true in the dense integrator, and then use `section_trj` to get the trajectory.
-"""
-function create_integrators(p; 
-             tmax = 20_000.0, nfast = 1, ndense = 40, 
-             cc_tol = CC_TOL, int_tol = INT_TOL, 
-             save_everystep = save_everystep, save_start = save_start)
-
-    condition(u, t, integ) = u[1]
- 
-    # --- fast: no trajectory saved, terminates as soon as n crossings are in ---
-    i_fast = integrator(p; tmax, kind=:fast, n=nfast, cc_tol, int_tol, save_everystep = false, save_start = false)
- 
-    # --- dense: saves the trajectory for plotting / period detection ---
-    i_dense = integrator(p; tmax, kind=:dense, n=ndense, cc_tol, int_tol, save_everystep = save_everystep, save_start = save_start)
- 
-    return (; integ_fast = i_fast.integ, yf = i_fast.y, pyf = i_fast.py, tsf = i_fast.ts, nmax_fast = i_fast.nmax, integ_dense = i_dense.integ, yd = i_dense.y, pyd = i_dense.py, tsd = i_dense.ts, nmax_dense = i_dense.nmax)
-end
 
 
-function SectionParams(E, p, num_int; 
-          tmax = 20_000.0, nfast = 1, ndense=40, 
-          cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = true, save_start = true)
-    # if num_int == :fast
-    #     b = root_integrator(p; tmax, nfast, cc_tol = cc_tol, int_tol = int_tol, save_everystep = false, save_start = false)
-    #     return SectionParams1(b.integ_fast, b.yf, b.pyf, b.tsf, b.nmax_fast, E, p, tmax)
-    # elseif num_int == :dense
-    #     b = root_integrator(p; tmax, nfast, cc_tol = cc_tol, int_tol = int_tol, save_everystep = seve_everystep, save_start = save_start)
-    #     return SectionParams1(b.integ_fast, b.yf, b.pyf, b.tsf, b.nmax_fast, E, p, tmax)
-    if num_int == :both
-        b = create_integrators(p; tmax, nfast=nfast, ndense=ndense, cc_tol, int_tol, save_everystep = save_everystep, save_start = save_start)
-        return SectionParams(b.integ_fast, b.yf, b.pyf, b.tsf, b.nmax_fast, b.integ_dense, b.yd, b.pyd, b.tsd, b.nmax_dense, E, p, tmax)
-    else
-        error("num_int must be :both")
-    end
-end
+
 
 "n-th crossing of the section, starting from v. This is T^n(v)."
 function T(v, n::Int, prm::SectionParams)
@@ -475,7 +374,7 @@ finding three base orbits at energy
     (;orb=(; df, timing, seeds), fig=(f, ax))
 """
 function get_obrits_ABC(;
-    p            = (1.0, 1.0, 1.0),
+    p            = (;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8),
     Emin         = 0.01,
     nfast        = 1,              # crossings the dense integrator may take
     ndense       = 2,
@@ -535,7 +434,7 @@ end
     return orbs0
 """
 function follow_ABC!(orbs0, Es; 
-                 p=(1.0,1.0,1.0), tmax = 100_000.0, nfast = 1, ndense = 1, verbose = false)
+                 p=(;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8), tmax = 100_000.0, nfast = 1, ndense = 1, verbose = false)
     prm = SectionParams(orbs0.E[1], p, :both; tmax, nfast, ndense, save_everystep = false, save_start = false)
 
     for o in collect(eachrow(orbs0))
@@ -570,7 +469,7 @@ end
 
     This takes care of (NaN or Inf) ∈ M
 """
-function monodrome(orbits; p = (1.0,1.0,1.0), verbose=false)
+function monodrome(orbits; p = (;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8), verbose=false)
     M    = Vector{Matrix{Float64}}(undef, nrow(orbits))
     check = falses(nrow(orbits))
 
@@ -632,7 +531,7 @@ get_phase2(λs)                 = angle(λs[2])
 # get_phase(M::Matrix) = get_phase(eigvals(M))
 
 function ABC_energy_trace(;nup=5000,ndown=5000)
-    p            = (1.0, 1.0, 1.0)
+    p            = (;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8)
     E_fix        = 0.11  # this is the one I fixed
     E_max        = 1.0
     Es_up        = collect(range(E_fix, E_max, nup))[2:end]
@@ -746,7 +645,7 @@ end
 """
     I want a function that generates the the (p,q)-orbits. It is my goal to see or visualize the torus of my preiodic orbits.
 """
-function tori(orbits; labels = unique(orbits.str), p = (1.0, 1.0, 1.0),
+function tori(orbits; labels = unique(orbits.str), p = (;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8),
                n_periods = 1, n_unst_perido = 10, n_per_shell = 4,
                shell_radius = 3e-3, n_shells = 2,
                colors = COLOR_SCHEME, fig_size = (1400, 1000),
@@ -808,21 +707,21 @@ end
 
 
 
-res = ABC_energy_trace(nup=5000, ndown=5000).all_ABC
+# res = ABC_energy_trace(nup=5000, ndown=5000).all_ABC
 
-orbits = append_monodrome(res)
-
-
-set_style!(:print)  # :print
-to = tori(orbits; labels=["A", "B", "C"], n_periods=1, 
-            n_unst_perido=1, n_per_shell=3, n_shells=1, 
-            shell_radius = 6e-3, 
-            azimuth = π, elevation = 0.05, perspectiveness = 0.0,
-            mask=false)
-display(to.fig)
+# orbits = append_monodrome(res)
 
 
-figs = graphs(orbits)
+# set_style!(:print)  # :print
+# to = tori(orbits; labels=["A", "B", "C"], n_periods=1, 
+#             n_unst_perido=1, n_per_shell=3, n_shells=1, 
+#             shell_radius = 6e-3, 
+#             azimuth = π, elevation = 0.05, perspectiveness = 0.0,
+#             mask=false)
+# display(to.fig)
+
+
+# figs = graphs(orbits)
 
 
 # display(figs.fA.fλ)
