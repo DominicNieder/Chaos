@@ -28,13 +28,13 @@ const PMAP_PRIME_TOL = 1e-9    # tollerace for saying that two roots belong to t
 const DEL_BOX = 1e-3           # offset between the two boxes that breaks the symmetry of the charged point particles
 
 
-p = (;C=-1.0, m1=1.0, m2=1.0, L=1.0, del= 1DEL_BOX)
+p = (;C=1, m1=1.0, m2=1.0, L=1.0, del= 1DEL_BOX)
 
+E  = 1
+v2 = [0.1,0.1]
 
-
-u0 = [-0.5, 0.5, 0.01, 0.0]
-E = energy(u0, p)
-println("@$u0: E= ",E)
+u0 = lift(v2,E,p)
+println("@$u0: E= ",energy(u0, p))
 
 
 # params = SectionParams(E, p; 
@@ -45,20 +45,22 @@ u, t, pts= get_traj(u0, int_time;
                     p=p, abstol=INT_TOL, reltol=INT_TOL)
 
 
+
 xs = first.(u,2)
 ps = last.(u,2)
 xone= Point2f.(zip(t, first.(xs)))
 xtwo= Point2f.(zip(t, last.(xs)))
 sec = Point2f.(first.(pts,2))
-
+sec_boundary  = boundary(E; p)
 set_style!(:dark)
 fig = Figure(size=(1300,900))
 
-ax_sec = Axis(fig[1,1], xlabel=L"x_2\, [L]", ylabel=L"p_2")
-ax_traj= Axis(fig[2,1],xlabel="time", ylabel="position in characteristic box size L", )
+ax_sec = Axis(fig[2,1], xlabel=L"x_2\, [L]", ylabel=L"p_2")
+ax_traj= Axis(fig[1,1:2],xlabel="time", ylabel="position in characteristic box size L", )
 ax_energy= Axis(fig[2,2], xlabel="time", ylabel=L"\text{Energy}\,[\mathcal{C}/L]")
-lines!(ax_traj, xone[1:2*500])
-lines!(ax_traj, xtwo[1:2*500])
+lines!(ax_traj, xone[1:2*2*500])
+lines!(ax_traj, xtwo[1:2*2*500])
 scatter!(ax_sec, sec)
-lines!(ax_energy, t, [abs(energy(ui,p)- E)/E for ui in u] )
+scatter!(ax_sec, sec_boundary, color= INK)
+lines!(ax_energy, t, [abs(energy(ui,p)- E)*p.L/E/p.C for ui in u] )
 display(fig)

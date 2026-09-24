@@ -69,28 +69,66 @@ end
 
 "Box considered, in units of characteristic box lenght [L]
 
+    (dB(1,1), dB(1,2)), (dB(2,1), dB(2,2))
+
 B1(1|------|2)-B2(1|------|2)"
-get_boxes(p::NamedTuple) = ((-p.del/2-1, -p.del/2), (p.del/2, p.del/2+1))
+get_boxes(p::NamedTuple) = ((-(p.L+p.del/2), -p.del/2), (p.del/2, (p.L + p.del/2)))
 
+function in_box(u::Vector{Float64}, p; tol=0.0)
+    b1, b2 = get_boxes(p)
+    x1 = u[1]
+    x2 = u[2]
+    println("x2=$x2 b2=$b2, x1=$x1, b2=$b1")
+    return (b1[1] - tol <= x1 <= b1[2] + tol) &&
+    (b2[1] - tol <= x2 <= b2[2] + tol)
+end
 
+const EPS_OFF = 1e-15           # offset to the surface of section
 
-p12(x2, p2, E, p)    = 2*p.m2 * (E - V_int([0.0, x2, NaN, p2], p) - py^2/(2*p.m2)) 
+section_x1(p) = p.C > 0 ? get_boxes(p)[1][1] + EPS_OFF : get_boxes(p)[1][2] - EPS_OFF
+
+# p1^2 on the section, at the actual wall position
+p12(x2, p2, E, p) = 2p.m1 * (E - V_int([section_x1(p), x2, NaN, p2], p) - p2^2/(2p.m2))
 in_section(v, E, p) = p12(v[1], v[2], E ,p) > 0
 pymax(y, E, p) = sqrt(max(0.0, 2 * p[2] * (E - Pot(0.0, y, p))))
 
 
 
-
-
-const EPS_OFF = 1e-9           # offset to the surface of section
-
-
-"Lift (y, py) to a 4D state. Offset follows sign(px) -> no phantom t=0 crossing."
-function lift(v, E, p; sgn = +1)
+function lift(v, E, p)
+    in_section(v, E, p) || error("v=$v not in section")
     a = p12(v[1], v[2], E, p)
-    a <= 0 && return nothing
-    return [EPS_OFF, v[1], sgn * sqrt(a), v[2]]
+    a > 0 || return nothing
+    sgn = p.C > 0 ? -1.0 : 1.0          # moving toward the section wall
+    u = [section_x1(p), v[1], sgn*sqrt(a), v[2]]
+    in_box(u, p) || error("Did not lift correctly: x1=$(u[1]), box1=$(get_boxes(p)[1])")
+    return u
 end
+
+
+
+"""
+Calculate the boundary of phase space, where p1=0 and x1=dB(1,j)
+
+    return Point2f.(x2, p), for length of n points, the boundary goes round once
+"""
+function boundary(E; p=(; C=-1.0, m1=1.0, m2=1.0, L=1.0, del=DEL_BOX), n=400)
+    dB  = get_boxes(p)
+    x1  = p.C > 0 ? dB[1][1] : dB[1][2]          # section: particle 1 fixed here
+    x2  = range(dB[2][1], dB[2][2]; length=n)    # sweep all of box 2
+
+    p2 = map(x2) do x
+        K = E - V_int([x1, x, NaN, NaN], p)      # kinetic energy available (p1 = 0)
+        K >= 0 ? sqrt(2p.m2 * K) : NaN           # NaN = forbidden, breaks the line
+    end
+
+    upper = Point2f.(x2, p2)
+    lower = Point2f.(reverse(x2), -reverse(p2))
+    return vcat(upper, lower, upper[1:1])        # closed curve
+end
+
+
+
+
 
 function get_traj(u0, t;
     p=(;C=1.0,m1=1.0,m2=1.0, del=1e-9), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
