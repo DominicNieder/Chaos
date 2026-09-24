@@ -3,7 +3,8 @@
 - [ ] I want to write into a LaTex file about my findings on the Hénon–Heiles Model
 - [ ] I want to start looking at my system at hand': Two trapped point particles
 - [ ] I am still curiuous to find out more about how Tori get destroyed whilst new periodic orbits are created 
-- [ ] How to determine the unitless-ness of my system
+- [x] How to determine the unitless-ness of my system
+- [ ] Now that I have the Energy in units of $\mathcal{C}/L$ how about the units of momentum?
 
 ---
 
@@ -40,6 +41,50 @@ $$V(x_1-x_2)= \frac{\mathcal{C}}{|x_1-x_2|}= \frac{\mathcal{C}/L}{|\hat{x}_1-\ha
 This results in a natural units of energy to be given by the relation of the characteristic interaction strength $\mathcal{C}$ per characteristic length scale $L$. So we considere in relation to the $\mathcal{C}/L$: 
 $$\frac{H(u)}{\mathcal{C}/L} =  \frac{p_1^2}{2m_1\,\mathcal{C}/L}+\frac{p_2^2}{2m_2\,\mathcal{C}/L}+\frac{1}{|\hat{x}_1-\hat{x}_2|}=\frac{E}{\mathcal{C}/L}.$$
 
-With the dimensions of energy, spanning 
+With the dimensions of energy given by $\mathcal{C}/L$.
+
+How about the units of momentum and time?
+Energy is in units $E_{\text{sys}}[\mathcal{C}/L]$ and in units of length $L$, mass $\text{}$ and time $\text{t}$, $E_{\text{SI}}[(L/\text{t})^2\text{m}]$ we can equate these $E_{\text{sys}}=E_{\text{SI}}$ to obtain the units of time:
+
+$$\begin{align}
+1[(L/\text{t})^2\text{m}]&=1[\mathcal{C}/L]\\
+1[\text{t}^2] &=1[L^3\text{m}/\mathcal{C}]
+\end{align}$$
+
+Here a suggestion, without much thought: As a simple model, I will set $m_1=m_2=1\text{m}$ so that both point mass are the same, and would simplify my units for the system.
+
+### surface of section
+
+Yet again, considering the boundary of the surface of section:
+The surface of section will be a plane which position depends on the sign of the characteristic interaction strenght $\mathcal{C}$. 
+If $\mathcal{C}<0$ then the ineraction is repulsive and the boundaries further apart, are sure to make contact, where as the opposite is the case for $\mathcal{C}>0$. Thus, without loss of generality, we choose particle $1$ as the conditional particle. Depending on the sign of the characteristic interaction strenght $\mathcal{C}$ either $\partial B(1,1)$ ($\mathcal{C}<0$, repulsive) or $\partial B(1,2)$ ($\mathcal{C}>0$, attractive) will mark the point that span the surface of section $\Sigma=\text{span}(x_2,p_2)$. We shall refere to the boundary of particle $1$ as $\partial B(1,\_)=\partial B=\{-(1+\delta),-\delta\}$
+
+**Finding the boundary**
+Remember that the kinetic energy term is positive $T(p_i)\geq 0$ for all $p_i$. 
+$$\begin{align}
+H(u)=T(p_1)+T(p_2)+V(x_1,x_2)&=E\\
+\Rightarrow T(p_2)+ V(\partial B(j),x_2)&\leq E
+\end{align}$$
+
+We are seeking all points $\{(x_2,p_2)|T(p_2)+ V(\partial B(j),x_2)-E=0\}$.
+
+The code, scans through the range of $x_2\in\mathcal{B}(2)$ and determine all $p_2$ that sattisfy this condition.
+
+``` Julia
+function boundary(E; p=(; C=-1.0, m1=1.0, m2=1.0, L=1.0, del=DEL_BOX), n=400)
+    dB  = get_boxes(p)
+    x1  = p.C > 0 ? dB[1][1] : dB[1][2]          # section: particle 1 fixed here
+    x2  = range(dB[2][1], dB[2][2]; length=n)    # sweep all of box 2
+
+    p2 = map(x2) do x
+        K = E - V_int([x1, x, NaN, NaN], p)      # kinetic energy available (p1 = 0)
+        K >= 0 ? sqrt(2p.m2 * K) : NaN           # NaN = forbidden, breaks the line
+    end
+
+    upper = Point2f.(x2, p2)
+    lower = Point2f.(reverse(x2), -reverse(p2))
+    return vcat(upper, lower, upper[1:1])        # closed curve
+end
+```
 
 ### Lost Wonderers Thoughts:
