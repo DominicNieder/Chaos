@@ -52,20 +52,22 @@ Kin(u,p)= u[3]^2 / (2p.m1) + u[4]^2 / (2p.m2)  # total kinetic energy
 
 energy(u, p) = Kin(u,p) + V_int(u,p)  # total energy
 
+
+"""
+This system has a upper boundary, for which the energy is not accessible. This is when they the two particles are as far away/close from another as possible. At some point the particle cannot decrease in the system. This is a consequence of an inifit interaction potential V_int, and a finit configuration space. 
+"""
+function sec_energy_boundry(p)
+    sgn1 = p.C > 0 ? 1 : 2          # moving away from the section wall
+    sgn2 = p.C > 0 ? 2 : 1
+    b1, b2 = get_boxes(p)
+    bsec= b1[sgn1]
+    ext_pos= b2[sgn2]
+    return V_int([bsec, ext_pos, 0, 0], p)
+end
+
 # ----------------------------------------------------------------------
 # all possible init conditions on manningfold of energy()=E
 # ----------------------------------------------------------------------
-
-"""
-    Determening the momentum p2 (second particle)
-    p=(;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8)
-u0 = [x1,x2,p1, _]
-"""
-function init_u0(u0, E, p)
-    K = E - V_int(u0, p) - u0[4]^2/(2p.m1)
-    K ≥ 0 || error("no real p₂: energy E is below the potential + p₁ contribution")
-    [u0[1], u0[2], sqrt(2p.m2 * K), u0[4]]
-end
 
 "Box considered, in units of characteristic box lenght [L]
 
@@ -98,7 +100,7 @@ function lift(v, E, p)
     in_section(v, E, p) || error("v=$v not in section")
     a = p12(v[1], v[2], E, p)
     a > 0 || return nothing
-    sgn = p.C > 0 ? -1.0 : 1.0          # moving toward the section wall
+    sgn = p.C > 0 ? 1.0 : -1.0          # moving away from the section wall
     u = [section_x1(p), v[1], sgn*sqrt(a), v[2]]
     in_box(u, p) || error("Did not lift correctly: x1=$(u[1]), box1=$(get_boxes(p)[1])")
     return u
@@ -131,7 +133,7 @@ end
 
 
 function get_traj(u0, t;
-    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-9), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
+    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-3, L=1), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
     cb, pts = wall_callback(p; cc_tol=cc_tol)
     prob = ODEProblem(eom!, u0, (0.0, t), p)
     sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol, callback= cb)
@@ -162,11 +164,11 @@ function section_trj(v, prm)
     u0 = lift(v, prm.E, prm.p)
     u0 === nothing && error("point $v outside energy boundary")
 
-    empty!(prm.yd); empty!(prm.pyd); empty!(prm.tsd)
+    empty!(prm.ptsd)
     reinit!(prm.integ_dense, u0)
     solve!(prm.integ_dense)
     sol = prm.integ_dense.sol
-    return sol, permutedims([prm.yd prm.pyd]), copy(prm.tsd)
+    return sol, first.(prm.ptsd,2), copy(last.(prm.pts))
 end
 
 "Find the smallest k with |T^k v - v| < tol.
@@ -200,7 +202,7 @@ function T(v, n::Int, prm::SectionParams)
  
     n > prm.nmax_fast[] && (prm.nmax_fast[] = n)
  
-    empty!(prm.yf); empty!(prm.pyf); empty!(prm.tsf)
+    empty!(prm.ptsf)
     reinit!(prm.integ_fast, u0)
     solve!(prm.integ_fast)
  
