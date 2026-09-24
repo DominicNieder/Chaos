@@ -1,7 +1,7 @@
 ### To do!
 
 - [ ] I want to write into a LaTex file about my findings on the Hénon–Heiles Model
-- [ ] I want to start looking at my system at hand': Two trapped point particles
+- [x] I want to start looking at my system at hand': Two trapped point particles
 - [ ] I am still curiuous to find out more about how Tori get destroyed whilst new periodic orbits are created 
 - [x] How to determine the unitless-ness of my system
 - [ ] Now that I have the Energy in units of $\mathcal{C}/L$ how about the units of momentum?
@@ -86,5 +86,23 @@ function boundary(E; p=(; C=-1.0, m1=1.0, m2=1.0, L=1.0, del=DEL_BOX), n=400)
     return vcat(upper, lower, upper[1:1])        # closed curve
 end
 ```
+
+
+### Observations of the two charged particles serperated by boxes
+
+
+
+![$\mathcal{C}=-1$: Boundary of the section for the two-box system. We observe the minimal energy accessible to the system!](../../figures/two-boxed-charges/section-boundary/C-1-boundaries_of_section.png)
+
+![$\mathcal{C}=+1$:Boundary of the section for the two-box system. We observe the minimal energy accessible to the system!](../../figures/two-boxed-charges/section-boundary/C1-boundaries_of_section.png)
+
+
+The figure shows the boundary of the Poincaré section for the repulsive two-particle system, with particle 1 fixed at the selected boundary point and particle 2 sampled across its allowed box. The closed curve is obtained by solving the energy constraint
+$$
+T(p_2) + V(\partial B, x_2) = E
+$$
+for each position $x_2$ in the second box. The accessible states lie inside the enclosed region, while the curve itself marks the phase-space boundary where the kinetic energy available to particle 2 vanishes. This construction makes explicit how the fixed boundary condition on particle 1 defines a reduced two-dimensional section of the full four-dimensional dynamics.
+
+
 
 ### Lost Wonderers Thoughts:
