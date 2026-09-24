@@ -8,6 +8,7 @@
 
 ---
 
+
 ### Units of my system
 
 My hamiltoninan $H(u)=H(x_1,x_2,p_1,p_2)$ is given by the electromagnetic interaction potential $V(x_1,x_2)$, and the reflecting boundaries potnetial $V_b$, and of course the kinetic terms $T(p_i)$
@@ -57,16 +58,16 @@ Here a suggestion, without much thought: As a simple model, I will set $m_1=m_2=
 
 Yet again, considering the boundary of the surface of section:
 The surface of section will be a plane which position depends on the sign of the characteristic interaction strenght $\mathcal{C}$. 
-If $\mathcal{C}<0$ then the ineraction is repulsive and the boundaries further apart, are sure to make contact, where as the opposite is the case for $\mathcal{C}>0$. Thus, without loss of generality, we choose particle $1$ as the conditional particle. Depending on the sign of the characteristic interaction strenght $\mathcal{C}$ either $\partial B(1,1)$ ($\mathcal{C}<0$, repulsive) or $\partial B(1,2)$ ($\mathcal{C}>0$, attractive) will mark the point that span the surface of section $\Sigma=\text{span}(x_2,p_2)$. We shall refere to the boundary of particle $1$ as $\partial B(1,\_)=\partial B=\{-(1+\delta),-\delta\}$
+If $\mathcal{C}<0$ then the ineraction is repulsive and the boundaries further apart, are sure to make contact, where as the opposite is the case for $\mathcal{C}>0$. Thus, without loss of generality, we choose particle $1$ as the conditional particle. Depending on the sign of the characteristic interaction strenght $\mathcal{C}$ either $\partial \mathcal{B}(1,1)$ ($\mathcal{C}<0$, repulsive) or $\partial \mathcal{B}(1,2)$ ($\mathcal{C}>0$, attractive) will mark the point that span the surface of section $\Sigma=\text{span}(x_2,p_2)$. We shall refere to the boundary of particle $1$ as $\partial \mathcal{B}(1,\_)=\partial \mathcal{B}=\{-(1+\delta),-\delta\}$
 
 **Finding the boundary**
 Remember that the kinetic energy term is positive $T(p_i)\geq 0$ for all $p_i$. 
 $$\begin{align}
 H(u)=T(p_1)+T(p_2)+V(x_1,x_2)&=E\\
-\Rightarrow T(p_2)+ V(\partial B(j),x_2)&\leq E
+\Rightarrow T(p_2)+ V(\partial \mathcal{B}(j),x_2)&\leq E
 \end{align}$$
 
-We are seeking all points $\{(x_2,p_2)|T(p_2)+ V(\partial B(j),x_2)-E=0\}$.
+We are seeking all points $\{(x_2,p_2)|T(p_2)+ V(\partial \mathcal{B}(j),x_2)-E=0\}$.
 
 The code, scans through the range of $x_2\in\mathcal{B}(2)$ and determine all $p_2$ that sattisfy this condition.
 
@@ -99,10 +100,30 @@ end
 
 The figure shows the boundary of the Poincaré section for the repulsive two-particle system, with particle 1 fixed at the selected boundary point and particle 2 sampled across its allowed box. The closed curve is obtained by solving the energy constraint
 $$
-T(p_2) + V(\partial B, x_2) = E
+T(p_2) + V(\partial \mathcal{B}, x_2) = E
 $$
 for each position $x_2$ in the second box. The accessible states lie inside the enclosed region, while the curve itself marks the phase-space boundary where the kinetic energy available to particle 2 vanishes. This construction makes explicit how the fixed boundary condition on particle 1 defines a reduced two-dimensional section of the full four-dimensional dynamics.
 
+When varying the parameter $\mathcal{C}$ from negative we observe no converging behaviour, as to be expected. 
 
+![Here we sea a dense plot of the behavriour of the boundary of the surface of section with varying C from -1 to +1.](../../figures/two-boxed-charges/section-boundary/section-behaviour-dense-with-C.png)
+
+![This shows a zoome in display of the surface of section.](../../figures/two-boxed-charges/section-boundary/section-behaviour-with-C-with-lim.png)
+
+![This shows the full view, as the previous figure.](../../figures/two-boxed-charges/section-boundary/section-behaviour-with-C-with.png)
+
+
+### Looking at phase space
+
+![Trajectories, Poincaré section, and energy error for the two-particle system at \(E=-1.2\).](../../figures/two-boxed-charges/explore-surface-sections/some_traj@E-1.2.png)
+
+![Trajectories, Poincaré section, and energy error for the two-particle system at \(E=-1.0\).](../../figures/two-boxed-charges/explore-surface-sections/some_traj@E-1.0.png)
+
+![Trajectories, Poincaré section, and energy error for the two-particle system at \(E=1.2\).](../../figures/two-boxed-charges/explore-surface-sections/some_traj@E1.2.png)
+
+![Trajectories, Poincaré section, and energy error for the two-particle system at \(E=1.0\).](../../figures/two-boxed-charges/explore-surface-sections/some_traj@E1.0.png)
+
+
+The figure shows the trajectories of both particles, their intersections with the Poincaré section, and the corresponding energy error. The solid and dashed curves represent \(x_1\) and \(x_2\), respectively. The section plot shows the accessible \((x_2,p_2)\) states for the chosen initial conditions, while the energy plot confirms the numerical conservation of \(E\).
 
 ### Lost Wonderers Thoughts:
