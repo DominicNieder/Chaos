@@ -126,4 +126,17 @@ When varying the parameter $\mathcal{C}$ from negative we observe no converging 
 
 The figure shows the trajectories of both particles, their intersections with the Poincaré section, and the corresponding energy error. The solid and dashed curves represent \(x_1\) and \(x_2\), respectively. The section plot shows the accessible \((x_2,p_2)\) states for the chosen initial conditions, while the energy plot confirms the numerical conservation of \(E\).
 
+### On the nature of my interaction
+
+I can determine the boundary of my surface of section as a function $\hat{x}_2(p_2)$.
+
+One obtains a Laplacian expression
+
+$$\hat{x}_2 = \frac{2m_2\mathcal{C}/L}{2Em_2-p_2^2}-\partial \mathcal{B}(\mathcal{C})$$
+
+Here it is interesting to note, lets take $\text{sign}(\mathcal{C})=-1$, this means our Hamiltonian can have negative eigenvalues $H(u)=E$. 
+What this means, is that if the energy is negative, $E<0$ the two charged particles are bound. If the system is on the energy-shell whith positive eigenvalue, $E>0$, then the electrons are not bound by the interaction potential, though through the boundary conditions $x_1,x_2\in\mathcal{B}$. So it would be interesting if one observes some kind of transition, of a bound state to a free state.
+
+A sigularity at resonance $0>E\overset{!}{=} T(p_2)$ (implying $Em_2-p_2^2=0$) is avoided, as $T(p_2)\geq 0$. For $0<E\overset{!}{=} T(p_2)$, the sigularity is also avoided, as $V(x_2)\not=0$.
+
 ### Lost Wonderers Thoughts:
