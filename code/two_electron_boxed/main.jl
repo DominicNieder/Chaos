@@ -22,18 +22,17 @@ const CC_TOL  = 1e-13
 const INT_TOL = 1e-14          # how precise the integrator should be for sattisfactory convergance
 const PMAP_ROOT_TOL = 1e-11    # poincare returnmap precission to find periodic orbit, i.e. the root
 const PMAP_PRIME_TOL = 1e-9    # tollerace for saying that two roots belong to the same orbit
-const DEL_BOX = 1e-3           # offset between the two boxes that breaks the symmetry of the charged point particles
+const DEL_BOX = 1e-8           # offset between the two boxes that breaks the symmetry of the charged point particles
 
 
-p = (;C=-1, m1=1.0, m2=1.0, L=1.0, del= DEL_BOX)
-E  = 1.2p.C/p.L
+p = (;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= DEL_BOX)
+E  = 500 / (p.C/p.L)
 
-
-
-
-seeds = [[0.2,0.0], [0.80,0.0], [0.01,0.0]]  # C<0
+scatter(boundary(E;p=p,n=10000))
+seeds = [[0.0006,0.0], [0.0006,20]]  # C<0
 #seeds =  [[0.2,0.0], [0.32,0.0], [0.5,0.0]]
 u0s = [lift(v,E,p) for v in seeds]
+
 
 
 int_time = 10_000
@@ -44,9 +43,9 @@ set_style!(:dark)
 
 fig = Figure(size=(1300,900))
 ax_sec    = Axis(fig[2,1:2], xlabel=L"x_2\, [L]", ylabel=L"p_2")
-ax_traj   = Axis(fig[1,1:2], xlabel=L"t", ylabel=L"\hat{x}\, [\text{L}]")
+ax_traj   = Axis(fig[1,1:2], xlabel=L"\hat{x}_1\, [\text{L}]", ylabel=L"\hat{x}_2 \, [\text{L}]")
 ax_energy = Axis(fig[2,3],   xlabel=L"t", ylabel=L"\text{Energy}\,[\mathcal{C}/L]")
-[hlines!(ax_traj, get_boxes(p)[j][i], color=INK, linestyle=:dash) for i in 1:2, j in 1:2]
+# [hlines!(ax_traj, get_boxes(p)[j][i], color=INK, linestyle=:dash) for i in 1:2, j in 1:2]
 
 Es0 = Float64[]                                  # initial energy per seed, for the legend
 for (i, u0) in enumerate(u0s)
@@ -58,12 +57,12 @@ for (i, u0) in enumerate(u0s)
     xtwo = Point2f.(zip(t, last.(xs)))
     sec  = Point2f.(first.(pts, 2))
 
-    lines!(ax_traj, xone[1:2000], color=pick_color(i))
-    lines!(ax_traj, xtwo[1:2000], color=pick_color(i), linestyle=:dash)
+    lines!(ax_traj, Point2f.(xs), color=(pick_color(i),0.8))
+    # lines!(ax_traj, xtwo[1:2000], color=pick_color(i), linestyle=:dash)
     scatter!(ax_sec, sec, color=pick_color(i), markersize=4)
     lines!(ax_energy, t, [abs(energy(ui,p) - E)*p.L/E/p.C for ui in u], color=pick_color(i))
 end
-scatter!(ax_sec, boundary(E; p), color=INK, markersize=3)
+scatter!(ax_sec, boundary(E; p,n=1000), color=INK, markersize=3)
 
 # ── legend: component (line style) + seeds (colour, with E₀) ──
 comp_elems = [LineElement(color=:gray70, linestyle=:solid, linewidth=2),
@@ -91,5 +90,5 @@ Legend(fig[1,3], [comp_elems, seed_elems], [comp_labels, seed_labels],
 colsize!(fig.layout, 3, Auto(0.45))   # keep column 3 narrow so the legend sits snug
 
 folder = joinpath(FIG_DIR, "explore-surface-sections/")
-save(joinpath(folder, "some_traj@E$E.png"), fig)   # save AFTER the legend exists
+#save(joinpath(folder, "some_traj@E$E.png"), fig)   # save AFTER the legend exists
 display(fig)

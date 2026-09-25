@@ -74,7 +74,7 @@ end
     (dB(1,1), dB(1,2)), (dB(2,1), dB(2,2))
 
 B1(1|------|2)-B2(1|------|2)"
-get_boxes(p::NamedTuple) = ((-(p.L+p.del/2), -p.del/2), (p.del/2, (p.L + p.del/2)))
+get_boxes(p::NamedTuple) = ((-(p.L1+p.del/2), -p.del/2), (p.del/2, (p.L2 + p.del/2)))
 
 function in_box(u::Vector{Float64}, p; tol=0.0)
     b1, b2 = get_boxes(p)
@@ -92,9 +92,10 @@ section_x1(p) = p.C > 0 ? get_boxes(p)[1][1] + EPS_OFF : get_boxes(p)[1][2] - EP
 # p1^2 on the section, at the actual wall position
 p12(x2, p2, E, p) = 2p.m1 * (E - V_int([section_x1(p), x2, NaN, p2], p) - p2^2/(2p.m2))
 in_section(v, E, p) = p12(v[1], v[2], E ,p) > 0
-pymax(y, E, p) = sqrt(max(0.0, 2 * p[2] * (E - Pot(0.0, y, p))))
 
+possible_x2(p2,E,p) = 2p.m2*p.C*p.L/(2p.m2*E-p2^2) + section_x1(p)
 
+x2_is_possible(v,E,p) = v[1] <= possible_x2(v[2],E,p)
 
 function lift(v, E, p)
     in_section(v, E, p) || error("v=$v not in section")
@@ -113,7 +114,7 @@ Calculate the boundary of phase space, where p1=0 and x1=dB(1,j)
 
     return Point2f.(x2, p), for length of n points, the boundary goes round once
 """
-function boundary(E; p=(; C=-1.0, m1=1.0, m2=1.0, L=1.0, del=DEL_BOX), n=400)
+function boundary(E; p=(; C=-1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del=DEL_BOX), n=400)
     dB  = get_boxes(p)
     x1  = p.C > 0 ? dB[1][1] : dB[1][2]          # section: particle 1 fixed here
     x2  = range(dB[2][1], dB[2][2]; length=n)    # sweep all of box 2
@@ -133,7 +134,7 @@ end
 
 
 function get_traj(u0, t;
-    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-3, L=1), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
+    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-3, L1=1.0, L2=1.0), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
     cb, pts = wall_callback(p; cc_tol=cc_tol)
     prob = ODEProblem(eom!, u0, (0.0, t), p)
     sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol, callback= cb)
@@ -144,11 +145,11 @@ end
     flow ϕₜ takes u(0) to u(t)
     p=(;C, m1, m2, del)
 """
-function flow(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8), abstol = INT_TOL, reltol = INT_TOL)
+function flow(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, del= 1e-8,L2=1.0), abstol = INT_TOL, reltol = INT_TOL)
     return get_traj(u0, t; p=p, abstol = abstol, reltol = reltol)[end]
 end
 
-function monodromy(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8), d=1e-7, abstol = INT_TOL, reltol = INT_TOL)
+function monodromy(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8), d=1e-7, abstol = INT_TOL, reltol = INT_TOL)
 
     M   = zeros(4, 4)
     for j in 1:4
@@ -367,6 +368,9 @@ function already_found(df, v, prime; pmap_prime_tol = PMAP_PRIME_TOL)
 end
 
 
+function uniform_sample(E, p; nx2=5, np2=5, magin=EPS_OFF)
+    x2min, x2max = possible_x2(), possible_x2(0.0, E, p)
+end
 
 
 "creating the initial points from where the search starts from"
