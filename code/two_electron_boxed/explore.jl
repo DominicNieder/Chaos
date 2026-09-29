@@ -22,7 +22,7 @@ const CC_TOL  = 1e-13
 const INT_TOL = 1e-14          # how precise the integrator should be for sattisfactory convergance
 const PMAP_ROOT_TOL = 1e-11    # poincare returnmap precission to find periodic orbit, i.e. the root
 const PMAP_PRIME_TOL = 1e-9    # tollerace for saying that two roots belong to the same orbit
-const DEL_BOX = 0          # offset between the two boxes that breaks the symmetry of the charged point particles
+const DEL_BOX = 2e-5           # offset between the two boxes that breaks the symmetry of the charged point particles
 
 
 p = (;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= DEL_BOX)
@@ -90,5 +90,5 @@ Legend(fig[1,3], [comp_elems, seed_elems], [comp_labels, seed_labels],
 colsize!(fig.layout, 3, Auto(0.45))   # keep column 3 narrow so the legend sits snug
 ylims!(ax_sec, -200,200)
 folder = joinpath(FIG_DIR, "explore_boxGap/")
-#save(joinpath(folder, "E$E.png"), fig)   # save AFTER the legend exists
+save(joinpath(folder, "E$E.png"), fig)   # save AFTER the legend exists
 display(fig)

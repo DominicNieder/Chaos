@@ -134,7 +134,7 @@ end
 
 
 function get_traj(u0, t;
-    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-3, L1=1.0, L2=1.0), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
+    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-3, L1=1.0, L2=1.0), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL, maxiters=1e4)
     cb, pts = wall_callback(p; cc_tol=cc_tol)
     prob = ODEProblem(eom!, u0, (0.0, t), p)
     sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol, callback= cb)
