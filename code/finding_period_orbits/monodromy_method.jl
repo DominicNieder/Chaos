@@ -17,20 +17,24 @@ const SAVE_DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/sep16-latex/
 
 const RGRID  = range(-2.0, 2.0, length = 840)
 const EPOT   = [HenonHeiles.potential(x, y, (1.0,1.0,1.0)) for x in RGRID, y in RGRID]
-const LEVELS = [0.001, 0.01, 0.05,  0.1, 0.14,  0.166666,0.24,  0.6, 1.0, 1.5,2.3]# collect(logrange(5.0*0.009, 6.9*0.089, 10))
+const LEVELS = [0.001, 0.01, 0.05,  0.1,  0.166666,0.24,  0.6, 1.0, 1.5,2.3]# collect(logrange(5.0*0.009, 6.9*0.089, 10))
 
 
 if false
-    save_name= "pot_contour.png"
-    save_as=joinpath(FIG_DIR, save_name)
     set_style!(:print)
-    Fpot = Figure(size=(1300, 900))
-    axpot = Axis(Fpot[1,1], ylabel="y", xlabel="x")
-    contour!(axpot, RGRID, RGRID, EPOT, colormap=:viridis, labels=true,levels=LEVELS, linewidth=2.5)
-    xlims!(-1.25,1.25)
-    ylims!(-1.25,1.25)
-    save(save_as,Fpot, px_per_unit = 2)
-    display(Fpot)
+    save_as = joinpath(FIG_DIR, "pot_contour.png")
+
+    Fpot  = Figure(size = set_fig_size(0.8))
+    axpot = Axis(Fpot[1,1], xlabel = "x", ylabel = "y", aspect = DataAspect())
+
+    crange = extrema(LEVELS)
+    contour!(axpot, RGRID, RGRID, EPOT; levels = LEVELS[1:1],   labels = false,
+             colormap = CMAP_SEQ, colorrange = crange)
+    contour!(axpot, RGRID, RGRID, EPOT; levels = LEVELS[2:end], labels = true,
+             colormap = CMAP_SEQ, colorrange = crange)
+
+    limits!(axpot, -1.25, 1.25, -1.25, 1.25)
+    save(save_as, Fpot; pt_per_unit = 2)
 end
 
 
@@ -758,6 +762,9 @@ function halo_lines!(ax, pts; color, linewidth = 3.5, halo_color = (:black,0.5),
     lines!(ax, pts, color = halo_color, linewidth = linewidth + halo_width)  # dark cover
     lines!(ax, pts, color = color,      linewidth = linewidth)              # colored core
 end
+
+
+
 """
     I want a function that generates the the (p,q)-orbits. It is my goal to see or visualize the torus of my preiodic orbits.
 """
@@ -772,7 +779,7 @@ function tori(orbits; labels = unique(orbits.str), p = (1.0, 1.0, 1.0),
     function torus_of(label)
         sub = filter(o -> o.str == label, df)
         isempty(sub) && error("no orbit found for label $label")
-        o = sub[1, :]                        # reference (E, T, v) for this branch
+        o = sub[5000, :]                        # reference (E, T, v) for this branch
         E, T, v = o.E, o.T, o.v
         println(o.str)
         u0   = lift(v, E, p)
@@ -798,61 +805,73 @@ function tori(orbits; labels = unique(orbits.str), p = (1.0, 1.0, 1.0),
 
     results = [torus_of(lbl) for lbl in labels]
  
-    fig = Figure(size = fig_size)
-    # ax  = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_y",
+    fig = Figure(size = set_fig_size(0.8))
+    # ax  = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_x",
     #             title = "Invariant tori around the periodic orbits")
-    ax = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_y",
-               title = "Invariant tori around the periodic orbits",
+    ax = Axis3(fig[1, 1], xlabel = L"x", ylabel = L"y", zlabel = L"p_x",
                azimuth = azimuth, elevation = elevation,
                perspectiveness = perspectiveness)
+    x_plane = -0.55
+    y_plane = -0.55
+    px_min = minimum(
+        minimum(u[3] for u in traj)
+        for r in results for traj in (r.core, r.shell...)
+    ) - 0.05
+    px_max = maximum(
+        maximum(u[3] for u in traj)
+        for r in results for traj in (r.core, r.shell...)
+    ) + 0.05
 
+    function projected_path(traj, map_point)
+        points = Point3f[]
+        for state in traj
+            if mask && state[1] > 0
+                if !isempty(points) && !isnan(points[end][1])
+                    push!(points, Point3f(NaN, NaN, NaN))
+                end
+            else
+                push!(points, map_point(state))
+            end
+        end
+        return points
+    end
+
+    contour!(ax, RGRID, RGRID, EPOT;
+            levels=LEVELS,
+            color=:gray40,
+            linewidth=5.2,
+            transformation=(:xy, px_min))
     for (i, r) in enumerate(results)
         c = colors[mod1(i, length(colors))]
         for traj in r.shell
-            pts = mask ?  mask_positive_x(Point3f.(getindex.(traj,1), getindex.(traj,2), getindex.(traj,4))) : Point3f.(getindex.(traj,1), getindex.(traj,2), getindex.(traj,4))
-            lines!(ax, pts; color = (c, 1))
+            pts = Point3f.(getindex.(traj, 1), getindex.(traj, 2), getindex.(traj, 3))
+            mask && (pts = mask_positive_x(pts))
+            lines!(ax, pts; color = (c, 0.4))                  # no label: stays out of the legend
+
+            lines!(ax, projected_path(traj, u -> Point3f(u[1], u[2], px_min));
+                   color = (c, 0.25), linewidth = .5)
+            lines!(ax, projected_path(traj, u -> Point3f(x_plane, u[2], u[3]));
+                   color = (c, 0.25), linewidth = .5)
+            lines!(ax, projected_path(traj, u -> Point3f(u[1], y_plane, u[3]));
+                   color = (c, 0.25), linewidth = .5)
         end
-        core_pts = Point3f.(getindex.(r.core, 1), getindex.(r.core, 2), getindex.(r.core, 4))
-        lines!(ax, core_pts, color = c, linewidth = 4,
-               label = "$(r.label)  (E=$(round(r.E, digits=3)), T=$(round(r.T, digits=3)))")
+        core_pts = Point3f.(getindex.(r.core, 1), getindex.(r.core, 2), getindex.(r.core, 3))
+        lines!(ax, core_pts; color = c, linewidth = 2, label = "Orbit $(r.label)")
+        lines!(ax, projected_path(r.core, u -> Point3f(u[1], u[2], px_min));
+               color = (c, 0.3), linewidth = 1)
+        lines!(ax, projected_path(r.core, u -> Point3f(x_plane, u[2], u[3]));
+               color = (c, 0.3), linewidth = 1)
+        lines!(ax, projected_path(r.core, u -> Point3f(u[1], y_plane, u[3]));
+               color = (c, 0.3), linewidth = 1)
     end
     axislegend(ax, position = :rt)
+    xlims!(ax, x_plane, 0.55)
+    ylims!(ax, y_plane, 0.55)
+    zlims!(ax, px_min, px_max)
+
 
     return (; fig, ax, results)
 end
 
 
 
-res = ABC_energy_trace(nup=5000, ndown=5000).all_ABC
-orbits = append_monodrome(res)
-
-
-
-set_style!(:dark)  # :print
-to = tori(orbits; labels=["B", "C"], n_periods=1000, 
-            n_unst_perido=1000, n_per_shell=5, n_shells=1, 
-            shell_radius = 3e-3, 
-            azimuth = π, elevation = 0.05, perspectiveness = 0.0,
-            mask=true)
-display(to.fig)
-
-
-figs = graphs(orbits)
-
-
-display(figs.fA.fλ)
-# display(figs.fB.fλ)
-# display(figs.fC.fλ)
-
-display(figs.fA.fLy)
-# display(figs.fB.fLy)
-# display(figs.fC.fLy)
-
-display(figs.fA.fΘ)
-# display(figs.fB.fΘ)
-# display(figs.fC.fΘ)
-
-
-# xlims!(figs.fB.ax, -0.001, 0.1)
-# ylims!(figs.fB.ax, -0.5,3)
-# save(joinpath(FIG_DIR, "orbitA/Aeigenvalues-vs-E.png"), figs.fA.fig; px_per_unit = 2)

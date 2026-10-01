@@ -5,7 +5,13 @@ using CairoMakie
 # =========================================================================
 const FONT_LATEX = "Latin Modern Roman"    # pdflatex+lmodern / xelatex+fontspec
 # const FONT_LATEX = "CMU Serif"           # plain pdflatex (Computer Modern)
-const FONT_TYPST = "New Computer Modern"   # Typst default
+# const FONT_TYPST = "New Computer Modern"   # Typst default
+const FONT_TYPST = "Libertinus Serif"     # your template's font
+const DOC_FONT   = FONT_TYPST
+
+const TEXTWIDTH_PT = 453.5                # A4, 2.5 cm margins
+set_fig_size(frac = 0.8; aspect = 1.0) = (frac * TEXTWIDTH_PT, frac * TEXTWIDTH_PT * aspect)
+
 const FONT_DARK  = "CMU Serif"
 
 const DOC_FONT = FONT_LATEX   # <- switch this one line for LaTeX vs Typst
@@ -53,7 +59,7 @@ const LATEX_THEME = Theme(
     backgroundcolor = BG_PRINT, textcolor = RGBf(0,0,0),
     fonts = (regular = DOC_FONT, bold = DOC_FONT * " Bold",
              italic = DOC_FONT, bold_italic = DOC_FONT * " Bold"),
-    fontsize = 11,
+    fontsize = 10,
     Axis = (backgroundcolor = BG_PRINT,
         xgridcolor = RGBAf(0,0,0,0.10), ygridcolor = RGBAf(0,0,0,0.10),
         xticklabelcolor = :black, yticklabelcolor = :black,

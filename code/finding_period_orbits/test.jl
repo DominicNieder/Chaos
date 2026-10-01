@@ -90,7 +90,7 @@ end
 #      (q, p)  ->  (M q, τ M p).
 
 const SYM_GROUP = let
-    R  = [cospi(2/3) - sinpi(2/3); sinpi(2/3) cospi(2/3)]
+    R  = [cospi(2/3) -sinpi(2/3); sinpi(2/3) cospi(2/3)]
     S  = [-1.0 0.0; 0.0 1.0]
     d3 = [("E", Matrix{Float64}(I, 2, 2)), ("C3", R), ("C3²", R * R)]
     d3 = vcat(d3, [(n == "E" ? "σ" : "σ" * n, S * M) for (n, M) in d3])
