@@ -6,7 +6,7 @@
     margin: (left: 2.5cm, right: 2.5cm, top: 2.5cm, bottom: 2.5cm),
     numbering: "1",
   )
-  set text(font: "Libertinus Serif", size: 11pt, lang: "en")
+  set text(font: "Libertinus Serif", size: 11pt, lang: "en")  // or "New Computer Modern"
   set par(justify: true, leading: 0.75em)
   set heading(numbering: "1.1")
   show heading.where(level: 1): it => {
