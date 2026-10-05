@@ -1,0 +1,41 @@
+### To do!
+
+- [ ] writing down my process on Henon Heiles
+    - [ ] notes
+    - [ ] pots
+    - [ ] code 
+    - [ ] fluent text
+- [ ] looking at boxed charges 
+    - [x] effect of on the distance between boxes 'DEL'
+    - [ ] qualitative effect of energy scales before the second wall is hit
+
+---
+
+### quesitons
+
+- Why do I considere lyapunov exponents near the periodic orbits? 
+    - linearizaiton only makes sense near the periodic orbits?
+    - 
+
+### The effect of the distance
+
+It seems as if the distance between the boxes has a qualitative effect on the dynamics only after DEL>1e-6. Thus for now, I will choose DEL=1e-8 as the distance between the boxes. And later investigate the effect on the dynamics of the distance between the boxes again.
+
+::: {layout-ncol=3}
+![DEL = 0](../../figures/two-boxed-charges/explore_boxGap/E-500.0-P%28C%20=%20-1,%20m1%20=%201.0,%20m2%20=%201.0,%20L1%20=%201.0,%20L2%20=%201.0,%20del%20=%200.0%29.png)
+
+![DEL = 1e-13](../../figures/two-boxed-charges/explore_boxGap/E-500.0-P%28C%20=%20-1,%20m1%20=%201.0,%20m2%20=%201.0,%20L1%20=%201.0,%20L2%20=%201.0,%20del%20=%201.0e-13%29.png)
+
+![DEL = 1e-8](../../figures/two-boxed-charges/explore_boxGap/E-500.0-P%28C%20=%20-1,%20m1%20=%201.0,%20m2%20=%201.0,%20L1%20=%201.0,%20L2%20=%201.0,%20del%20=%201.0e-8%29.png)
+
+![DEL = 1e-7](../../figures/two-boxed-charges/explore_boxGap/E-500.0-P%28C%20=%20-1,%20m1%20=%201.0,%20m2%20=%201.0,%20L1%20=%201.0,%20L2%20=%201.0,%20del%20=%201.0e-7%29.png)
+
+![DEL = 1e-6](../../figures/two-boxed-charges/explore_boxGap/E-500.0-P%28C%20=%20-1,%20m1%20=%201.0,%20m2%20=%201.0,%20L1%20=%201.0,%20L2%20=%201.0,%20del%20=%201.0e-6%29.png)
+
+![DEL = 1e-5](../../figures/two-boxed-charges/explore_boxGap/E-500.0-P%28C%20=%20-1,%20m1%20=%201.0,%20m2%20=%201.0,%20L1%20=%201.0,%20L2%20=%201.0,%20del%20=%201.0e-5%29.png)
+:::
+:::
+
+
+
+### Lost Wonderers Thoughts:

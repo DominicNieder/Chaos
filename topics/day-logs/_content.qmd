@@ -1,4 +1,9 @@
 ::: {.callout-note collapse="false"}
+## 5 October, 2026
+
+{{< include ../26-10-05-log/_content.qmd >}}
+:::
+::: {.callout-note collapse="true"}
 ## 21 September, 2026
 
 {{< include ../26-09-21-log/_content.qmd >}}
