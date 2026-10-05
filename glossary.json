@@ -1,17 +1,4 @@
 {
-  "linear": {
-    "def": "",
-    "date": "2026-05-26",
-    "macro": "Linear",
-    "latex": "L"
-  },
-
-  "non-linear": {
-    "def": "",
-    "date": "2026-05-26",
-    "macro": null,
-    "latex": null
-  },
 
   "homeomorphism":{
     "def": "A continuous one-to-one map $f:A\\righarow B$ meaning f is injective and surjective, thus $f$ is bijective and $f^{-1}$ exists.",
@@ -22,6 +9,27 @@
 
   "diffeomorphism": {
     "def": "A continuously differentiable map $f: N \\to M$ between two manifolds, such that $f^{-1}: M \\rightarrow N$ is also differentiable. If $f$ is $r$-times differentiable it is called a $C^r$-diffeomorphism.",
+    "date": "2026-05-27",
+    "macro": null,
+    "latex": null
+  },
+
+  "manifold": {
+    "def": "A topological space that is locally homeomorphic to Euclidean space. A manifold can be equipped with additional structure, such as a differentiable structure, which allows for the definition of smooth functions and calculus on the manifold.",
+    "date": "2026-05-27",
+    "macro": null,
+    "latex": null
+  },
+
+  "stable manifold": {
+    "def": "A stable manifold is a set of points in the phase space of a dynamical system that asymptotically approach a stable equilibrium point as time goes to infinity. It represents the long-term behavior of trajectories that start near the equilibrium.",
+    "date": "2026-05-27",
+    "macro": null,
+    "latex": null
+  },
+
+  "unstable manifold": {
+    "def": "An unstable manifold is a set of points in the phase space of a dynamical system that approach a steady state solution of a stable orbit as one follows the orbit backward in time to minus-infinity. Vice-versa, it represents the long-term behavior of trajectories that start near the equilibrium a diverge with increasing time.",
     "date": "2026-05-27",
     "macro": null,
     "latex": null
@@ -105,7 +113,7 @@
   },
 
   "kinetic energy": {
-    "def": "Is the energy that is in the form of motion of a massive objects. It is defined by $\\hat{T}=\\sum_i\\tfrac{p_i^2}{2m}$ for all particles labeled $i$",
+    "def": "Is the energy that is in the form of motion of a massive objecmants. It is defined by $\\hat{T}=\\sum_i\\tfrac{p_i^2}{2m}$ for all particles labeled $i$",
     "date": "2026-06-17",
     "macro": "Ekin",
     "latex": "T"
