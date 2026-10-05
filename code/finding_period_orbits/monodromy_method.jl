@@ -575,6 +575,7 @@ function follow_ABC!(orbs0, Es;
     return (; orb = orbs0)
 end
 
+
 """
     return (;M, check)
 
@@ -641,10 +642,10 @@ get_phase2(λs)                 =  abs(angle(λs[1]))
 # end
 # get_phase(M::Matrix) = get_phase(eigvals(M))
 
-function ABC_energy_trace(;nup=5000,ndown=5000)
+function ABC_energy_trace(;nup=50000,ndown=5000)
     p            = (1.0, 1.0, 1.0)
     E_fix        = 0.11  # this is the one I fixed
-    E_max        = 1.0
+    E_max        = 10.0
     Es_up        = collect(range(E_fix, E_max, nup))[2:end]
     E_min        = 0.01
     Es_down      = sort(collect(range(E_min, E_fix, ndown))[1:end-1]; rev=true)
@@ -677,9 +678,70 @@ function ABC_energy_trace(;nup=5000,ndown=5000)
 end
 
 
+"""
+    Show the orbits in configuration space. The orbits are taken from the DataFrame res, which is the result of the energy sweep. The style is a Dict that contains the style of the plots. The function returns a NamedTuple with the figures and axes of the orbits A, B and C.
+"""
+function show_orbits_In_Config(res::DataFrame; style=:print, n_trajectories=20, save_figs = true)
+    df = sort(copy(res), [:E])
+    println("="^72)
+    n_trajectories > 0 || throw(ArgumentError("n_trajectories must be positive"))
+    function showOrbit(label)
+        os = sort(filter(o -> o.str == label, df), [:E])
+        isempty(os) && error("no orbit found for label $label")
 
+        n_samples = min(n_trajectories, nrow(os))
+        target_energies = range(first(os.E), last(os.E), length=n_samples)
+        selected_indices = Int[]
+        previous_index = 0
+        for (sample_index, target_energy) in enumerate(target_energies)
+            last_index = nrow(os) - (n_samples - sample_index)
+            candidates = (previous_index + 1):last_index
+            index = candidates[argmin(abs.(os.E[candidates] .- target_energy))]
+            push!(selected_indices, index)
+            previous_index = index
+        end
 
-function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME)
+        v0s = os.v[selected_indices]
+        Es  = os.E[selected_indices]
+        Ts  = os.T[selected_indices]
+        p   = (1.0, 1.0, 1.0)
+        set_style!(style)
+        f = Figure(size =set_fig_size(0.8))
+        c= label == "A" ? pick_color(1) : label == "B" ? pick_color(2) : pick_color(3)
+        ax = Axis(f[1, 1], xlabel = "x", ylabel = "y", title = "orbit $label")
+        contour_grid = range(-3.0, 3.0, length = 1260)
+        contour_potential = [HenonHeiles.potential(x, y, p) for x in contour_grid, y in contour_grid]
+        contour_levels = [LEVELS..., collect(3.0:30.0)...]
+        contour!(ax, contour_grid, contour_grid, contour_potential;
+            levels=contour_levels, color=:gray40)
+        limits!(ax, -3.0, 3.0, -3.0, 3.0)
+        for (i, v0) in enumerate(v0s)
+            line_alpha =0.8 # 0.2 + 0.8 * (i - 1) / max(length(v0s) - 1, 1)
+            get_traj(lift(v0, Es[i], p), Ts[i]; p=p, abstol = INT_TOL, reltol = INT_TOL) |> u -> begin
+                xs = [u[j][1] for j in axes(u, 1)]
+                ys = [u[j][2] for j in axes(u, 1)]
+                lines!(ax, xs, ys; color = c, linewidth = 1.5, alpha = line_alpha)
+            end
+        
+        end
+        return (;f, ax)
+    end
+    A = showOrbit("A"); B = showOrbit("B"); C = showOrbit("C")
+    if save_figs
+        nameA= joinpath(FIG_DIR, "orbits_A_config_space.svg")
+        nameB= joinpath(FIG_DIR, "orbits_B_config_space.svg")
+        nameC= joinpath(FIG_DIR, "orbits_C_config_space.svg")
+        save(nameA, A.f)
+        save(nameB, B.f)
+        save(nameC, C.f)
+    end
+    return (; A, B, C)
+end
+
+"""
+Creats figures based on the data of the monodromy matrix and the periodic orbits (A, B, C) found in the energy sweep. The figures are saved in the FIG_DIR.
+"""
+function graphs(res::DataFrame; save_as_svg = true, cmap = COLOR_SCHEME)
     df = sort(copy(res), [:E])
     println("="^72)
 
@@ -695,10 +757,10 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME)
         traces      = [tr(m) for m in Ms[check]]
         θs         = [get_phase2(collect(λs)) for λs in eigs] ./2pi
 
-        fλ  = Figure(size = fsize)        
-        fΘ  = Figure(size = fsize)
-        fLy = Figure(size = fsize)
-        fTr = Figure(size = fsize)      
+        fλ  = Figure(size = set_fig_size(0.8))        
+        fΘ  = Figure(size = set_fig_size(0.8))
+        fLy = Figure(size = set_fig_size(0.8))
+        fTr = Figure(size = set_fig_size(0.8))      
 
         # Lyapunov exponents of (monodrome) Map 
         axLy = Axis(fLy[1,1], xlabel = "E", ylabel = L"|α|T", title = "orbit $label")  
@@ -709,9 +771,12 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME)
         lines!(axTr, Es, traces)
 
         # Θ plot -> for theta = p//q, p,q∈N, bifurcation happens
-        pdivq = [0,1/2, 1/3, 1/4, 1/5, 2/5, 1/6, 1/7, 2/7, 3/7]
-        yticks= ["0",L"\frac{1}{2}", L"\frac{1}{3}", L"\frac{1}{4}", L"\frac{1}{5}", L"\frac{2}{5}", L"\frac{1}{6}", L"\frac{1}{7}", L"\frac{2}{7}", L"\frac{3}{7}"]
-        axΘ = Axis(fΘ[1,1], xlabel = "E", ylabel = "Θ/2π", title = "orbit $label", yticks=(pdivq,yticks), yticklabelcolor = INK, yaxisposition = :left)
+        pdivq = [0, 1/7, 1/6, 1/5, 1/4, 2/7, 1/3, 2/5, 3/7, 1/2]
+        yticks = ["0", L"\frac{1}{7}", L"\frac{1}{6}", L"\frac{1}{5}", L"\frac{1}{4}",
+              L"\frac{2}{7}", L"\frac{1}{3}", L"\frac{2}{5}", L"\frac{3}{7}", L"\frac{1}{2}"]
+        axΘ = Axis(fΘ[1,1], xlabel = "E", ylabel = L"Θ/2π", title = "orbit $label",
+               yticks = (pdivq, yticks), yticklabelcolor = INK,
+               yticklabelsize = 9, yaxisposition = :left)
         lines!(axΘ, Es, θs)
         hlines!(axΘ, pdivq[2:end], linestyle=:dot, color=INK)
 
@@ -731,12 +796,24 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME)
         style_elems  = [LineElement(color = :gray70, linestyle = :solid, linewidth = 2),
                         LineElement(color = :gray70, linestyle = :dash,  linewidth = 2)]
         branch_elems = [LineElement(color = pick_color(j, cmap), linewidth = 2) for j in axes(eigmat, 2)]
+        axislegend(axλ,
+                   [style_elems, branch_elems],
+                   [["Re(λ)", "Im(λ)"], ["λ$j" for j in [1,2]]],
+                   ["Component", "Branch"];
+                   position = label == "C" ? :lt : :lt,
+                   orientation = :horizontal)
 
-        Legend(fλ[1,2],
-               [style_elems, branch_elems],
-               [["Re(λ)", "Im(λ)"], ["λ$j" for j in [1,2]]],
-               ["Component", "Branch"])
-
+        label == "C" && ylims!(axλ, -2, 2.0)
+        if save_as_svg 
+            namefλ  = joinpath(FIG_DIR, "orbit_$(label)_eigenvalues.svg")
+            namefLy = joinpath(FIG_DIR, "orbit_$(label)_lyapunov.svg")
+            namefΘ  = joinpath(FIG_DIR, "orbit_$(label)_theta.svg")
+            namefTr = joinpath(FIG_DIR, "orbit_$(label)_trace.svg")
+            save(namefλ, fλ)
+            save(namefLy, fLy)
+            save(namefΘ, fΘ)
+            save(namefTr, fTr)
+        end
         (; fλ, axλ, fLy, axLy, fΘ, axΘ, fTr, axTr)
     end
 
