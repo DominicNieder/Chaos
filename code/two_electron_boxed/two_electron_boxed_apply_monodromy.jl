@@ -74,13 +74,12 @@ end
     (dB(1,1), dB(1,2)), (dB(2,1), dB(2,2))
 
 B1(1|------|2)-B2(1|------|2)"
-get_boxes(p::NamedTuple) = ((-(p.L1+p.del/2), -p.del/2), (p.del/2, (p.L2 + p.del/2)))
+get_boxes(p::NamedTuple) = ((-(p.L1 + p.del/2), -p.del/2), (p.del/2, (p.L2 + p.del/2)))
 
 function in_box(u::Vector{Float64}, p; tol=0.0)
     b1, b2 = get_boxes(p)
     x1 = u[1]
     x2 = u[2]
-    println("x2=$x2 b2=$b2, x1=$x1, b2=$b1")
     return (b1[1] - tol <= x1 <= b1[2] + tol) &&
     (b2[1] - tol <= x2 <= b2[2] + tol)
 end
@@ -93,18 +92,38 @@ section_x1(p) = p.C > 0 ? get_boxes(p)[1][1] + EPS_OFF : get_boxes(p)[1][2] - EP
 p12(x2, p2, E, p) = 2p.m1 * (E - V_int([section_x1(p), x2, NaN, p2], p) - p2^2/(2p.m2))
 in_section(v, E, p) = p12(v[1], v[2], E ,p) > 0
 
-possible_x2(p2,E,p) = 2p.m2*p.C*p.L/(2p.m2*E-p2^2) + section_x1(p)
+possible_x2(p2,E,p) = 2p.m2*p.C*p.L1/(2p.m2*E-p2^2) + section_x1(p)
 
 x2_is_possible(v,E,p) = v[1] <= possible_x2(v[2],E,p)
 
+
+"""
+    v:: surface of section state
+    E:: energy
+    p:: system parameters
+    return u:: state vector
+"""
 function lift(v, E, p)
     in_section(v, E, p) || error("v=$v not in section")
     a = p12(v[1], v[2], E, p)
     a > 0 || return nothing
     sgn = p.C > 0 ? 1.0 : -1.0          # moving away from the section wall
     u = [section_x1(p), v[1], sgn*sqrt(a), v[2]]
-    in_box(u, p) || error("Did not lift correctly: x1=$(u[1]), box1=$(get_boxes(p)[1])")
+    in_box(u, p) || error("Did not lift correctly: \nP1: x1=$(u[1]), box1=$(get_boxes(p)[1]);\nP2: x2=$(u[2]), box2=$(get_boxes(p)[2])\nEnergy E(u)=$(energy(u,p)) (set to $(E))\nv=$v")
     return u
+end
+
+
+
+function analytical_bound(E,p; n=1000)
+    dB = get_boxes(p)
+    xmax = min(2*p.m2*p.C/p.L2/(2*E*p.m2) + dB[2][1], dB[2][2])
+    dx = (xmax - dB[1][2] )/n
+    x = collect(dB[1][2]:dx:xmax)
+    momentum = sqrt.(max.( (E .- p.C ./ (p.L2 .* (x .+ dB[2][1])) ) .* 2 .* p.m2, 0.0))
+    upper = Point2f.(x, momentum)
+    lower = Point2f.(reverse(x), -reverse(momentum))
+    return vcat(upper, lower, upper[1:1])        # closed curve
 end
 
 
@@ -114,27 +133,30 @@ Calculate the boundary of phase space, where p1=0 and x1=dB(1,j)
 
     return Point2f.(x2, p), for length of n points, the boundary goes round once
 """
-function boundary(E; p=(; C=-1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del=DEL_BOX), n=400)
-    dB  = get_boxes(p)
-    x1  = p.C > 0 ? dB[1][1] : dB[1][2]          # section: particle 1 fixed here
-    x2  = range(dB[2][1], dB[2][2]; length=n)    # sweep all of box 2
-
-    p2 = map(x2) do x
-        K = E - V_int([x1, x, NaN, NaN], p)      # kinetic energy available (p1 = 0)
-        K >= 0 ? sqrt(2p.m2 * K) : NaN           # NaN = forbidden, breaks the line
+function boundary(E; p, n=400)
+    dB = get_boxes(p)
+    x1 = section_x1(p)
+    lo, hi = dB[2]
+    if p.C < 0 && E < 0
+        hi = min(hi, x1 + p.C/E)      # attractive: bounded separation
+    elseif p.C > 0
+        E > 0 || return Point2f[]
+        lo = max(lo, x1 + p.C/E)      # repulsive: minimum separation
     end
-
+    lo < hi || return Point2f[]
+    x2 = range(lo, hi; length=n)
+    p2 = [sqrt(max(2p.m2*(E - V_int([x1, x, 0, 0], p)), 0.0)) for x in x2]
     upper = Point2f.(x2, p2)
     lower = Point2f.(reverse(x2), -reverse(p2))
-    return vcat(upper, lower, upper[1:1])        # closed curve
+    return vcat(upper, lower, upper[1:1])
 end
 
 
-
-
-
+"""
+    return sol.u, sol.t, pts
+"""
 function get_traj(u0, t;
-    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-3, L1=1.0, L2=1.0), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL, maxiters=1e4)
+    p=(;C=1.0,m1=1.0,m2=1.0, del=1e-3, L1=1.0, L2=1.0), cc_tol=CC_TOL, abstol=INT_TOL, reltol=INT_TOL)
     cb, pts = wall_callback(p; cc_tol=cc_tol)
     prob = ODEProblem(eom!, u0, (0.0, t), p)
     sol  = solve(prob, Vern9(); abstol=abstol, reltol=reltol, callback= cb)
@@ -143,9 +165,9 @@ end
 
 """
     flow ϕₜ takes u(0) to u(t)
-    p=(;C, m1, m2, del)
+    p=(;C, m1, m2, L1, L2,del)
 """
-function flow(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, del= 1e-8,L2=1.0), abstol = INT_TOL, reltol = INT_TOL)
+function flow(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8), abstol = INT_TOL, reltol = INT_TOL)
     return get_traj(u0, t; p=p, abstol = abstol, reltol = reltol)[end]
 end
 
@@ -160,6 +182,13 @@ function monodromy(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8)
     return M
 end
 
+function section_trj(v)
+    prm = SectionParams(E, p; 
+          tmax = 1_000.0, nfast = 1, ndense=40, 
+          cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = false, save_start = false)
+    return section_trj(v, prm)
+end
+
 "return sol, pMap, tsd"
 function section_trj(v, prm)
     u0 = lift(v, prm.E, prm.p)
@@ -169,7 +198,9 @@ function section_trj(v, prm)
     reinit!(prm.integ_dense, u0)
     solve!(prm.integ_dense)
     sol = prm.integ_dense.sol
-    return sol, first.(prm.ptsd,2), copy(last.(prm.pts))
+    section_points = get_section_p(prm.ptsd)
+    trace = isempty(section_points) ? zeros(2, 0) : hcat(section_points...)
+    return sol, trace, copy(last.(prm.ptsd))
 end
 
 "Find the smallest k with |T^k v - v| < tol.
@@ -207,9 +238,9 @@ function T(v, n::Int, prm::SectionParams)
     reinit!(prm.integ_fast, u0)
     solve!(prm.integ_fast)
  
-    length(prm.yf) < n &&
-        error("only $(length(prm.yf)) crossings in t < $(prm.tmax) (need $n)")
-    return [prm.yf[n], prm.pyf[n]]
+    length(prm.ptsf) < n &&
+        error("only $(length(prm.ptsf)) crossings in t < $(prm.tmax) (need $n)")
+    return get_section_p(prm.ptsf)[n]
 end
 
 Fres(v, n, prm) = T(v, n, prm) - v
@@ -217,7 +248,7 @@ Fres(v, n, prm) = T(v, n, prm) - v
 
 "Finite everywhere: TrustRegion probes outside the boundary and NaN poisons it."
 function Fres_safe(v, n, prm::SectionParams)
-    a = px2(v[1], v[2], prm.E, prm.p)
+    a = p12(v[1], v[2], prm.E, prm.p)
     a <= 0 && return fill(1.0 + 100 * sqrt(-a), 2)
     return Fres(v, n, prm)
 end
@@ -338,6 +369,7 @@ end
 """
 function analyse_seed(v0, n, prm; str = "seed",
                       pmap_root_tol = PMAP_ROOT_TOL, pmap_prime_tol= PMAP_PRIME_TOL, maxiters=300)
+    # res = find_orbit(v0, n, prm;N_max = 100, d = 1e-7, tol = PMAP_ROOT_TOL, max_backtrack = 30, dmax = 0.05, verbose = false)
     res = solve_orbit(v0, n, prm, tol=pmap_root_tol, maxiters=maxiters)
     # println(res.resnorm, res.comment)
     res.converged || return nothing
@@ -345,7 +377,7 @@ function analyse_seed(v0, n, prm; str = "seed",
     min_period = minPeriodicity(res.v, prm; pmap_prime_tol = pmap_prime_tol, search = 40)
     min_period.Nperiod === nothing && return nothing
     T = min_period.Tperiod
-    return (; E = prm.E, v = res.v, str, T)
+    return (;E = prm.E, v = res.v, str, T)
 end
 
 
@@ -368,10 +400,6 @@ function already_found(df, v, prime; pmap_prime_tol = PMAP_PRIME_TOL)
 end
 
 
-function uniform_sample(E, p; nx2=5, np2=5, magin=EPS_OFF)
-    x2min, x2max = possible_x2(), possible_x2(0.0, E, p)
-end
-
 
 "creating the initial points from where the search starts from"
 function section_grid(E, p; ny = 10, npy = 10, margin = 0.03)
@@ -390,7 +418,291 @@ function section_grid(E, p; ny = 10, npy = 10, margin = 0.03)
     seeds
 end
 
+"""
+Randomly sample the accessible section in `(x2, p2)`.
+Positions are sampled uniformly over the accessible `x2` interval, and each
+momentum is sampled uniformly over its energy-allowed interval at that `x2`.
+"""
+function sample_grid(E, p; nx = 10, np = 10, margin = 1e-11)
+    nx > 0 || throw(ArgumentError("nx must be positive"))
+    np > 0 || throw(ArgumentError("np must be positive"))
+    margin >= 0 || throw(ArgumentError("margin must be nonnegative"))
 
+    box2 = get_boxes(p)[2]
+    x1 = section_x1(p)
+    xmin = box2[1] + margin
+    xmax = box2[2] - margin
+
+    # The accessible position interval follows from E - V_int(x1, x2) > 0
+    # when p2 = 0. Both boxes lie on opposite sides of the gap, so x2 > x1.
+    if p.C > 0
+        E > 0 || throw(ArgumentError("no accessible section for C > 0 and E <= 0"))
+        xmin = max(xmin, x1 + p.C / E + margin)
+    elseif p.C < 0 && E < 0
+        xmax = min(xmax, x1 + abs(p.C) / abs(E) - margin)
+    elseif p.C == 0
+        E > 0 || throw(ArgumentError("no accessible section for C = 0 and E <= 0"))
+    end
+
+    xmin < xmax || throw(ArgumentError("the requested energy and margin leave no accessible section"))
+
+    seeds = Vector{Float64}[]
+    sizehint!(seeds, nx * np)
+    for x2 in xmin .+ rand(nx) .* (xmax - xmin)
+        V = V_int([x1, x2, 0.0, 0.0], p)
+        p2max_sq = 2p.m2 * (E - V)
+        p2max_sq > 0 || continue
+        p2max = sqrt(p2max_sq)
+        for p2 in (2 .* rand(np) .- 1) .* p2max
+            push!(seeds, [x2, p2])
+        end
+    end
+    return seeds
+end
+
+"""
+    section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing)
+ 
+Seeds the Poincaré section at energy `E` (model units), integrates each seed
+for `tint`, and returns:
+  - `seed.f`  : seeds on the section with the energy boundary
+  - `sec.f`   : surface of section (left), energy drift (right top), legend (right bottom)
+  - raw data  : `seeds` (kept), `sec_map`, `trajs`, `times`
+"""
+function section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing)
+    seeds     = sample_grid(E, p; nx, np)
+    sec_bound = boundary(E; p, n=500)
+ 
+    # ── integrate ──
+    kept    = Vector{Float64}[]
+    sec_map = Vector{Point2f}[]
+    trajs   = Vector{Vector{Float64}}[]
+    times   = Vector{Float64}[]
+    for seed in seeds
+        u0 = lift(seed, E, p)
+        u0 === nothing && continue
+        u, ts, pts = get_traj(u0, tint; p)
+        push!(kept, seed)
+        push!(sec_map, Point2f.(first.(pts, 2)))
+        push!(trajs, u)
+        push!(times, ts)
+    end
+ 
+    # ── seed figure ──
+    fseed    = Figure(size=(1300, 900))
+    ax_seeds = Axis(fseed[1, 1], xlabel=L"x_2\,[L]", ylabel=L"p_2",
+                    title="Seeds, E = $(round(E; sigdigits=4))")
+    scatter!(ax_seeds, sec_bound, color=INK, markersize=3)
+    scatter!(ax_seeds, Point2f.(kept), color=[pick_color(i) for i in eachindex(kept)],
+             markersize=10)
+    ylims!(ax_seeds, -20,20)  # if condtion wanted: insert -> plims === nothing || 
+ 
+    # ── section (left) + energy drift and legend (right) ──
+    f    = Figure(size=(1300, 900))
+    ax   = Axis(f[1:2, 1:2], xlabel=L"x_2\,[L]", ylabel=L"p_2",
+                title="Surface of section, E = $(round(E; sigdigits=4))")
+    axen = Axis(f[1, 3], xlabel=L"t", ylabel=L"|E(t)-E|\,/\,|E|",
+                yscale=log10, title="Energy drift")
+ 
+    Escale = E == 0 ? abs(p.C / p.L1) : abs(E)       # avoid dividing by 0 at E = 0
+    scatter!(ax, sec_bound, color=INK, markersize=3)
+    for (i, sec) in enumerate(sec_map)
+        scatter!(ax, sec, color=pick_color(i), markersize=4)
+        err = [max(abs(energy(ui, p) - E) / Escale, eps()) for ui in trajs[i]]
+        lines!(axen, times[i], err, color=pick_color(i))
+    end
+    plims === nothing || ylims!(ax, plims)  #  
+ 
+    # ── legend ──
+    comp_elems  = [MarkerElement(color=INK, marker=:circle, markersize=6)]
+    seed_elems  = [MarkerElement(color=pick_color(i), marker=:circle, markersize=8)
+                   for i in eachindex(kept)]
+    seed_labels = [@sprintf("(%.3g, %.3g)", s[1], s[2]) for s in kept]
+    Legend(f[2, 3], [comp_elems, seed_elems], [["section boundary"], seed_labels],
+           ["Component", "Seeds (x₂, p₂)"];
+           framevisible=false, tellheight=false,
+           halign=:left, valign=:top, titlehalign=:left, titlesize=12,
+           gridshalign=:left, labelsize=11, rowgap=1, groupgap=8,
+           nbanks = length(kept) > 12 ? 2 : 1)
+    colsize!(f.layout, 3, Auto(0.45))
+ 
+    return (; E, seed=(; f=fseed, ax=ax_seeds), sec=(; f, ax, axen),
+              seeds=kept, sec_map, trajs, times)
+end
+ 
+ 
+"""
+    scan_section_maps(Es, p; nx=5, np=5, tint=1_000, plims=nothing,
+                      save_fig=false, folder=joinpath(FIG_DIR, "section_maps"))
+ 
+Runs `section_map` for every energy in `Es` (model units). Energies without an
+accessible section are skipped with a warning. Returns a vector of results;
+view with `display(res[i].sec.f)` or `display(res[i].seed.f)`.
+"""
+function scan_section_maps(Es, p; nx=5, np=5, tint=1_000, plims=nothing,
+                           save_fig=false,
+                           folder=joinpath(FIG_DIR, "section_maps_attractive/"))
+    save_fig && mkpath(folder)
+    tag = @sprintf("C%+g_del%.0e_L%g-%g", p.C, p.del, p.L1, p.L2)
+ 
+    out = []
+    @showprogress desc="section maps" for E in Es
+        res = try
+            section_map(E, p; nx, np, tint, plims)
+        catch err
+            @warn "skipped E = $E" exception=err
+            continue
+        end
+        push!(out, res)
+ 
+        if save_fig
+            Etag = @sprintf("E%+.4g", E)
+            save(joinpath(folder, "seeds_$(Etag)_$(tag).png"),   res.seed.f)
+            save(joinpath(folder, "section_$(Etag)_$(tag).png"), res.sec.f)
+        end
+    end
+    return out
+end
+
+
+
+# ============================================================================================
+#                       Periodic-orbit search up to period nmax
+# ============================================================================================
+
+# """
+#     E, N (prime period), T (time period), v (root on section),
+#     pmap (2×N section points of the orbit), trDT (trace of DT^N), kind (kind_index)
+# """
+# po_table() = DataFrame(E=Float64[], N=Int[], T=Float64[], v=Vector{Float64}[],
+#                        pmap=Matrix{Float64}[], trDT=Float64[], kind=Int[])
+
+# "True if `v` coincides with any section point of an orbit already in `df` at energy `E`."
+# function is_known(df, v, E; tol=1e-7)
+#     for o in eachrow(df)
+#         isapprox(o.E, E; rtol=1e-12, atol=1e-12) || continue
+#         any(j -> norm(o.pmap[:, j] .- v) < tol, axes(o.pmap, 2)) && return true
+#     end
+#     return false
+# end
+
+
+# """
+#     find_periodic_orbits(E, p; nmax=8, nx=5, np=5, ...)
+
+# For n = 1…nmax, roots of Tⁿ(v) − v are searched from the same random seeds.
+# Each root is reduced to its prime period N (N divides n), deduplicated against
+# all section points of already-found orbits, and classified by tr(DTᴺ).
+# """
+# function find_periodic_orbits(E, p; nmax=8, nx=5, np=5, tmax=100_000.0,
+#                               root_tol=PMAP_ROOT_TOL, prime_tol=PMAP_PRIME_TOL,
+#                               dup_tol=1e-7, maxiters=300, verbose=false)
+#     df    = po_table()
+#     seeds = sample_grid(E, p; nx, np)
+#     prm   = SectionParams(E, p; tmax, nfast=nmax, ndense=2nmax,
+#                           save_everystep=false, save_start=false)
+
+#     for n in 1:nmax
+#         prm.nmax_fast[] = n                  # fast integrator stops after n crossings
+#         @showprogress desc=@sprintf("E=%.4g  n=%d ", E, n) for v0 in seeds
+#             try
+#                 res = solve_orbit(v0, n, prm; tol=root_tol, maxiters)
+#                 res.converged || continue
+#                 is_known(df, res.v, E; tol=dup_tol) && continue
+
+#                 mp = minPeriodicity(res.v, prm; pmap_prime_tol=prime_tol, search=2nmax)
+#                 mp.Nperiod === nothing && continue
+
+#                 τ = tr(get_DT(res.v, mp.Nperiod, prm))
+#                 push!(df, (E, mp.Nperiod, mp.Tperiod, res.v, mp.pMap, τ, kind_index(τ)))
+#             catch err
+#                 verbose && @warn "seed failed" E n seed=v0 exception=err
+#             end
+#         end
+#     end
+#     return sort!(df, [:N, :T])
+# end
+
+
+# """
+#     periodic_orbit_map(E, p; nmax=8, nx=5, np=5, plims=nothing, kwargs...)
+
+# Section with all periodic orbits (colour = period N, marker = stability),
+# plus tr(DTᴺ) vs. T on the side (stable band |tr| < 2 shaded).
+# """
+# function periodic_orbit_map(E, p; nmax=8, nx=5, np=5, plims=nothing, kwargs...)
+#     df = find_periodic_orbits(E, p; nmax, nx, np, kwargs...)
+
+#     f    = Figure(size=(1300, 900))
+#     ax   = Axis(f[1:2, 1:2], xlabel=L"x_2\,[L]", ylabel=L"p_2",
+#                 title="Periodic orbits (N ≤ $nmax), E = $(round(E; sigdigits=4))")
+#     axtr = Axis(f[2, 3], xlabel=L"T", ylabel=L"\mathrm{tr}\,DT^N",
+#                 yscale=Makie.pseudolog10, title="Stability")
+
+#     scatter!(ax, boundary(E; p, n=500), color=INK, markersize=3)
+#     hspan!(axtr, -2, 2, color=(:gray70, 0.3))
+#     for o in eachrow(df)
+#         scatter!(ax, o.pmap[1, :], o.pmap[2, :], color=pick_color(o.N),
+#                  marker=KIND_MS[o.kind], markersize=10)
+#         scatter!(axtr, [o.T], [o.trDT], color=pick_color(o.N),
+#                  marker=KIND_MS[o.kind], markersize=10)
+#     end
+#     plims === nothing || ylims!(ax, plims...)
+
+#     if isempty(df)
+#         text!(ax, 0.5, 0.5; text="no periodic orbits found", space=:relative,
+#               align=(:center, :center))
+#     else
+#         Ns = sort(unique(df.N)); ks = sort(unique(df.kind))
+#         Legend(f[1, 3],
+#                [[MarkerElement(color=pick_color(N), marker=:circle, markersize=10) for N in Ns],
+#                 [MarkerElement(color=:gray60, marker=KIND_MS[k], markersize=10) for k in ks]],
+#                [["N = $N  ($(count(==(N), df.N)))" for N in Ns], KIND_LABEL[ks]],
+#                ["Period (count)", "Stability"];
+#                framevisible=false, tellheight=false, halign=:left, valign=:top,
+#                titlehalign=:left, titlesize=12, gridshalign=:left, labelsize=11,
+#                rowgap=1, groupgap=8)
+#     end
+#     colsize!(f.layout, 3, Auto(0.45))
+
+#     return (; E, df, f, ax, axtr)
+# end
+
+
+# """
+#     scan_periodic_orbits(Es, p; nmax=8, nx=5, np=5, plims=nothing,
+#                          save_fig=false, save_data=false, kwargs...)
+
+# Runs `periodic_orbit_map` for every energy in `Es` (model units).
+# Returns `(; maps, orbits)`: `maps[i].f` to display, `orbits` = all energies in one DataFrame.
+# """
+# function scan_periodic_orbits(Es, p; nmax=8, nx=5, np=5, plims=nothing,
+#                               save_fig=false, save_data=false,
+#                               folder=joinpath(FIG_DIR, "periodic_orbits"),
+#                               data_dir=DATA_DIR, kwargs...)
+#     save_fig  && mkpath(folder)
+#     save_data && mkpath(data_dir)
+#     tag = @sprintf("C%+g_del%.0e_L%g-%g_N%d", p.C, p.del, p.L1, p.L2, nmax)
+
+#     maps = []
+#     for E in Es
+#         res = try
+#             periodic_orbit_map(E, p; nmax, nx, np, plims, kwargs...)
+#         catch err
+#             @warn "skipped E = $E" exception=err
+#             continue
+#         end
+#         push!(maps, res)
+#         save_fig && save(joinpath(folder, @sprintf("po_E%+.4g_%s.png", E, tag)), res.f)
+#     end
+
+#     orbits = isempty(maps) ? po_table() : reduce(vcat, [m.df for m in maps])
+#     save_data && jldsave(joinpath(data_dir, "periodic_orbits_$(tag).jld2"); orbits, Es, p)
+#     return (; maps, orbits)
+# end
+
+
+include("section_maps.jl")
 
 """
     Takes a bunch of seed and finds the periodic orbit to each seed. If the orbit is found, it is added to the df. The df is returned at the end.
@@ -408,7 +720,17 @@ function sweep!(df::AbstractDataFrame, seeds, n, prm; pmap_root_tol = PMAP_ROOT_
     return df
 end
 
-
+function sweep_po_energies(; Es, p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8), nfast = 1, ndense = 2,
+    tmax = 100_000.0, ny = 10, np = 10, margin = 0.03, pmap_root_tol = PMAP_ROOT_TOL)
+    df = orbit_table()
+    for E in Es
+        E_inunits = E/ abs(p.C/p.L1)
+        prm = SectionParams(E_inunits, p; tmax, nfast, ndense, save_everystep = false, save_start = false)
+        seeds = sample_grid(E_inunits, p; nx = ny, np = np, margin = margin)
+        sweep!(df, seeds, nfast, prm; pmap_root_tol = pmap_root_tol)
+    end
+    return df
+end
 
  
 
@@ -417,23 +739,24 @@ finding three base orbits at energy
     return
     (;orb=(; df, timing, seeds), fig=(f, ax))
 """
-function get_obrits_ABC(;
-    p            = (;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8),
-    Emin         = 0.01,
+function get_orbits_1period(;
+    p            = (;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8),
+    Emin         = 500.0,
     nfast        = 1,              # crossings the dense integrator may take
     ndense       = 2,
     tmax         = 100_000.0,
-    seeds = [[0.0,0.23], [0.2, 0.3], [0.3, 0.0]],
-    orbit_str = ["A", "B", "C"],
+    seeds = [[0.000154, 20.0], [6.0e-5, 60.0]],  # seeds for the orbits
+    orbit_str = ["s", "u"],
     cmap      = COLOR_SCHEME,
     display_figure=false,
     show_figure=true
     )
-    #seeds =  section_grid(E, p; ny = 3, npy = 3, margin = 0.03)
-    any(!,[in_section(vi, Emin, p) for vi in seeds]) && error("some seeds are outside the energy boundary")
+    Etrue = Emin / abs(p.C/p.L1)
+    seeds = sample_grid(Etrue, p; nx = 5, np = 5)
+    any(!,[in_section(vi, Etrue, p) for vi in seeds]) && error("some seeds are outside the energy boundary")
 
     
-    prm = SectionParams(Emin, p, :both; tmax, nfast, ndense, save_everystep = false, save_start = false)
+    prm = SectionParams(Etrue, p; tmax, nfast, ndense, save_everystep = false, save_start = false)
 
   
 
@@ -444,24 +767,25 @@ function get_obrits_ABC(;
     before = nrow(df)
     secs = @elapsed for i in axes(seeds, 1)
         v0 = seeds[i]
-
+        println("v0=$v0")
         sol = analyse_seed(v0, nfast, prm;str=orbit_str[i])
         sol !== nothing && push!(df, sol)
     end 
-    push!(timing, (Emin, nfast, length(seeds), nrow(df) - before, secs))
+    push!(timing, (Etrue, nfast, length(seeds), nrow(df) - before, secs))
 
     if display_figure  # surface section of the 
-        cABC = [pick_color(i,cmap) for i in 1:3]
-        der_rand =  boundary(Emin, p)
+        der_rand =  analytical_bound(Etrue,p; n=1000)
         f = Figure(size=(1400,900))
-        ax = Axis(f[1, 1], xlabel = "y", ylabel = "py", title = "E=$(round(Emin, digits=4)) orbtis A, B, C")
+        ax = Axis(f[1, 1], xlabel = "y", ylabel = "py", title = "E=$(round(Etrue, digits=4))")
         vs = Point2f.([o.v[1] for o in eachrow(df)], [o.v[2] for o in eachrow(df)])
-        scatter!(ax, vs, color = cABC, markersize = 6, alpha = 1)
-        annotation = ["$(orbit_str[i]), T=$(round(o.T, digits=3))" for (i, o) in enumerate(eachrow(df))]
+        orbit_colors = [pick_color(findfirst(==(o.str), orbit_str), cmap) for o in eachrow(df)]
+        scatter!(ax, vs, color = orbit_colors, markersize = 6, alpha = 1)
+        annotation = ["$(o.str), T=$(round(o.T, digits=3))" for o in eachrow(df)]
         text!(ax, vs, text=annotation, fontsize = 14, color = INK, align = (:left, :bottom), offset = (5, 5))
 
         scatter!(ax, Point2f.(vs), markersize = 5, color = INK, alpha = 0.7)
         scatter!(ax, der_rand, markersize = 3, color = INK)
+        ylims!(ax, -100,100)
         show_figure && display(f)
         return (;orb=(; df, timing, seeds), fig=(f, ax))
     else
@@ -513,7 +837,7 @@ end
 
     This takes care of (NaN or Inf) ∈ M
 """
-function monodrome(orbits; p = (;C= 1.0, m1=1.0, m2=1.0, L=1.0, del= 1e-8), verbose=false)
+function monodrome(orbits; p = (;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8), verbose=false)
     M    = Vector{Matrix{Float64}}(undef, nrow(orbits))
     check = falses(nrow(orbits))
 

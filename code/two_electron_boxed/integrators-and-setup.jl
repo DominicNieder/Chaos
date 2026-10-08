@@ -74,7 +74,7 @@ end
 Elastic reflection at all four walls. Every time the wall given by `section`
 is hit, the *other* particle's (x, p) is recorded. Returns `(cb, pts)`.
 """
-function wall_callback(p; cc_tol = CC_TOL)
+function wall_callback(p; n=nothing, cc_tol = CC_TOL)
     pts     = Tuple{Float64,Float64,Float64}[]
     boxes   = get_boxes(p)
     section = p.C > 0 ? (1,1) : (1,2)
@@ -109,6 +109,7 @@ function wall_callback(p; cc_tol = CC_TOL)
                 k[idx] != 0 && bounce!(integrator, idx)
             end
         end
+        n !== nothing && length(pts) >= n[] && terminate!(integrator)
     end
 
     cb = VectorContinuousCallback(condition!, affect!, 4; interp_points = 20, abstol = cc_tol)
@@ -118,7 +119,7 @@ end
 
 
 """
-    p=(;C, m1, m2, del)
+    p=(;C, m1, m2, L1, L2, del)
 
     return (; integ, pts)
 
@@ -131,13 +132,15 @@ returned Refs, never from freshly-made ones, or writes to `prm.nmax_*` will be
 invisible to the callbacks.
 """
 function integrator(p; 
-    tmax = 20_000.0, kind=:fast, n = 1, cc_tol = CC_TOL, int_tol=INT_TOL, save_everystep = false, save_start = false)
-    nmax = Ref(n)
+    tmax = 20_000.0, kind=:fast, n = nothing, cc_tol = CC_TOL, int_tol=INT_TOL, save_everystep = false, save_start = false)
+    nmax = n===nothing ? nothing : Ref(n)
  
     # --- fast: no trajectory saved, terminates as soon as n crossings are in ---
 
-    callback, pts   = wall_callback(p; cc_tol=cc_tol)
-    prob            = ODEProblem(eom!, zeros(4), (0.0, tmax), p)
+    callback, pts   = wall_callback(p; n=nmax, cc_tol=cc_tol)
+    boxes           = get_boxes(p)
+    u_init          = [(sum(boxes[1]) / 2), (sum(boxes[2]) / 2), 0.0, 0.0]
+    prob            = ODEProblem(eom!, u_init, (0.0, tmax), p)
     if kind == :dense
         integ      = init(prob, Vern9(); 
                             abstol = int_tol, reltol = int_tol,
@@ -183,6 +186,7 @@ function SectionParams(E, p;
           tmax = 20_000.0, nfast = 1, ndense=40, 
           cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = true, save_start = true)
 
-    b = create_integrators(p; tmax, nfast=nfast, ndense=ndense, cc_tol, int_tol, save_everystep = save_everystep, save_start = save_start)
-    return SectionParams(b.integ_fast, b.ptsf, b.nmax_fast, b.integ_dense, b.ptsd, b.nmax_dense, E, p, tmax)
+    E64, tmax64 = Float64(E), Float64(tmax)
+    b = create_integrators(p; tmax=tmax64, nfast=nfast, ndense=ndense, cc_tol, int_tol, save_everystep = save_everystep, save_start = save_start)
+    return SectionParams(b.integ_fast, b.ptsf, b.nmax_fast, b.integ_dense, b.ptsd, b.nmax_dense, E64, p, tmax64)
 end
