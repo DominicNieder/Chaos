@@ -152,4 +152,8 @@ function section_boundary(y0_range, py0_range)
     boundary
 end
 
+function boundary(E, p, n)
+    section_boundary(section_boundary_ranges(E, p, n)...)
+end
+
 end  # module

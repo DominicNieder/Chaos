@@ -49,3 +49,20 @@ display(figs.fC.fΘ)
 # xlims!(figs.fB.ax, -0.001, 0.1)
 # ylims!(figs.fB.ax, -0.5,3)
 # save(joinpath(FIG_DIR, "orbitA/Aeigenvalues-vs-E.png"), figs.fA.fig; px_per_unit = 2)
+
+
+# ===============================
+# visualizing surface of section
+# ===============================
+p= (1.0,1.0,1.0)
+vis= Figure(size=set_fig_size(frac=0.8))
+# this should visualize trajectories in config spce
+ax1= Axis(vis[1,1], xlabel="x", ylabel="y")
+
+# ax2= Axis(vis[1,2], xlabel="x", ylabel="y")
+
+E1    = 0.001
+b1    = HenonHeiles.boundary(E1, p)
+scatter(b1)
+seed1 = []
+u, t, pmap = get_traj(lift(seed1, E1, p, 1000))
