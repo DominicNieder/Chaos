@@ -39,3 +39,8 @@ It seems as if the distance between the boxes has a qualitative effect on the dy
 
 
 ### Lost Wonderers Thoughts:
+
+I watched a lecture by Tim Palmers interpretation on quantum mechanics, i.e. the Bell inequality. He calls invariant set theory.
+
+Here the idea is that the underlying assumptions about the Bell's inequality are not in line with reality, that state space is a smooth and continuous state space, but is rather fractal, thus determanistically indeterminable. 
+The experimental assumptions, that each photon is the same, cannot be fulfilled; each photon originates from a different location in phase space, and thus the assumption, that the photons are locally the same are broken.
