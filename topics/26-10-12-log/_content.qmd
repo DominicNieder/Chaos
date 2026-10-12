@@ -1,0 +1,22 @@
+### To do!
+- [ ] writing down my process on Henon Heiles
+    - [ ] notes
+    - [ ] plots
+    - [ ] code 
+    - [ ] fluent text
+- [ ] 
+
+
+---
+
+#### Unordered notes
+
+So I am starting to further the the study of change of the topology and geometry of the attractive case of the model.
+
+- I need to think about the time units
+
+
+I have 
+
+
+### Lost Wonderers Thoughts:

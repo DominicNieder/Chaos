@@ -2,12 +2,12 @@
 
 - [ ] writing down my process on Henon Heiles
     - [ ] notes
-    - [ ] pots
+    - [ ] plots
     - [ ] code 
     - [ ] fluent text
-- [ ] looking at boxed charges 
+- [x] looking at boxed charges 
     - [x] effect of on the distance between boxes 'DEL'
-    - [ ] qualitative effect of energy scales before the second wall is hit
+    - [x] qualitative effect of energy scales before the second wall is hit
 
 ---
 
