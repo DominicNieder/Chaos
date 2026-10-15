@@ -1,3 +1,9 @@
+using Roots
+
+uc(c) = find_zero(u -> 2/π*(atan(u) + u/(1+u^2)) - c, (0.0, 1e6), Roots.Bisection())
+ε(E, m, c) = uc(c) * sqrt(-2m*E)
+
+
 """
     section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing)
 
@@ -7,28 +13,27 @@ for `tint`, and returns:
   - `sec.f`   : surface of section (left), energy drift (right top), legend (right bottom)
   - raw data  : `seeds` (kept), `sec_map`, `trajs`, `times`
 """
-function section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing)
+function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)))
     seeds     = sample_grid(E, p; nx, np)
     sec_bound = boundary(E; p, n=500)
 
     # ── integrate ──
     kept    = Vector{Float64}[]
     sec_map = Vector{Point2f}[]
-    trajs   = Vector{Vector{Float64}}[]
-    times   = Vector{Float64}[]
+
     naborted = 0
     for seed in seeds
         u0 = lift(seed, E, p)
         u0 === nothing && continue
         u, ts, pts = get_traj(u0, tint; p)
-        if ts[end] < tint                      # solver aborted (near-collision, dt → eps)
-            naborted += 1
-            continue
-        end
+        # if ts[end] < tint                      # solver aborted (near-collision, dt → eps)
+        #     naborted += 1
+        #     continue
+        # end
         push!(kept, seed)
         push!(sec_map, Point2f.(first.(pts, 2)))
-        push!(trajs, u)
-        push!(times, ts)
+        # push!(trajs, u)
+        # push!(times, ts)
     end
 
     naborted > 0 && @info "E = $E: $naborted of $(length(seeds)) seeds aborted by the solver"
@@ -73,8 +78,13 @@ function section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing)
     colsize!(f.layout, 3, Auto(0.45))
 
     return (; E, seed=(; f=fseed, ax=ax_seeds), sec=(; f, ax, axen),
-              seeds=kept, sec_map, trajs, times)
+              seeds=kept, sec_map)
 end
+
+
+"""
+For attractive section maps; I am expecting the system not to change, I expect the system to be topologicaly the same. I expect the monodromy method to result be constand M(E)= M
+"""
 
 
 """
@@ -85,15 +95,16 @@ Runs `section_map` for every energy in `Es` (model units). Energies without an
 accessible section are skipped with a warning. Returns a vector of results;
 view with `display(res[i].sec.f)` or `display(res[i].seed.f)`.
 """
-function scan_section_maps(Es, p; nx=5, np=5, tint=1_000, plims=nothing,
+function scan_section_maps(Es, p; nx=5, np=5, tint=1_000,
                            save_fig=false,
-                           folder=joinpath(FIG_DIR, "section_maps"))
+                           folder=joinpath(FIG_DIR, "section_maps"),c=0.99)
     save_fig && mkpath(folder)
     tag = @sprintf("C%+g_del%.0e_L%g-%g", p.C, p.del, p.L1, p.L2)
 
     out = []
     @showprogress desc="section maps" for E in Es
         res = try
+            plims = (-ε(E, 1.0, c), ε(E, 1.0, c))
             section_map(E, p; nx, np, tint, plims)
         catch err
             @warn "skipped E = $E" exception=(err, catch_backtrace())
@@ -173,6 +184,8 @@ function find_periodic_orbits(E, p; nmax=8, nx=5, np=5, tmax=100_000.0,
     return sort!(df, [:prime, :T])
 end
 
+    
+
 
 """
     periodic_orbit_map(E, p; nmax=8, nx=5, np=5, plims=nothing,
@@ -182,7 +195,7 @@ Section with all periodic orbits (colour = prime period, marker = stability),
 optionally on top of a `section_map` background, plus τ = tr(M) − 2 vs. T
 (stable band |τ| < 2 shaded).
 """
-function periodic_orbit_map(E, p; nmax=8, nx=5, np=5, plims=nothing,
+function periodic_orbit_map(E, p; nmax=8, nx=5, np=5, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)),
                             background=true, nbg=3, tint=1_000, kwargs...)
     df = find_periodic_orbits(E, p; nmax, nx, np, kwargs...)
 
@@ -235,7 +248,7 @@ end
 Runs `periodic_orbit_map` for every energy in `Es` (model units).
 Returns `(; maps, orbits)`: `display(maps[i].f)`; `orbits` holds all energies.
 """
-function scan_periodic_orbits(Es, p; nmax=8, nx=5, np=5, plims=nothing,
+function scan_periodic_orbits(Es, p; nmax=8, nx=5, np=5, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)),
                               save_fig=false, save_data=false,
                               folder=joinpath(FIG_DIR, "periodic_orbits"),
                               data_dir=DATA_DIR, kwargs...)
@@ -259,4 +272,97 @@ function scan_periodic_orbits(Es, p; nmax=8, nx=5, np=5, plims=nothing,
     orbits = isempty(dfs) ? po_table() : reduce(vcat, dfs; cols=:union)
     save_data && jldsave(joinpath(data_dir, "periodic_orbits_$(tag).jld2"); orbits, Es, p)
     return (; maps, orbits)
+end
+
+
+"""
+    scan_periodic_orbits_interactive(Es, p; nmax=8, nx=5, np=5, kwargs...)
+
+Run `scan_periodic_orbits` and display a GLMakie energy-slider view of the
+periodic orbits on the section and their stability. Returns the scan maps,
+combined orbit table `df` (with the `po_table()` columns), and the interactive
+figure, axes, and slider.
+"""
+function scan_periodic_orbits_interactive(Es, p; nmax=8, nx=5, np=5,
+                                          plims=nothing, background=false,
+                                          save_fig=false, save_data=false,
+                                          folder=joinpath(FIG_DIR, "periodic_orbits"),
+                                          data_dir=DATA_DIR, kwargs...)
+    set_style!(:dark)
+    scan = scan_periodic_orbits(Es, p; nmax, nx, np, plims, save_fig, save_data,
+                                folder, data_dir, background, kwargs...)
+    isempty(scan.maps) && error("No energies produced a periodic-orbit map")
+
+    df = po_table()
+    isempty(scan.orbits) || append!(df, scan.orbits; cols=:union)
+    scan_energies = [m.E for m in scan.maps]
+
+    keys = sort(unique([(o.prime, o.kind) for o in eachrow(df)]))
+    section_data = Vector{Dict{Tuple{Int,Int},Vector{Point2f}}}(undef, length(scan_energies))
+    stability_data = Vector{Dict{Tuple{Int,Int},Vector{Point2f}}}(undef, length(scan_energies))
+    boundaries = Vector{Vector{Point2f}}(undef, length(scan_energies))
+    info = Vector{String}(undef, length(scan_energies))
+
+    for (i, E) in enumerate(scan_energies)
+        section_data[i] = Dict(k => Point2f[] for k in keys)
+        stability_data[i] = Dict(k => Point2f[] for k in keys)
+        at_energy = filter(:E => ==(E), df)
+        boundaries[i] = boundary(E; p, n=500)
+        info[i] = "E = $(round(E; sigdigits=5)) — $(nrow(at_energy)) periodic orbit(s)"
+
+        for o in eachrow(at_energy)
+            key = (o.prime, o.kind)
+            append!(section_data[i][key], Point2f.(o.sec_y, o.sec_py))
+            if o.check && isfinite(o.τ)
+                push!(stability_data[i][key], Point2f(o.T, o.τ))
+            end
+        end
+    end
+
+    all_bounds = reduce(vcat, boundaries; init=Point2f[])
+    if isempty(all_bounds)
+        xlim, ylim = (-1.0, 1.0), (-1.0, 1.0)
+    else
+        xs, ys = getindex.(all_bounds, 1), getindex.(all_bounds, 2)
+        xpad = max(0.05 * (maximum(xs) - minimum(xs)), eps())
+        ypad = max(0.05 * (maximum(ys) - minimum(ys)), eps())
+        xlim = (minimum(xs) - xpad, maximum(xs) + xpad)
+        ylim = (minimum(ys) - ypad, maximum(ys) + ypad)
+    end
+
+    fig = Figure(size=(1500, 900))
+    slider = Slider(fig[2, 1:2], range=eachindex(scan_energies), startvalue=1)
+    idx = slider.value
+    ax = Axis(fig[1, 1], xlabel=L"x_2\,[L]", ylabel=L"p_2",
+              title=@lift("Periodic orbits, " * info[$idx]))
+    axtr = Axis(fig[1, 2], xlabel=L"T", ylabel=L"\tau = \mathrm{tr}\,M - 2",
+                title="Stability")
+
+    scatter!(ax, @lift(boundaries[$idx]); color=INK, markersize=3)
+    hspan!(axtr, -2, 2, color=(:gray70, 0.3))
+    for key in keys
+        prime, kind = key
+        let k = key
+            scatter!(ax, @lift(section_data[$idx][k]);
+                     color=pick_color(prime), marker=kind_marker(kind), markersize=10,
+                     label="N=$prime, $(kind_label(kind))")
+            scatter!(axtr, @lift(stability_data[$idx][k]);
+                     color=pick_color(prime), marker=kind_marker(kind), markersize=10)
+        end
+    end
+    xlims!(ax, xlim...)
+    ylims!(ax, ylim...)
+    if !isempty(keys)
+        axislegend(ax; position=:rt)
+    end
+
+    on(events(fig.scene).keyboardbutton) do event
+        event.action == Keyboard.press || return
+        i = slider.value[]
+        event.key == Keyboard.right && set_close_to!(slider, min(i + 1, length(scan_energies)))
+        event.key == Keyboard.left && set_close_to!(slider, max(i - 1, 1))
+    end
+
+    display(fig)
+    return (; maps=scan.maps, df, orbits=df, fig, ax, axtr, slider, energies=scan_energies)
 end
