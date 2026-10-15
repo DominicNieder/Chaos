@@ -4,19 +4,35 @@
     - [ ] plots
     - [ ] code 
     - [ ] fluent text
-- [ ] 
+- [x] renormalisation
 
 
 ---
 
 #### Unordered notes
 
-So I am starting to further the the study of change of the topology and geometry of the attractive case of the model.
+So I am starting to further the the study of change of the topology and geometry of the attractive case of the model, I will describe this in 'Renormalisation'
 
 - I need to think about the time units
 
 
-I have 
 
+### Renormalisation
+
+So I am considering the case that the displayed, relative volume should be a constant value $c$. I am looking for $\epsilon$, to find how the width should be displayed.
+
+$$\frac{\int_{-\epsilon}^{\epsilon} x(p)dp}{\int_{-\infty}^{\infty} x(p)dp}=c$$
+
+The Lorenzian function $x(p)\propto \tfrac{1}{2m_2E-p^2}$ is obtained by Looking at the boundary of the surface of section. If the boundary is considered, we obtain
+
+$$x(p)= \frac{2m_2 \mathcal{C}}{L} \frac{1}{2m_2E-p^2}-\partial\mathcal{B}_{1\text{R}}$$
+
+The integral of the lorenzian term is
+
+$$\int_{-\infty}^{\infty}\frac{dp}{p^2+\kappa^2} = \frac{\pi}{\kappa}, \qquad \int_{-\varepsilon}^{\varepsilon}\frac{dp}{p^2+\kappa^2} = \frac{2}{\kappa}\arctan\frac{\varepsilon}{\kappa}$$ $$\frac{2}{\pi}\arctan\frac{\varepsilon}{\kappa} = c \quad\Longrightarrow\quad \boxed{\varepsilon = \sqrt{-2mE}\;\tan\!\left(\frac{\pi c}{2}\right)}, \qquad 0<c<1.$$
+
+As the boundary only funcitons as an offset, and only cases $E<0$ shall be considered, this consideres the problem to be solved.
 
 ### Lost Wonderers Thoughts:
+
+When discussing with Awais, he suggested, attractive and repulsive should behave the same, with the difference of changing the order of the boxes?
