@@ -21,6 +21,9 @@
 #outline()
 #pagebreak()
 
-#include "chapters/01henonheiles.typ"
+
+#include "chapters/01Introduction.typ"
+#include "chapters/02mathematical_prelimenaries.typ"
+#include "chapters/henonheiles.typ"
 
 #bibliography("../literature/references.bib", style: "apa")
