@@ -1,0 +1,11 @@
+---
+title: "Two Trapped Point Charges"
+description: ""
+date: last-modified
+---
+
+::: {.callout-note appearance="minimal"}
+Also available as a [slide deck](slides.qmd).
+:::
+
+{{< include _content.qmd >}}

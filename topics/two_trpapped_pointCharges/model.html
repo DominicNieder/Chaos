@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Two trapped point charges</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #1a1a1a;
+      --panel: #262626;
+      --grid: #55514a;
+      --text: #f8f2e0;
+      --muted: #c8c0ad;
+      --blue: #55a8ff;
+      --red: #ff6c6c;
+      --accent: #f48484;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 18px;
+      background: var(--page);
+      color: var(--text);
+      font: 15px/1.5 system-ui, sans-serif;
+    }
+    main { max-width: 1000px; margin: auto; }
+    h1 { margin: 0 0 4px; font-size: 1.35rem; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    .controls { display: flex; gap: 8px; margin-bottom: 12px; }
+    button {
+      border: 1px solid var(--grid);
+      border-radius: 7px;
+      padding: 8px 13px;
+      background: var(--panel);
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+    button[aria-pressed="true"] {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .view {
+      display: none;
+      padding: 12px;
+      border: 1px solid var(--grid);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .view.active { display: block; }
+    svg { display: block; width: 100%; height: auto; }
+    .axis { stroke: var(--muted); stroke-width: 2; }
+    .tick { stroke: var(--muted); stroke-width: 1.5; }
+    .box { fill: #303030; stroke: #c8c0ad; stroke-width: 4; }
+    .charge-neg { fill: var(--blue); stroke: #d9edff; stroke-width: 2; }
+    .charge-pos { fill: var(--red); stroke: #ffe0e0; stroke-width: 2; }
+    .curve { fill: none; stroke: var(--accent); stroke-width: 3; }
+    .guide { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 5; }
+    .magnifier { fill: none; stroke: var(--text); stroke-width: 3.5; }
+    .point { fill: var(--red); stroke: #fff; stroke-width: 1; }
+    .label { fill: var(--text); font-size: 15px; }
+    .small { fill: var(--muted); font-size: 13px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px 22px; padding: 8px 6px 0; color: var(--muted); }
+    .key { display: inline-flex; align-items: center; gap: 7px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.blue { background: var(--blue); }
+    .dot.red { background: var(--red); }
+    .line-key { width: 20px; height: 3px; background: var(--accent); }
+    .formula { padding: 4px 8px; color: var(--muted); }
+    body.slide-embed { padding: 8px; }
+    body.slide-embed h1,
+    body.slide-embed main > p { display: none; }
+    body.slide-embed .controls { margin-bottom: 6px; }
+    body.slide-embed .view { padding: 6px; }
+    body.slide-embed .view svg { max-width: 700px; margin-inline: auto; }
+    @media (max-width: 560px) {
+      body { padding: 12px; }
+      body.slide-embed { padding: 4px; }
+      .view { padding: 6px; }
+      .label { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Two trapped point charges</h1>
+
+  <div class="controls" role="group" aria-label="Drawing layers">
+    <button type="button" data-view="boxes" aria-pressed="true">Boxes and charges</button>
+    <button type="button" data-view="potential" aria-pressed="false">Interaction potential</button>
+  </div>
+
+  <section class="view active" id="boxes" aria-label="Boxes and charge positions">
+    <svg viewBox="0 0 900 440" role="img" aria-labelledby="boxTitle boxDesc">
+      <title id="boxTitle">Two boxes containing point charges</title>
+      <desc id="boxDesc">The one-dimensional box boundaries are marked at minus L, near zero, and plus L. The negative and positive particles lie on the axis; the negative particle and small gap are shown enlarged in the inset.</desc>
+      <circle cx="420" cy="205" r="47" fill="var(--panel)"/>
+      <line class="axis" x1="100" y1="205" x2="800" y2="205"/>
+      <line class="box" x1="130" y1="163" x2="130" y2="227"/>
+      <line class="box" x1="420" y1="163" x2="420" y2="227"/>
+      <line class="box" x1="710" y1="163" x2="710" y2="227"/>
+      <line class="tick" x1="130" y1="195" x2="130" y2="215"/>
+      <line class="tick" x1="420" y1="195" x2="420" y2="215"/>
+      <line class="tick" x1="710" y1="195" x2="710" y2="215"/>
+      <circle class="magnifier" cx="420" cy="205" r="47" fill="none"/>
+      <text class="label" x="130" y="240" text-anchor="middle">−L−δ/2</text>
+      <text class="label" x="420" y="240" text-anchor="middle">0</text>
+      <text class="label" x="710" y="240" text-anchor="middle">+L+δ/2</text>
+      <circle class="charge-neg" cx="409" cy="205" r="10"/>
+      <text x="409" y="211" text-anchor="middle" fill="#071321" font-size="19" font-weight="700">−</text>
+      <circle class="charge-pos" cx="573" cy="205" r="10"/>
+      <text x="573" y="211" text-anchor="middle" fill="#260909" font-size="19" font-weight="700">+</text>
+      <text class="label" x="805" y="219">x</text>
+
+      <circle cx="260" cy="345" r="91" fill="var(--panel)"/>
+      <line class="guide" x1="397.04" y1="163.99" x2="215.55" y2="265.60"/>
+      <line class="guide" x1="457.60" y1="233.20" x2="332.80" y2="399.60"/>
+      <circle class="magnifier" cx="260" cy="345" r="91" fill="none"/>
+
+      <line class="axis" x1="191" y1="345" x2="329" y2="345"/>
+      <line class="box" x1="225" y1="306" x2="225" y2="374"/>
+      <line class="box" x1="295" y1="306" x2="295" y2="374"/>
+      <circle class="charge-neg" cx="215" cy="345" r="10"/>
+      <text x="215" y="351" text-anchor="middle" fill="#071321" font-size="19" font-weight="700">−</text>
+      <line class="tick" x1="225" y1="333" x2="225" y2="357"/>
+      <line class="tick" x1="260" y1="333" x2="260" y2="357"/>
+      <line class="tick" x1="295" y1="333" x2="295" y2="357"/>
+      <text class="small" x="225" y="395" text-anchor="middle">−δ/2</text>
+      <text class="small" x="260" y="370" text-anchor="middle">0</text>
+      <text class="small" x="295" y="395" text-anchor="middle">+δ/2</text>
+      <text class="small" x="260" y="419" text-anchor="middle">δ = 10⁻⁸</text>
+    </svg>
+    <div class="legend">
+      <span class="key"><span class="dot blue"></span>Negative point charge at x₁</span>
+      <span class="key"><span class="dot red"></span>Positive point charge at x₂</span>
+      <span class="key">C = −1 (attractive interaction)</span>
+    </div>
+  </section>
+
+  <section class="view" id="potential" aria-label="Interaction potential versus separation">
+    <div class="formula">U(r) = C / r, &nbsp; C = −1, &nbsp; r = |x₂ − x₁|</div>
+    <svg viewBox="0 0 900 400" role="img" aria-labelledby="potentialTitle potentialDesc">
+      <title id="potentialTitle">Attractive interaction potential</title>
+      <desc id="potentialDesc">Potential U equals negative one over separation r, with the example initial separation 0.3887 marked on the curve.</desc>
+      <line class="axis" x1="100" y1="320" x2="820" y2="320"/>
+      <line class="axis" x1="100" y1="45" x2="100" y2="320"/>
+      <line class="guide" x1="100" y1="180" x2="820" y2="180"/>
+      <text class="small" x="88" y="185" text-anchor="end">−2</text>
+      <text class="small" x="88" y="325" text-anchor="end">−4</text>
+      <text class="small" x="100" y="344" text-anchor="middle">0.25</text>
+      <text class="small" x="460" y="344" text-anchor="middle">0.625</text>
+      <text class="small" x="820" y="344" text-anchor="middle">1</text>
+      <text class="label" x="832" y="325">r</text>
+      <text class="label" x="47" y="55">U(r)</text>
+      <text class="small" x="115" y="70">0</text>
+      <text class="small" x="115" y="310">−4</text>
+      <path class="curve" id="potentialCurve"/>
+      <line class="guide" id="initialGuide" x1="0" y1="0" x2="0" y2="320"/>
+      <circle class="point" id="initialPoint" cx="0" cy="0" r="7"/>
+      <text class="label" id="initialRLabel" x="250" y="148">r₀ ≈ 0.3887</text>
+      <text class="small" id="initialULabel" x="250" y="168">U(r₀) ≈ −2.57</text>
+      <text class="small" x="460" y="385" text-anchor="middle">Separation r = |x₂ − x₁| (length units)</text>
+    </svg>
+    <div class="legend">
+      <span class="key"><span class="line-key"></span>Interaction potential U(r)</span>
+      <span class="key"><span class="dot red"></span>Example initial separation</span>
+    </div>
+  </section>
+</main>
+<script>
+  const rMin = 0.25;
+  const rMax = 1;
+  const r0 = 0.3887;
+  const x = r => 100 + (r - rMin) / (rMax - rMin) * 720;
+  const y = potential => 45 + (-potential) / 4 * 275;
+  const curvePoints = Array.from({length: 160}, (_, i) => {
+    const r = rMin + i / 159 * (rMax - rMin);
+    return `${i === 0 ? "M" : "L"} ${x(r).toFixed(2)} ${y(-1 / r).toFixed(2)}`;
+  });
+  const x0 = x(r0);
+  const y0 = y(-1 / r0);
+  document.getElementById("potentialCurve").setAttribute("d", curvePoints.join(" "));
+  document.getElementById("initialGuide").setAttribute("x1", x0);
+  document.getElementById("initialGuide").setAttribute("x2", x0);
+  document.getElementById("initialPoint").setAttribute("cx", x0);
+  document.getElementById("initialPoint").setAttribute("cy", y0);
+  document.getElementById("initialRLabel").textContent = `r₀ ≈ ${r0}`;
+  document.getElementById("initialULabel").textContent = `U(r₀) ≈ ${(-1 / r0).toFixed(2)}`;
+
+  if (new URLSearchParams(window.location.search).has("slide-embed")) {
+    document.body.classList.add("slide-embed");
+  }
+
+  const buttons = document.querySelectorAll("button[data-view]");
+  const views = document.querySelectorAll(".view");
+  for (const button of buttons) {
+    button.addEventListener("click", () => {
+      const selected = button.dataset.view;
+      for (const view of views) view.classList.toggle("active", view.id === selected);
+      for (const item of buttons) {
+        item.setAttribute("aria-pressed", String(item === button));
+      }
+    });
+  }
+</script>
+</body>
+</html>

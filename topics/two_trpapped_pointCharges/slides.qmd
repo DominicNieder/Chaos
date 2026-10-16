@@ -1,0 +1,11 @@
+---
+title: "Two_trpapped_pointCharges"
+subtitle: "Notes"
+date: last-modified
+format:
+  revealjs:
+    theme: night
+    footer: '<a href="index.html">Back to website</a>'
+---
+
+{{< include _content.qmd >}}
