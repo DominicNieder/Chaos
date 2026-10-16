@@ -66,7 +66,7 @@ In order to find a solution of this one makes use of
 when we consider the Functional $integral_(t_1) ^t_2 bold(f)(bold(x)) d t$
 //#ref("variationalAlgebra")
 
-We then considere then, the work 
+We then considere the Helmholz, the work 
 
 
 #math.equation(
