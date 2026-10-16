@@ -29,7 +29,42 @@ const DEL_BOX = 1e-8          # offset between the two boxes that breaks the sym
 
 p =(;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8)
 
-seedN1 = [0.3887, 0.0]
+Es = collect(range(-0.5,-0.3,length= 256))
+maps = scan_periodic_orbits_interactive(Es, p; nmax=3, nx=6, np=6,
+                                          plims=(-5,5), background=true,
+                                          save_fig=true, save_data=false,
+                                          folder=joinpath(FIG_DIR, "periodic_orbits/scan2"),
+                                          data_dir=DATA_DIR)
+
+display(maps.fig)
+
+
+
+# follow periodic orbits and analyse the monodromy matrix
+Esfollow = sort!(collect(range(-2,-0.5, length=1000)),rev=true)
+orbs = follow!(Esfollow, p, 3; seed= [0.113022,0.568])
+
+ana = monodrome(orbs; p=p, verbose=true)
+orbits_with_mono = copy(orbs)
+orbits_with_mono.M = ana.M
+orbits_with_mono.check = ana.check
+orbits_with_mono.str .= "A"
+set_style!(:dark)
+eigenvalue_plots = graphs(orbits_with_mono; fsize=set_fig_size(0.8))
+display(eigenvalue_plots.fA.fλ)
+
+sec= section_map(-0.43, p; nx=5, np=5, tint=1_000)
+display(sec.sec.f)
+
+
+
+
+
+orb = maps.orbits
+display(maps.maps[1].f)
+
+seed = orb[(orb.E .== -1.0) .& ( orb.prime .== 1), :v]
+
 EN1 = -0.42 /abs(p.C/p.L1)
 
 prm = SectionParams(EN1, p; 
@@ -40,23 +75,23 @@ println(orb.v)
 Es = collect(range(-20.0, 100.0, length=50000))
 
 traj, _, _ = get_traj(lift(orb.v, EN1, p), orb.T; p=p)
-δ = 1e-8
-dtraj1, _, _ = get_traj(lift(orb.v, EN1, p) + [-δ, 0, 0, 0], orb.T; p=p)
-dtraj2, _, _ = get_traj(lift(orb.v, EN1, p) + [0, δ, 0, 0], orb.T; p=p)
-dtraj3, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, δ, 0], orb.T; p=p)
-dtraj4, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, 0, δ], orb.T; p=p)
+delta = 1e-8
+dtraj1, _, _ = get_traj(lift(orb.v, EN1, p) + [-delta, 0, 0, 0], orb.T; p=p)
+dtraj2, _, _ = get_traj(lift(orb.v, EN1, p) + [0, delta, 0, 0], orb.T; p=p)
+dtraj3, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, delta, 0], orb.T; p=p)
+dtraj4, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, 0, delta], orb.T; p=p)
 
-dtraj2p, _, _ = get_traj(lift(orb.v, EN1, p) + [0, -δ, 0, 0], orb.T; p=p)
-dtraj3p, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, -δ, 0], orb.T; p=p)
-dtraj4p, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, 0, -δ], orb.T; p=p)
+dtraj2p, _, _ = get_traj(lift(orb.v, EN1, p) + [0, -delta, 0, 0], orb.T; p=p)
+dtraj3p, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, -delta, 0], orb.T; p=p)
+dtraj4p, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, 0, -delta], orb.T; p=p)
 
 
 uT = traj[end]
 M = hcat(
-    (dtraj1[end] .- uT) ./ (-δ),
-    (dtraj2[end] .- dtraj2p[end]) ./ 2δ,
-    (dtraj3[end] .- dtraj3p[end]) ./ 2δ,
-    (dtraj4[end] .- dtraj4p[end]) ./ 2δ,
+    (dtraj1[end] .- uT) ./ (-delta),
+    (dtraj2[end] .- dtraj2p[end]) ./ 2delta,
+    (dtraj3[end] .- dtraj3p[end]) ./ 2delta,
+    (dtraj4[end] .- dtraj4p[end]) ./ 2delta,
 )
 @show M det(M)
 @show eigvals(M)
@@ -81,33 +116,6 @@ lines!(ax, Point2f.(getindex.(dtraj4, 1), getindex.(dtraj4, 2));
 axislegend(ax; position=:rt)
 
 display(f)
-
-# orbs = follow!(Es, p)
-
-# ana = monodrome(orbs; p=p, verbose=true)
-# orbits_with_mono = copy(orbs)
-# orbits_with_mono.M = ana.M
-# orbits_with_mono.check = ana.check
-# orbits_with_mono.str .= "A"
-# set_style!(:dark)
-# eigenvalue_plots = graphs(orbits_with_mono; fsize=set_fig_size(0.8))
-# display(eigenvalue_plots.fA.fλ)
-
-sec= section_map(-0.43, p; nx=5, np=5, tint=1_000)
-display(sec.sec.f)
-
-Es = collect(range(-0.5,-0.3,length= 1000))
-maps = scan_periodic_orbits_interactive(Es, p; nmax=4, nx=5, np=5,
-                                          plims=nothing, background=true,
-                                          save_fig=false, save_data=false,
-                                          folder=joinpath(FIG_DIR, "periodic_orbits"),
-                                          data_dir=DATA_DIR)
-
-
-orb = maps.orbits
-display(maps.maps[1].f)
-
-seed = orb[(orb.E .== -1.0) .& ( orb.prime .== 1), :v]
 
 
 # so I want to find the periodic orbit 

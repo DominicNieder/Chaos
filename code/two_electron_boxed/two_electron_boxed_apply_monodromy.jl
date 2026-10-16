@@ -394,6 +394,36 @@ function get_eigenvals(M)
     (c + δ, c - δ)
 end
 
+"""
+    monodromy_kind_index(M; tol=1e-6)
+
+Classify the transverse multipliers extracted from the 4×4 flow monodromy
+matrix by `get_eigenvals`. Returns 1 for elliptic, 2 for hyperbolic,
+3 for inverse hyperbolic, 4 for parabolic, and 0 if the multipliers are
+non-finite or do not form a recognizable pair.
+"""
+function monodromy_kind_index(M; tol=1e-6)
+    λ1, λ2 = get_eigenvals(M)
+    all(isfinite, (λ1, λ2)) || return 0
+
+    scale = max(1.0, abs(λ1), abs(λ2))
+    near_real(λ) = abs(imag(λ)) <= tol * scale
+    if near_real(λ1) && near_real(λ2)
+        r1, r2 = real(λ1), real(λ2)
+        if (abs(r1 - 1) <= tol * scale && abs(r2 - 1) <= tol * scale) ||
+           (abs(r1 + 1) <= tol * scale && abs(r2 + 1) <= tol * scale)
+            return 4
+        end
+        r1 > 0 && r2 > 0 && return 2
+        r1 < 0 && r2 < 0 && return 3
+        return 0
+    end
+
+    abs(abs(λ1) - 1) <= tol * scale &&
+    abs(abs(λ2) - 1) <= tol * scale && return 1
+    return 0
+end
+
 
 "True if v coincides with ANY section point of an already-catalogued orbit."
 function already_found(df, v, prime; pmap_prime_tol = PMAP_PRIME_TOL)
@@ -481,8 +511,9 @@ include("section_maps.jl")
 """
     Takes a bunch of seed and finds the periodic orbit to each seed. If the orbit is found, it is added to the df. The df is returned at the end.
 """
-function sweep!(df::AbstractDataFrame, seeds, n, prm; pmap_root_tol = PMAP_ROOT_TOL, verbose = false)
-    @showprogress dt = 1 desc = "E=$(round(prm.E; digits = 4)) n=$n" for v0 in seeds
+function sweep!(df::AbstractDataFrame, seeds, n, prm; pmap_root_tol = PMAP_ROOT_TOL,
+                verbose = false, show_progress = true)
+    @showprogress enabled=show_progress dt = 1 desc = "E=$(round(prm.E; digits = 4)) n=$n" for v0 in seeds
         orb = try
             analyse_seed(v0, n, prm; str="seed", pmap_root_tol = pmap_root_tol)
         catch e
@@ -573,15 +604,15 @@ end
     follows periodic orbit for Es, 
     return orbs0
 """
-function follow!(Es, p)
+function follow!(Es, p, n; seed=nothing)
     
     EN1 = first(Es) / abs(p.C / p.L1)
-    seedN1 = sample_grid(EN1, p, nx=1,np=1)[1]
+    seedN1= seed === nothing ?  sample_grid(EN1, p, nx=1,np=1)[1] : seed
     df = orbit_table()
     prm = SectionParams(EN1, p;
           tmax = 20_000.0, nfast = 1, ndense=40,
           cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = false, save_start = false)
-    orb = analyse_seed(seedN1, 1, prm; str = "seed")
+    orb = analyse_seed(seedN1, n, prm; str = "seed")
 
     if orb === nothing
         error("Didn't find the first periodic orbit")
@@ -593,7 +624,7 @@ function follow!(Es, p)
         # println("test")
         set_energy!(prm, e)
         orb = try
-            analyse_seed(v0, 1, prm; str="iter")
+            analyse_seed(v0, n, prm; str="iter")
         catch err
             @warn "analyse seed failed" E=e exception=(err)
             nothing
@@ -613,11 +644,12 @@ end
 
     This takes care of (NaN or Inf) ∈ M
 """
-function monodrome(orbits; p = (;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8), verbose=false)
+function monodrome(orbits; p = (;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8),
+                   verbose=false, show_progress=true)
     M    = Vector{Matrix{Float64}}(undef, nrow(orbits))
     check = falses(nrow(orbits))
 
-    @showprogress dt=1 desc="monodromy" for (i, o) in enumerate(eachrow(orbits))
+    @showprogress enabled=show_progress dt=1 desc="monodromy" for (i, o) in enumerate(eachrow(orbits))
         Mat = try
             monodromy(lift(o.v, o.E, p), o.T; p=p)
         catch err
