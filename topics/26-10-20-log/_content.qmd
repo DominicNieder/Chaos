@@ -1,0 +1,56 @@
+### To do!
+
+
+---
+
+### tracing surface of section
+
+I have two scans where I search periodic orbits and look random trajectories, in order to see how the structures change for the various energy shells between $E_1=-0.5$ and $E_2=-0.3$.
+This region is particular interesting, as this region is where the structure of phasespac change from partially structured system to a completly chaotic system.
+
+![](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.5_C-1_del1e-08_L1-1_N3.png)
+
+![](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.3008_C-1_del1e-08_L1-1_N3.png)
+
+
+A particular interesting region, is the energy range: $E=-0.45765\frac{\mathcal{C}}{L}$ and $E=-0.43882 \frac{\mathcal{C}}{L}$.
+
+
+![](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.4325_C-1_del1e-08_L1-1_N3.png)
+
+![](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.4137_C-1_del1e-08_L1-1_N3.png)
+
+![](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.3878_C-1_del1e-08_L1-1_N3.png)
+
+![](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.3659_C-1_del1e-08_L1-1_N3.png)
+
+
+I also tested this transition for various gap sizes, though the simulation for $del=10^{-3}, 10^{-5}, 10^{-8}$ still crashes for the chaotic region.
+Interestingly the qualitatively, the region inspected ($E\in[-0.5,-0.3]$) seems qualitatively unaffected.
+
+Here is one energy picked randomly, to allow for a comparison.
+
+::: {#fig-panel layout-ncol=3}
+
+E=-0.391 C/L
+
+![gap: 10⁻⁸](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.391_C-1_del1e-08_L1-1_N3.png){#fig-b}
+
+![gap: 10⁻⁶](../../figures/two-boxed-charges/periodic_orbits/scan3-larger_gap/po_E-0.391_C-1_del1e-05_L1-1_N3.png)
+
+![gap: 10⁻³](../../figures/two-boxed-charges/periodic_orbits/scan4-larger_gap/po_E-0.391_C-1_del1e-03_L1-1_N3.png){#fig-c}
+
+E= 0.4145 C/L
+:::
+::: {#fig-panel layout-ncol=3}
+![gap: 10⁻⁸](../../figures/two-boxed-charges/periodic_orbits/scan2/po_E-0.4145_C-1_del1e-08_L1-1_N3.png){#fig-b}
+
+![gap: 10⁻⁶](../../figures/two-boxed-charges/periodic_orbits/scan3-larger_gap/po_E-0.4145_C-1_del1e-05_L1-1_N3.png)
+
+![gap: 10⁻³](../../figures/two-boxed-charges/periodic_orbits/scan4-larger_gap/po_E-0.4145_C-1_del1e-03_L1-1_N3.png){#fig-c}
+
+
+:::
+
+
+### Lost Wonderers Thoughts:

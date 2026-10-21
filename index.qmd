@@ -14,9 +14,9 @@ page-layout: full
 
 ---
 
-## Latest: 12 October, 2026
+## Latest: 21 October, 2026
 
-{{< include topics/26-10-12-log/_content.qmd >}}
+{{< include topics/26-10-21-log/_content.qmd >}}
 
 ## Current project: Hénon-Heiles 
 

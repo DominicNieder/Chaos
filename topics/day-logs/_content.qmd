@@ -1,4 +1,14 @@
 ::: {.callout-note collapse="false"}
+## 21 October, 2026
+
+{{< include ../26-10-21-log/_content.qmd >}}
+:::
+::: {.callout-note collapse="true"}
+## 20 October, 2026
+
+{{< include ../26-10-20-log/_content.qmd >}}
+:::
+::: {.callout-note collapse="true"}
 ## 12 October, 2026
 
 {{< include ../26-10-12-log/_content.qmd >}}
