@@ -122,7 +122,7 @@ emax  = maximum(orbitA31_plot.orbits.E[orbitA31_plot.orbits.jump])
 println(emin, emax)
 es = collect(range(emin, emax, 128))
 
-s = section_map(jump_orb.E[end-4], p; nx=10, np=10, tint=250, plims=(-5,5), set_xmin=0.004, set_xmax=0.1, set_pmin=0.0, set_pmax= 1.0)
+s = section_map(jump_orb.E[end-6], p; nx=10, np=10, tint=250, plims=(-5,5), set_xmin=0.04, set_xmax=0.06, set_pmin=0.45, set_pmax= 0.48)
 display(s.sec.f)
 mkpath(joinpath(FIG_DIR, "section_maps_attractive/detailE-051"))
 save(joinpath(FIG_DIR, "section_maps_attractive/detailE-051/sec.png"),s.sec.f)
