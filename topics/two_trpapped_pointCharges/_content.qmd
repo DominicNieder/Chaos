@@ -4,7 +4,7 @@
 <iframe id="two-charge-model" src="about:blank" title="Two trapped point charges model" width="100%" height="700" style="border: 0;" loading="lazy"></iframe>
 <script>
   const modelFrame = document.getElementById("two-charge-model");
-  const inSlides = window.location.pathname.endsWith("/slides.html");
+  const inSlides = window.location.pathname.endsWith("/slides-revealjs.html");
   const modelPath = window.location.pathname.includes("/topics/two_trpapped_pointCharges/")
     ? "model.html"
     : "topics/two_trpapped_pointCharges/model.html";

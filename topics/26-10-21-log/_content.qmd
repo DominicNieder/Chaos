@@ -7,6 +7,12 @@
 
 ---
 
+### naming of periodic orbits
+
+So I am currently studying two specific periodic orbits. I call these orbit 'A'.
+There is one which is there from $E = -\infty$ and has a period of $p=1$, in the sense of poincaré maps, $M:\Sigma -> \Sigma$. Hence the name of that orbit $A1$. 
+
+Then there is a periodic orbit, with period $p=3$. Its origin is yet unknown, but seems to come into existance, due to the 'detection' of one outer wall.
 
 
 

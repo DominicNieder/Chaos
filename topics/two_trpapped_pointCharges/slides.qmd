@@ -1,6 +1,6 @@
 ---
-title: "Two_trpapped_pointCharges"
-subtitle: "Notes"
+title: "Two confined point charges"
+subtitle: "Classical Dynamical Systems"
 date: last-modified
 format:
   revealjs:
@@ -8,4 +8,58 @@ format:
     footer: '<a href="index.html">Back to website</a>'
 ---
 
+## Dynamical Systems
+
+
+a *phase space* $x \in \mathbb{R}^{n}$, $n$ the degrees of freedom
+$$\frac{d x}{dt} := \dot{x} = f(x)$$
+
+
+
+
+---
+
+### autonomous Hamiltonian systems
+
+$x=(p,q) \in \mathbb{R}^{2d}$, and $p,q \in \mathbb{R}^d$
+
+$$\begin{pmatrix}\dot{p} \\ \dot{q} \end{pmatrix} = \begin{pmatrix}-\frac{\partial H(x)}{\partial q} \\  \frac{\partial H(x)}{\partial p} \end{pmatrix}$$
+
+---
+
+### Hamiltonian systems {data-transition="slide"}
+
+
+
+$x=(p,q) \in \mathbb{R}^{2d}$, and $p,q \in \mathbb{R}^d$
+
+
+$$f(x)= \begin{pmatrix}0 & -\mathbb{1} \\ \mathbb{1} & 0\end{pmatrix} \begin{pmatrix} \tfrac{\partial H(x)}{\partial p} \\ \tfrac{\partial H(x)}{\partial q}\end{pmatrix}$$
+
+---
+
+### Hamiltonian systems {data-transition="slide"}
+
+$x=(p,q) \in \mathbb{R}^{2d}$, and $p,q \in \mathbb{R}^d$
+
+
+$$f(x)= S \frac{\partial H(x)}{\partial x}$$
+
+
+
+$S= \begin{pmatrix}0 & -\mathbb{1} \\ \mathbb{1} & 0\end{pmatrix} \begin{pmatrix} \Rightarrow$ **symplectic geometry**: conservation of phase–space volume!
+
+---
+
+### Periodic trajectories
+
+A trajectory is $\Phi(t,x)$ solves $\dot{x}=f(x)$: $\Phi(T,x)=x$ 
+
+
+
+
+---
+
+
 {{< include _content.qmd >}}
+

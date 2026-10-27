@@ -1,6 +1,7 @@
 project:
   type: website
   output-dir: _site
+  post-render: ./render-slide-deck.sh
   render:
     - "*.qmd"
     - "topics/**/*.qmd"
