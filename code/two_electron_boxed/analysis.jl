@@ -95,3 +95,120 @@ function explore_energies(seeds, E0; p=(;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, d
     end
     return out
 end
+
+"""
+    indent_jump(theta; del=0.1)
+
+Return a Boolean vector matching `theta`. For each adjacent pair, mark the
+point after it when `abs(theta[i] - theta[i + 1]) > del`. Non-finite
+differences are not marked.
+"""
+function indent_jump(θ; del=0.05)
+    isfinite(del) && del >= 0 || throw(ArgumentError("del must be finite and nonnegative"))
+    jumps = falses(length(θ))
+    for i in 1:(length(θ) - 1)
+        difference = abs(θ[i] - θ[i + 1])
+        isfinite(difference) && difference > del && (jumps[i + 1] = true)
+    end
+    return jumps
+end
+
+"""
+    analyse_followed_traj(orbs, p; size=(1300, 900), trajectory_every=100, style=:dark)
+
+Compute monodromy diagnostics for a set of followed orbits and visualise their
+continuation in phase and configuration space.
+
+The function evaluates the monodromy matrix for each orbit, computes the
+associated phase variable `theta`, detects jumps in this phase, and prints a
+summary of the largest discontinuity. It then generates a continuation plot and
+a configuration-space plot, highlighting orbit points with phase jumps.
+
+Returns a named tuple:
+- `f`, `ax`: phase-space continuation figure and axis
+- `config_f`, `config_ax`: configuration-space figure and axis
+- `orbits`: original orbit data augmented with `M`, `check`, `theta`, and `jump`
+- `monodrome`: monodromy/eigenvalue plots
+"""
+function analyse_followed_traj(orbs, p; 
+       size=(1300, 900), 
+       trajectory_every=100, 
+       style=:dark)
+
+    trajectory_every > 0 || throw(ArgumentError("trajectory_every must be positive"))
+    ana = monodrome(orbs; p=p, verbose=false)
+    orbits_with_mono = copy(orbs)
+    orbits_with_mono.M = ana.M
+    orbits_with_mono.check = ana.check
+    orbits_with_mono.theta = [
+        valid ? get_phase2(eigvals(M)) / (2π) : NaN
+        for (M, valid) in zip(ana.M, ana.check)
+    ]
+    orbits_with_mono.jump = indent_jump(orbits_with_mono.theta; del=0.005)
+    njumps = count(orbits_with_mono.jump)
+    theta_differences = abs.(diff(orbits_with_mono.theta))
+    finite_difference_indices = findall(isfinite, theta_differences)
+    println(any(orbits_with_mono.jump) ?
+            "Detected $njumps jump(s)." :
+            "No jumps detected.")
+    if isempty(finite_difference_indices)
+        println("No finite adjacent theta differences to inspect.")
+    else
+        max_difference_index = finite_difference_indices[
+            argmax(theta_differences[finite_difference_indices])
+        ]
+        println("Largest adjacent theta change: ",
+                theta_differences[max_difference_index],
+                " between E=", orbits_with_mono.E[max_difference_index],
+                " and E=", orbits_with_mono.E[max_difference_index + 1],
+                " (jump threshold del=0.05)")
+    end
+    
+    eigenvalue_plots = graphs(orbits_with_mono;
+              fsize=size, 
+              style=style, 
+              save_fig=false)
+
+    order = sortperm(orbs.E)
+    points = [Point2f(orbs.v[i][1], orbs.v[i][2]) for i in order]
+    jump_points = orbits_with_mono.jump[order]
+    length(points) >= 2 || error("need at least two orbit points to plot the energy flow")
+
+    f = Figure(size=size)
+    ax = Axis(f[1, 1], xlabel=L"x_2", ylabel=L"p_2",
+              title="Orbit continuation (arrows show increasing energy)")
+    scatter!(ax, points[.!jump_points]; color=pick_color(1), markersize=3)
+
+    arrow_indices = 1:max(1, cld(length(points) - 1, 30)):(length(points) - 1)
+    arrow_positions = points[arrow_indices]
+    arrow_directions = [points[i + 1] - points[i] for i in arrow_indices]
+    arrows2d!(ax, arrow_positions, arrow_directions;
+              color=pick_color(1), tipwidth=12, tiplength=12, shaftwidth=1.5)
+    scatter!(ax, points[jump_points]; color=INK, markersize=9,
+             strokecolor=pick_color(1), strokewidth=1)
+
+    config_f = Figure(size=size)
+    config_ax = Axis(config_f[1, 1], xlabel=L"x_1", ylabel=L"x_2",
+                     aspect=DataAspect(),
+                     title="Configuration-space orbits (first and every $trajectory_every)")
+    regular_indices = 1:trajectory_every:length(order)
+    jump_indices = order[findall(jump_points)]
+    selected_orbit_indices = sort!(unique(vcat(order[regular_indices], jump_indices)))
+    for i in selected_orbit_indices
+        u0 = lift(orbs.v[i], orbs.E[i], p)
+        u0 === nothing && error("could not lift orbit point at E=$(orbs.E[i])")
+        trajectory, _, _ = get_traj(u0, orbs.T[i]; p)
+        is_jump = orbits_with_mono.jump[i]
+        lines!(config_ax, Point2f.(getindex.(trajectory, 1), getindex.(trajectory, 2));
+               color=is_jump ? INK : (pick_color(1), 0.6),
+               linewidth=is_jump ? 3 : 2)
+    end
+    if !isempty(jump_indices)
+        jump_states = [lift(orbs.v[i], orbs.E[i], p) for i in jump_indices]
+        any(isnothing, jump_states) && error("could not lift a jump orbit point")
+        scatter!(config_ax, [Point2f(u[1], u[2]) for u in jump_states];
+                 color=INK, markersize=10, strokecolor=pick_color(1), strokewidth=1)
+    end
+    return (;f, ax, config_f, config_ax, orbits=orbits_with_mono,
+            monodrome=eigenvalue_plots)
+end

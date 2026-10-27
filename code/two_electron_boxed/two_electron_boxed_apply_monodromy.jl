@@ -90,7 +90,7 @@ section_x1(p) = p.C > 0 ? get_boxes(p)[1][1] + EPS_OFF : get_boxes(p)[1][2] - EP
 
 # p1^2 on the section, at the actual wall position
 p12(x2, p2, E, p) = 2p.m1 * (E - V_int([section_x1(p), x2, NaN, p2], p) - p2^2/(2p.m2))
-in_section(v, E, p) = p12(v[1], v[2], E ,p) > 0
+in_section(v, E, p) = p12(v[1], v[2], E ,p) >= 0
 
 possible_x2(p2,E,p) = 2p.m2*p.C*p.L1/(2p.m2*E-p2^2) + section_x1(p)
 
@@ -381,8 +381,9 @@ function analyse_seed(v0, n, prm; str = "seed",
     # println(res.resnorm, res.comment)
     res.converged || return nothing
     
-    min_period = minPeriodicity(res.v, prm; pmap_prime_tol = pmap_prime_tol, search = 40)
+    min_period = minPeriodicity(res.v, prm; pmap_prime_tol = pmap_prime_tol, search = n)
     min_period.Nperiod === nothing && return nothing
+    min_period.Nperiod !== n && return nothing
     T = min_period.Tperiod
     return (;E = prm.E, v = res.v, str, T)
 end
@@ -438,38 +439,23 @@ end
 
 
 
-"creating the initial points from where the search starts from"
-function section_grid(E, p; ny = 10, npy = 10, margin = 0.03)
-    roots = real.(filter(r -> abs(imag(r)) < 1e-10, HenonHeiles.limit_of_initial_y0(E, p)))
-    sort!(roots)
-    ymin, ymax = roots[1], roots[2]      # the two turning points bounding the well
-    dy = margin * (ymax - ymin)
-    seeds = Vector{Float64}[]
-    for y in range(ymin + dy, ymax - dy, length = ny)
-        pm = pymax(y, E, p)
-        pm <= 0 && continue
-        for s in range(0 + margin, 1 - margin, length = npy)
-            push!(seeds, [y, s * pm])
-        end
-    end
-    seeds
-end
 
 """
 Randomly sample the accessible section in `(x2, p2)`.
 Positions are sampled uniformly over the accessible `x2` interval, and each
 momentum is sampled uniformly over its energy-allowed interval at that `x2`.
 """
-function sample_grid(E, p; nx = 10, np = 10, margin = 1e-2)
+function sample_grid(E, p; nx = 10, np = 10, set_pmin=nothing, set_pmax=nothing, set_xmin=nothing, set_xmax=nothing, margin = 1e-4)
     nx > 0 || throw(ArgumentError("nx must be positive"))
     np > 0 || throw(ArgumentError("np must be positive"))
     margin >= 0 || throw(ArgumentError("margin must be nonnegative"))
 
     box2 = get_boxes(p)[2]
     x1 = section_x1(p)
-    xmin = box2[1] + margin
-    xmax = box2[2] - margin
+    xmin =  box2[1] + margin 
+    xmax = box2[2] - margin 
 
+    println(xmin," ", xmax)
     # The accessible position interval follows from E - V_int(x1, x2) > 0
     # when p2 = 0. Both boxes lie on opposite sides of the gap, so x2 > x1.
     lo, hi = get_boxes(p)[2]
@@ -484,7 +470,8 @@ function sample_grid(E, p; nx = 10, np = 10, margin = 1e-2)
     end
     w = hi - lo
     w > 0 || throw(ArgumentError("no accessible section"))
-    xmin, xmax = lo + margin*w, hi - margin*w
+    xmin  = set_xmin===nothing ? lo + margin*w : set_xmin
+    xmax  = set_xmax===nothing ? hi - margin*w : set_xmax
 
     seeds = Vector{Float64}[]
     sizehint!(seeds, nx * np)
@@ -493,9 +480,14 @@ function sample_grid(E, p; nx = 10, np = 10, margin = 1e-2)
         V = V_int([x1, x2, 0.0, 0.0], p)
         p2max_sq = 2p.m2 * (E - V)
         p2max_sq > 0 || continue
-        p2max = sqrt(p2max_sq)
-        for p2 in (2 .* rand(np) .- 1) .* p2max
-            push!(seeds, [x2, p2])
+
+        p2max = (set_pmax===nothing) ? sqrt(p2max_sq) : ((set_pmax^2 > p2max_sq) ? sqrt(p2max_sq) : set_pmax)
+        p2min = (set_pmin===nothing) ? margin : set_pmin
+        println(p2max," ", p2min)
+        
+        for p2 in range(p2min, p2max, np)
+            println(p12(x2, p2, E, p))
+            in_section([x2, p2], E, p) && push!(seeds, [x2, p2])
         end
     end
     return seeds
@@ -597,22 +589,25 @@ function get_orbits_1period(;
     end
 end
 
+function get_prime(orb)
 
+end
 
 
 """
     follows periodic orbit for Es, 
     return orbs0
 """
-function follow!(Es, p, n; seed=nothing)
+function follow!(Es, p, n; seed=nothing, str=nothing, verbos=false)
     
     EN1 = first(Es) / abs(p.C / p.L1)
-    seedN1= seed === nothing ?  sample_grid(EN1, p, nx=1,np=1)[1] : seed
+    seedN1= seed === nothing ?  sample_grid(EN1, p, nx=1,np=2)[1] : seed
+    label = (str === nothing) ? label="seed" : label=str
     df = orbit_table()
     prm = SectionParams(EN1, p;
           tmax = 20_000.0, nfast = 1, ndense=40,
           cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = false, save_start = false)
-    orb = analyse_seed(seedN1, n, prm; str = "seed")
+    orb = analyse_seed(seedN1, n, prm; str = label)
 
     if orb === nothing
         error("Didn't find the first periodic orbit")
@@ -620,21 +615,26 @@ function follow!(Es, p, n; seed=nothing)
         v0 = orb.v
     end
     push!(df, orb)
+    c = 0
     @showprogress dt=1 desc="orbit $(orb.str)" for e in Es[2:end]
         # println("test")
         set_energy!(prm, e)
         orb = try
-            analyse_seed(v0, n, prm; str="iter")
+            analyse_seed(v0, n, prm; str=label)
         catch err
             @warn "analyse seed failed" E=e exception=(err)
             nothing
         end
+
         if orb === nothing
-            @warn "analyse seed failed" E=e
+            verbos && @warn "analyse seed failed" E=e
+            c+=1
         else
+            
             v0 = orb.v
             push!(df, orb)
         end
+        c == 10 && continue
     end
     return df
 end
@@ -743,14 +743,45 @@ end
 
 
 
+"""
+    graphs(res::DataFrame; fsize=(1400, 900), cmap=COLOR_SCHEME,
+           labels=unique(res.str), save_fig=true,
+           save_dir=joinpath(@__DIR__, "../../figures/two-boxed-charges/monodromy"),
+           style=:dark)
 
+Build monodromy and stability plots for each orbit label in `labels`, using
+the orbit data in `res`. The input must contain `E`, `str`, and `T`; if it
+does not contain both `M` and `check`, monodromy matrices are computed with
+`monodrome(res)`. Only rows with valid monodromy (`check == true`) contribute
+to the plotted curves.
+If `res` has a `theta` column, its values (the normalized phase `Θ/2π`) are
+used for the phase plot; otherwise those values are calculated for plotting.
+
+For each label, the function creates four figures:
+  - `fλ`: real (solid) and imaginary (dashed) parts of the four eigenvalue
+    branches versus energy
+  - `fLy`: Lyapunov quantity `|α|T` versus energy, with a reference line at 1
+  - `fΘ`: phase `Θ/2π` versus energy
+  - `fTr`: trace `tr(M)` versus energy
+
+Returns a named tuple with one field per label, named `f<label>` (for example,
+`result.fA` for label `"A"`). Each field contains a named tuple with the
+figures and their axes: `fλ`, `axλ`, `fLy`, `axLy`, `fΘ`, `axΘ`, `fTr`, and
+`axTr`. These fields are returned even when that label has no valid
+monodromy; in that case its figures display a "no valid monodromy" message.
+
+When `save_fig=true`, saves each label's four figures as PNG files in
+`save_dir`. `fsize` sets figure size, `cmap` selects eigenvalue-branch
+colors, and `style` selects the plotting style via `set_style!`.
+"""
 function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME, labels=unique(res.str),
                 save_fig=true,
-                save_dir=joinpath(@__DIR__, "../../figures/two-boxed-charges/monodromy"))
+                save_dir=joinpath(@__DIR__, "../../figures/two-boxed-charges/monodromy"),
+                style=:dark)
     df = sort(copy(res), [:E])
     save_fig && mkpath(save_dir)
     println("="^72)
-
+    set_style!(style)
 
     function save_graphs(label, plots)
         save_fig || return plots
@@ -784,7 +815,8 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME, labels=uniq
         eigmat     = reduce(hcat, eigvals.(Ms[check]))'   # rows = energy, cols = branch j=1:4
         lyp        = map((λs,T) -> get_lyapunov(collect(λs),T), eachrow(eigmat), sub.T[check])
         traces      = [tr(m) for m in Ms[check]]
-        θs         = [get_phase2(collect(λs)) for λs in eachrow(eigmat)] ./2pi
+        θs         = "theta" ∈ names(sub) ? sub.theta[check] :
+                     [get_phase2(collect(λs)) for λs in eachrow(eigmat)] ./2pi
 
         # Lyapunov exponents of (monodrome) Map 
         axLy = Axis(fLy[1,1], xlabel = "E", ylabel = L"|α|T", title = "orbit $label")  
@@ -797,7 +829,7 @@ function graphs(res::DataFrame; fsize=(1400,900), cmap=COLOR_SCHEME, labels=uniq
         # Θ plot -> for theta = p//q, p,q∈N, bifurcation happens
         axΘ = Axis(fΘ[1,1], xlabel = "E", ylabel = "Θ/2π", title = "orbit $label", yticklabelcolor = INK, yaxisposition = :left)
         lines!(axΘ, Es, θs)
-        
+        ylims!(axΘ,-0.001, maximum(θs)+0.2)
         # eigenvalues λ
         axλ = Axis(fλ[1,1], xlabel = "E", ylabel = "Re(λ) and Im(λ)", title = "orbit $label")
         for j in axes(eigmat, 2)

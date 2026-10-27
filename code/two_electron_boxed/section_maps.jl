@@ -13,8 +13,9 @@ for `tint`, and returns:
   - `sec.f`   : surface of section (left), energy drift (right top), legend (right bottom)
   - raw data  : `seeds` (kept), `sec_map`
 """
-function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)))
-    seeds     = sample_grid(E, p; nx, np)
+function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)), vis=:dark, set_pmin=nothing, set_pmax=nothing, set_xmin=nothing, set_xmax=nothing)
+    set_style!(vis)
+    seeds     = sample_grid(E, p; nx, np, set_pmin=set_pmin, set_pmax=set_pmax, set_xmin=set_xmin, set_xmax=set_xmax)
     sec_bound = boundary(E; p, n=500)
 
     f    = Figure(size=(1300, 900))
@@ -77,6 +78,7 @@ function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 
     return (; E, seed=(; f=fseed, ax=ax_seeds), sec=(; f, ax, axen),
               seeds=kept, sec_map)
 end
+
 
 
 """
@@ -411,4 +413,180 @@ function scan_periodic_orbits_interactive(Es, p; nmax=8, nx=5, np=5,
 
     display(fig)
     return (; maps=scan.maps, df, orbits=df, fig, ax, slider, energies=scan_energies)
+end
+
+
+
+# ============================================================================================
+#        Interactive section-map scan (no periodic-orbit search)
+#        Replaces the empty `interactive_section_maps` stub in section_maps.jl
+# ============================================================================================
+
+"""
+    relative_seeds(E, p; nx=5, np=5, margin=0.02)
+
+Deterministic seeds at fixed *relative* positions in the accessible section:
+x₂ at fraction `sx ∈ [margin, 1-margin]` of the accessible x₂-interval, p₂ at
+fraction `sp ∈ [-1+margin, 1-margin]` of p₂max(x₂). Seed k therefore "means the same"
+at every energy, so its section curve can be followed continuously through `Es`.
+Inaccessible slots are `nothing` (slot count is always nx*np).
+"""
+function relative_seeds(E, p; nx=5, np=5, margin=0.02)
+    seeds = Vector{Union{Nothing,Vector{Float64}}}(nothing, nx*np)
+    lo, hi = get_boxes(p)[2]
+    x1 = section_x1(p)
+    if p.C > 0
+        E > 0 || return seeds
+        lo = max(lo, x1 + p.C/E)
+    elseif p.C < 0 && E < 0
+        hi = min(hi, x1 + abs(p.C)/abs(E))
+    end
+    hi > lo || return seeds
+    w   = hi - lo
+    sxs = nx == 1 ? [0.5] : range(margin, 1 - margin, length=nx)
+    sps = np == 1 ? [0.0] : range(-1 + margin, 1 - margin, length=np)
+    k = 0
+    for sx in sxs, sp in sps
+        k += 1
+        x2   = lo + sx*w
+        p2sq = 2p.m2*(E - V_int([x1, x2, 0.0, 0.0], p))
+        p2sq > 0 || continue
+        seeds[k] = [x2, sp*sqrt(p2sq)]
+    end
+    return seeds
+end
+
+"Integrate every seed at energy E; returns per-slot section points and max relative energy drift."
+function compute_section(E, p, seeds; tint=1_000)
+    secs   = [Point2f[] for _ in seeds]
+    drift  = fill(NaN, length(seeds))
+    Escale = E == 0 ? abs(p.C/p.L1) : abs(E)
+    for (k, s) in enumerate(seeds)
+        s === nothing && continue
+        try
+            in_section(s, E, p) || continue
+            u0 = lift(s, E, p)
+            u0 === nothing && continue
+            u, _, pts = get_traj(u0, tint; p)
+            secs[k]  = Point2f.(first.(pts, 2))
+            drift[k] = max(maximum(ui -> abs(energy(ui, p) - E), u) / Escale, eps())
+        catch err
+            @debug "seed failed" E seed=s exception=err
+        end
+    end
+    return secs, drift
+end
+
+"""
+    interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative,
+                             plims=nothing, follow_limits=true, vis=:dark,
+                             markersize=3, parallel=true, show_progress=true,
+                             folder=joinpath(FIG_DIR, "section_maps"))
+
+Computes the surface of section for every energy in `Es` (model units) and shows
+them in one GLMakie window with an energy slider. No periodic-orbit search.
+
+`seeds`:
+  - `:relative` (default) — `relative_seeds`, same relative position at each E,
+                            so each colour can be followed through the scan
+  - `:random`             — `sample_grid` (re-randomised at each E)
+  - a vector of `[x₂, p₂]` — fixed absolute seeds, skipped where inaccessible
+
+Controls: slider, ←/→ step through energies, `s` saves the current frame to `folder`.
+Right panel: max relative energy drift vs E (worst seed), with the current E marked.
+`follow_limits=true` rescales the axes to each energy; `plims` fixes the p₂ range.
+
+Returns `(; fig, ax, axdrift, slider, energies, secs, drift, seeds)`.
+"""
+function interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative,
+                                  plims=nothing, follow_limits=true, vis=:dark,
+                                  markersize=3, parallel=true, show_progress=true,
+                                  folder=joinpath(FIG_DIR, "section_maps"))
+    set_style!(vis)
+    energies = collect(float.(Es))
+    nE = length(energies)
+
+    seed_at(E) = seeds === :relative ? relative_seeds(E, p; nx, np) :
+                 seeds === :random   ? (try sample_grid(E, p; nx, np) catch; Vector{Float64}[] end) :
+                 [in_section(s, E, p) ? s : nothing for s in seeds]
+
+    seedsets = [seed_at(E) for E in energies]
+    nslots   = maximum(length, seedsets; init=0)
+    nslots > 0 || error("no accessible seeds at any energy")
+
+    secs  = Vector{Vector{Vector{Point2f}}}(undef, nE)
+    drift = Vector{Vector{Float64}}(undef, nE)
+
+    work(i) = ((secs[i], drift[i]) = compute_section(energies[i], p, seedsets[i]; tint))
+    if parallel && Threads.nthreads() > 1 && nE > 1
+        @showprogress enabled=show_progress desc="section maps" Threads.@threads for i in 1:nE
+            work(i)
+        end
+    else
+        parallel && nE > 1 && Threads.nthreads() == 1 &&
+            @warn "one Julia thread; start with --threads=auto to parallelize"
+        @showprogress enabled=show_progress desc="section maps" for i in 1:nE
+            work(i)
+        end
+    end
+
+    bounds   = [boundary(E; p, n=500) for E in energies]
+    maxdrift = [all(isnan, d) ? NaN : maximum(filter(!isnan, d)) for d in drift]
+    nkept    = [count(!isempty, s) for s in secs]
+
+    # ── figure ──
+    fig    = Figure(size=(1300, 900))
+    slider = Slider(fig[2, 1:2], range=1:nE, startvalue=1)
+    idx    = slider.value
+
+    ax = Axis(fig[1, 1], xlabel=L"x_2\,[L]", ylabel=L"p_2",
+              title=@lift("Surface of section, E = $(round(energies[$idx]; sigdigits=5))  " *
+                          "($(nkept[$idx]) / $(length(seedsets[$idx])) seeds,  $(idx[]) / $nE)"))
+    axdrift = Axis(fig[1, 2], xlabel=L"E", ylabel=L"\max_t |E(t)-E|/|E|",
+                   yscale=log10, title="Energy drift")
+
+    scatter!(ax, @lift(bounds[$idx]); color=INK, markersize=3)
+    for k in 1:nslots                                  # one plot per slot: no length mismatch
+        scatter!(ax, @lift(k <= length(secs[$idx]) ? secs[$idx][k] : Point2f[]);
+                 color=pick_color(k), markersize=markersize)
+    end
+
+    good = .!isnan.(maxdrift)
+    any(good) && scatterlines!(axdrift, energies[good], maxdrift[good];
+                               color=INK, markersize=4)
+    vlines!(axdrift, @lift([energies[$idx]]); color=pick_color(1), linewidth=2)
+    colsize!(fig.layout, 2, Relative(0.3))
+
+    # ── limits ──
+    function set_limits!(i)
+        follow_limits || return
+        pts = vcat(bounds[i], reduce(vcat, secs[i]; init=Point2f[]))
+        pts = filter(q -> all(isfinite, q), pts)
+        isempty(pts) && return
+        xs, ys = first.(pts), last.(pts)
+        xp = max(0.03*(maximum(xs) - minimum(xs)), eps(Float32))
+        yp = max(0.03*(maximum(ys) - minimum(ys)), eps(Float32))
+        xlims!(ax, minimum(xs) - xp, maximum(xs) + xp)
+        plims === nothing ? ylims!(ax, minimum(ys) - yp, maximum(ys) + yp) : ylims!(ax, plims...)
+    end
+    on(set_limits!, idx)
+    set_limits!(1)
+    !follow_limits && plims !== nothing && ylims!(ax, plims...)
+
+    # ── keyboard: ←/→ step, s saves the current frame ──
+    on(events(fig.scene).keyboardbutton) do ev
+        ev.action == Keyboard.press || return
+        i = slider.value[]
+        ev.key == Keyboard.right && set_close_to!(slider, min(i + 1, nE))
+        ev.key == Keyboard.left  && set_close_to!(slider, max(i - 1, 1))
+        if ev.key == Keyboard.s
+            mkpath(folder)
+            tag  = @sprintf("C%+g_del%.0e_L%g-%g", p.C, p.del, p.L1, p.L2)
+            file = joinpath(folder, @sprintf("isec_E%+.5g_%s.png", energies[i], tag))
+            save(file, fig); @info "saved $file"
+        end
+    end
+
+    display(fig)
+    return (; fig, ax, axdrift, slider, energies, secs, drift, seeds=seedsets)
 end

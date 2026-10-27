@@ -29,48 +29,126 @@ const DEL_BOX = 1e-8          # offset between the two boxes that breaks the sym
 
 p =(;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8)
 
-Es = collect(range(-0.5,-0.3,length= 256))
-maps = scan_periodic_orbits_interactive(Es, p; nmax=3, nx=6, np=6,
-                                          plims=(-5,5), background=true,
-                                          save_fig=true, save_data=false,
-                                          folder=joinpath(FIG_DIR, "periodic_orbits/scan2"),
-                                          data_dir=DATA_DIR)
+# Es = collect(range(-1.5,-0.3,length= 256))
+# secs = interactive_section_maps(Es, p; 
+#                                    nx=20, np=20,              tint=1_000,           seeds=:relative,
+#                                   plims=(-5,5), follow_limits=true, vis=:dark,
+#                                   markersize=4, parallel=true, show_progress=true,
+#                                   folder=joinpath(FIG_DIR, "section_maps/scan1/section_scan.mp4"))
+# display(secs.fig)
+# mkpath(joinpath(FIG_DIR, "section_maps/scan1"))
+# record(secs.fig, joinpath(FIG_DIR, "section_maps/scan1/section_scan.mp4"), eachindex(secs.energies); framerate = 10) do i
+#     set_close_to!(secs.slider, i)
+# end
 
-display(maps.fig)
+# ========================================
+#  following specific periodic orbits
+# ========================================
+# defining 'following' parameters
+EsA1 = collect(range(-1.1,-0.3, length=1000))
+labelA1, seedA1, periodA1 = "A1", [0.02,0.0], 1
+
+EsA31 = sort!(collect(range(-0.5, -0.0, length=1000)), rev=true)
+labelA3, seedA3, periodA3 = "A3.1", [0.118, 0.57], 3
+
+# following specified parameters
+# A1
+orbsA1 = follow!(EsA1, p, periodA1; 
+       seed= seedA1, 
+       str= labelA1)
+# A3.1
+orbsA31 = follow!(EsA31, p, periodA3; 
+       seed= seedA3, 
+       str= labelA3)
 
 
 
-# follow periodic orbits and analyse the monodromy matrix
-Esfollow = sort!(collect(range(-2,-0.5, length=1000)),rev=true)
-orbs = follow!(Esfollow, p, 3; seed= [0.113022,0.568])
-
-ana = monodrome(orbs; p=p, verbose=true)
-orbits_with_mono = copy(orbs)
-orbits_with_mono.M = ana.M
-orbits_with_mono.check = ana.check
-orbits_with_mono.str .= "A"
-set_style!(:dark)
-eigenvalue_plots = graphs(orbits_with_mono; fsize=set_fig_size(0.8))
-display(eigenvalue_plots.fA.fλ)
-
-sec= section_map(-0.43, p; nx=5, np=5, tint=1_000)
-display(sec.sec.f)
 
 
+# pmap= section_map(e, p; nx=20, np=20, tint=1_000)
 
+# mkpath(joinpath(FIG_DIR, "section_maps/A3.1"))
+# save(joinpath(FIG_DIR, "section_maps/A3.1/E-$(round(e,5)).png"), pmap.sec.f)
 
+# emax  = maximum(orbitA31_plot.orbits.E[orbitA31_plot.orbits.jump]) + 0.001
+# emin  = minimum(orbitA31_plot.orbits.E[orbitA31_plot.orbits.jump])- 0.001
+# es = collect(range(emin, emax, 64))
+# int_pmap = interactive_section_maps(es, p; nx=20, np=20, tint=1_000, seeds=:relative,
+#                                   plims=nothing, follow_limits=true, vis=:dark,
+#                                   markersize=3, parallel=true, show_progress=true,
+#                                   folder=joinpath(FIG_DIR, "section_maps/A3.1"))
+
+# record(int_pmap.fig, joinpath(FIG_DIR, "section_maps/A3.1/creation_zoom.mp4"), eachindex(int_pmap.energies); framerate = 10) do i
+#     set_close_to!(int_pmap.slider, i)
+#     limits!(int_pmap.ax, 0.0, 0.2, 0, 1)          # (xmin, xmax, ymin, ymax), fixed for all frames
+# end
+# on(int_pmap.slider.value) do i
+#     limits!(int_pmap.ax, 0.0, 1, -5, 5)              # fixed frame
+# end
+# notify(int_pmap.slider.value)                          # apply now, not only on the next step
+# display(int_pmap.fig)
 
 orb = maps.orbits
 display(maps.maps[1].f)
 
-seed = orb[(orb.E .== -1.0) .& ( orb.prime .== 1), :v]
 
-EN1 = -0.42 /abs(p.C/p.L1)
+
+orbitA1_plot = analyse_followed_traj(orbsA1, p; trajectory_every=50)
+display(orbitA1_plot.f)
+display(orbitA1_plot.config_f)
+display(getproperty(orbitA1_plot.monodrome, Symbol("f", first(orbsA1.str))).fΘ)
+
+orbitA31_plot = analyse_followed_traj(orbsA31, p; trajectory_every=50)
+display(orbitA31_plot.f)
+display(orbitA31_plot.config_f)
+display(getproperty(orbitA31_plot.monodrome, Symbol("f", first(orbsA31.str))).fλ)
+
+
+# studying the orbit at creation
+
+orbits = orbitA31_plot.orbits
+
+jump_indices = findall(orbits.jump)
+jump_orb= orbits[jump_indices,:]
+idx = jump_indices[argmin(orbits.E[jump_indices])]
+println(jump_orb)
+orbit = orbits[idx, :]
+println("Index: ", idx)
+println("Energy: ", orbit.E)
+println("Initial condition: ", orbit.v)
+println("Initial theta: ", orbit.theta)
+emin  = minimum(orbitA31_plot.orbits.E[orbitA31_plot.orbits.jump])
+emax  = maximum(orbitA31_plot.orbits.E[orbitA31_plot.orbits.jump])
+println(emin, emax)
+es = collect(range(emin, emax, 128))
+
+s = section_map(jump_orb.E[end-4], p; nx=10, np=10, tint=250, plims=(-5,5), set_xmin=0.004, set_xmax=0.1, set_pmin=0.0, set_pmax= 1.0)
+display(s.sec.f)
+mkpath(joinpath(FIG_DIR, "section_maps_attractive/detailE-051"))
+save(joinpath(FIG_DIR, "section_maps_attractive/detailE-051/sec.png"),s.sec.f)
+
+
+
+A31_detail = follow!(es,p,3, seed=orbit.v)
+
+
+num = 3
+seed = orbsA31.v[num]
+EN1 = orbsA31.E[num]/abs(p.C/p.L1)
+
+u, t, pts = get_traj(lift(seed,EN1,p), orbsA31.T[num];p=p)
+set_style!(:dark)
+f = Figure(size=(900, 900))
+ax = Axis(f[1, 1], xlabel="x1", ylabel="x2", aspect=DataAspect())
+
+lines!(ax, Point2f.(getindex.(u, 1).* sign.(getindex.(u,4)), getindex.(u, 2)) .* sign.(getindex.(u,4));
+       color=INK, label="Unperturbed")
+display(f)
 
 prm = SectionParams(EN1, p; 
           tmax = 20_000.0, nfast = 1, ndense=40, 
           cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = false, save_start = false)
-orb = analyse_seed(seedN1, 1, prm; str = "seed")
+orb = analyse_seed(seed, 1, prm; str = "seed")
 println(orb.v)
 Es = collect(range(-20.0, 100.0, length=50000))
 
