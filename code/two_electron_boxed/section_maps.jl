@@ -5,15 +5,18 @@ uc(c) = find_zero(u -> 2/π*(atan(u) + u/(1+u^2)) - c, (0.0, 1e6), Roots.Bisecti
 
 
 """
-    section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing)
+    section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing, parallel=true)
 
 Seeds the Poincaré section at energy `E` (model units), integrates each seed
 for `tint`, and returns:
   - `seed.f`  : seeds on the section with the energy boundary
   - `sec.f`   : surface of section (left), energy drift (right top), legend (right bottom)
   - raw data  : `seeds` (kept), `sec_map`
+
+Seed trajectories are integrated in parallel when Julia is running with
+multiple threads; plotting is always performed serially.
 """
-function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)), vis=:dark, set_pmin=nothing, set_pmax=nothing, set_xmin=nothing, set_xmax=nothing)
+function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)), vis=:dark, set_pmin=nothing, set_pmax=nothing, set_xmin=nothing, set_xmax=nothing, parallel=true, show_progress=true)
     set_style!(vis)
     seeds     = sample_grid(E, p; nx, np, set_pmin=set_pmin, set_pmax=set_pmax, set_xmin=set_xmin, set_xmax=set_xmax)
     sec_bound = boundary(E; p, n=500)
@@ -26,15 +29,36 @@ function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 
     Escale = E == 0 ? abs(p.C / p.L1) : abs(E)
     scatter!(ax, sec_bound, color=INK, markersize=3)
 
-    # ── integrate ──
+    # ── integrate independently per seed; keep plotting serial ──
+    results = Vector{Union{Nothing,NamedTuple}}(nothing, length(seeds))
+    function integrate_seed(i)
+        seed = seeds[i]
+        u0 = lift(seed, E, p)
+        u0 === nothing && return nothing
+        u, ts, pts = get_traj(u0, tint; p)
+        err = [max(abs(energy(ui, p) - E) / Escale, eps()) for ui in u]
+        return (; seed, u, ts, pts, err)
+    end
+
+    if parallel && Threads.nthreads() > 1 && length(seeds) > 1
+        @showprogress enabled=show_progress desc="seed trajectories" Threads.@threads for i in eachindex(seeds)
+            results[i] = integrate_seed(i)
+        end
+    else
+        parallel && length(seeds) > 1 && Threads.nthreads() == 1 &&
+            @warn "Julia is running with one thread; start Julia with --threads=auto to parallelize seed trajectories"
+        @showprogress enabled=show_progress desc="seed trajectories" for i in eachindex(seeds)
+            results[i] = integrate_seed(i)
+        end
+    end
+
     kept    = Vector{Float64}[]
     sec_map = Vector{Point2f}[]
 
     naborted = 0
-    for seed in seeds
-        u0 = lift(seed, E, p)
-        u0 === nothing && continue
-        u, ts, pts = get_traj(u0, tint; p)
+    for result in results
+        result === nothing && continue
+        seed, u, ts, pts, err = result.seed, result.u, result.ts, result.pts, result.err
         # if ts[end] < tint                      # solver aborted (near-collision, dt → eps)
         #     naborted += 1
         #     continue
@@ -43,7 +67,6 @@ function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 
         sec = Point2f.(first.(pts, 2))
         push!(sec_map, sec)
         scatter!(ax, sec, color=pick_color(length(kept)), markersize=4)
-        err = [max(abs(energy(ui, p) - E) / Escale, eps()) for ui in u]
         lines!(axen, ts, err, color=pick_color(length(kept)))
     end
 
@@ -88,23 +111,27 @@ For attractive section maps; I am expecting the system not to change, I expect t
 
 """
     scan_section_maps(Es, p; nx=5, np=5, tint=1_000, plims=nothing,
-                      save_fig=false, folder=joinpath(FIG_DIR, "section_maps"))
+                      save_fig=false, parallel=true, show_progress=true,
+                      folder=joinpath(FIG_DIR, "section_maps"))
 
 Runs `section_map` for every energy in `Es` (model units). Energies without an
 accessible section are skipped with a warning. Returns a vector of results;
-view with `display(res[i].sec.f)` or `display(res[i].seed.f)`.
+view with `display(res[i].sec.f)` or `display(res[i].seed.f)`. Each map's seed
+trajectories are integrated in parallel when multiple Julia threads are
+available; map generation and plotting remain serial.
 """
 function scan_section_maps(Es, p; nx=5, np=5, tint=1_000,
                            save_fig=false,
-                           folder=joinpath(FIG_DIR, "section_maps"),c=0.99)
+                           folder=joinpath(FIG_DIR, "section_maps"), c=0.99,
+                           parallel=true, show_progress=true)
     save_fig && mkpath(folder)
     tag = @sprintf("C%+g_del%.0e_L%g-%g", p.C, p.del, p.L1, p.L2)
 
     out = []
-    @showprogress desc="section maps" for E in Es
+    @showprogress enabled=show_progress desc="section maps" for E in Es
         res = try
             plims = (-ε(E, 1.0, c), ε(E, 1.0, c))
-            section_map(E, p; nx, np, tint, plims)
+            section_map(E, p; nx, np, tint, plims, parallel, show_progress=false)
         catch err
             @warn "skipped E = $E" exception=(err, catch_backtrace())
             continue
@@ -193,11 +220,14 @@ end
 
 Section with all periodic orbits (colour = prime period, marker = stability),
 optionally on top of a `section_map` background, plus τ = tr(M) − 2 vs. T
-(stable band |τ| < 2 shaded).
+(stable band |τ| < 2 shaded). Set `parallel=false` to disable threaded
+integration of background-map seeds; plotting remains serial.
 """
 function periodic_orbit_map(E, p; nmax=8, nx=5, np=5, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)),
-                            background=true, nbg=3, tint=1_000, orbit_df=nothing, kwargs...)
-    df = orbit_df === nothing ? find_periodic_orbits(E, p; nmax, nx, np, kwargs...) : orbit_df
+                            background=true, nbg=3, tint=1_000, orbit_df=nothing,
+                            parallel=true, show_progress=true, kwargs...)
+    df = orbit_df === nothing ?
+         find_periodic_orbits(E, p; nmax, nx, np, show_progress, kwargs...) : orbit_df
     background_points = Point2f[]
 
     f    = Figure(size=(1300, 900))
@@ -207,9 +237,9 @@ function periodic_orbit_map(E, p; nmax=8, nx=5, np=5, plims=(-ε(E, 1, 0.99),ε(
                 yscale=Makie.pseudolog10, title="Stability")
 
     if background
-        bg = section_map(E, p; nx=nbg, np=nbg, tint)
+        bg = section_map(E, p; nx=nbg, np=nbg, tint, parallel, show_progress)
         for sec in bg.sec_map
-            scatter!(ax, sec, color=(:gray60, 0.3), markersize=2)
+            scatter!(ax, sec, color=(:gray60, 0.7), markersize=2)
             append!(background_points, sec)
         end
     end
@@ -249,10 +279,11 @@ end
                          show_progress=true, kwargs...)
 
 Finds periodic orbits for each energy in parallel when multiple Julia threads
-are available, then builds the Makie maps serially. Set `parallel=false` to
-disable threaded searching. Progress is reported once per energy; set
-`show_progress=false` to suppress it. Start Julia with `--threads=auto` to use
-all available CPU cores.
+are available, then builds the Makie maps serially (including any background
+section maps; their seed integrations can also run in parallel). Set
+`parallel=false` to disable threaded work. Progress is reported during the
+energy scan and background integrations; set `show_progress=false` to suppress
+it. Start Julia with `--threads=auto` to use all available CPU cores.
 Returns `(; maps, orbits)`: `display(maps[i].f)`; `orbits` holds all energies.
 """
 function scan_periodic_orbits(Es, p; nmax=8, nx=5, np=5, plims=nothing,
@@ -303,7 +334,8 @@ function scan_periodic_orbits(Es, p; nmax=8, nx=5, np=5, plims=nothing,
         energy_plims = plims === nothing ? (-ε(E, 1, 0.99), ε(E, 1, 0.99)) : plims
         res = try
             periodic_orbit_map(E, p; nmax, nx, np, plims=energy_plims,
-                               background, nbg, tint, orbit_df=orbit_dfs[i], kwargs...)
+                               background, nbg, tint, orbit_df=orbit_dfs[i],
+                               parallel, show_progress, kwargs...)
         catch err
             @warn "skipped plotting E = $E" exception=(err, catch_backtrace())
             continue
@@ -589,4 +621,19 @@ function interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative
 
     display(fig)
     return (; fig, ax, axdrift, slider, energies, secs, drift, seeds=seedsets)
+end
+
+
+
+function sec_map_vid500_2(;n=64)
+    Es = range(-500,-2, n)
+    p= (;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8)
+    seedE0 = [[]]  # select seeds for E=-500, then stretch x by how the ration increased
+    for e in Es
+        ε(E, p.m2, 0.99)
+    end
+    interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative,
+                                  plims=nothing, follow_limits=true, vis=:dark,
+                                  markersize=3, parallel=true, show_progress=true,
+                                  folder=joinpath(FIG_DIR, "section_maps"))
 end

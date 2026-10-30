@@ -27,7 +27,7 @@ const DEL_BOX = 1e-8          # offset between the two boxes that breaks the sym
 
 
 
-p =(;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8)
+p =(;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= DEL_BOX)
 
 # Es = collect(range(-1.5,-0.3,length= 256))
 # secs = interactive_section_maps(Es, p; 
@@ -45,10 +45,13 @@ p =(;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8)
 #  following specific periodic orbits
 # ========================================
 # defining 'following' parameters
-EsA1 = collect(range(-1.1,-0.3, length=1000))
-labelA1, seedA1, periodA1 = "A1", [0.02,0.0], 1
+EsA1 = collect(range(-12,-0.3, length=2000))
+labelA1, seedA1, periodA1 = "A1", [0.032,0.0], 1
+secA1 = section_map(EsA1[1],p, tint=500)
+scatter!(secA1.sec.ax, Point2f(seedA1), markersize=9, color=INK)
+display(secA1.sec.f)
 
-EsA31 = sort!(collect(range(-0.5, -0.0, length=1000)), rev=true)
+EsA31 = sort!(collect(range(-0.5, -0.6, length=1000)), rev=true)
 labelA3, seedA3, periodA3 = "A3.1", [0.118, 0.57], 3
 
 # following specified parameters
@@ -62,8 +65,7 @@ orbsA31 = follow!(EsA31, p, periodA3;
        str= labelA3)
 
 
-
-
+println(orbsA1[1,:].v)
 
 # pmap= section_map(e, p; nx=20, np=20, tint=1_000)
 
@@ -93,12 +95,12 @@ display(maps.maps[1].f)
 
 
 
-orbitA1_plot = analyse_followed_traj(orbsA1, p; trajectory_every=50)
+orbitA1_plot = analyse_followed_traj(orbsA1, p; trajectory_every=50, d=1e-8, kind=:standard,flow_to_periodic_frac=7)
 display(orbitA1_plot.f)
 display(orbitA1_plot.config_f)
-display(getproperty(orbitA1_plot.monodrome, Symbol("f", first(orbsA1.str))).fΘ)
+display(getproperty(orbitA1_plot.monodrome, Symbol("f", first(orbsA1.str))).fλ)
 
-orbitA31_plot = analyse_followed_traj(orbsA31, p; trajectory_every=50)
+orbitA31_plot = analyse_followed_traj(orbsA31, p; trajectory_every=50,d=1e-9, kind=:standard,flow_to_periodic_frac=4)
 display(orbitA31_plot.f)
 display(orbitA31_plot.config_f)
 display(getproperty(orbitA31_plot.monodrome, Symbol("f", first(orbsA31.str))).fλ)
@@ -122,8 +124,8 @@ emax  = maximum(orbitA31_plot.orbits.E[orbitA31_plot.orbits.jump])
 println(emin, emax)
 es = collect(range(emin, emax, 128))
 
-s = section_map(jump_orb.E[end-6], p; nx=10, np=10, tint=250, plims=(-5,5), set_xmin=0.04, set_xmax=0.06, set_pmin=0.45, set_pmax= 0.48)
-display(s.sec.f)
+s = section_map(jump_orb.E[end-3], p; nx=15, np=15, tint=20, plims=(-5,5), set_xmin=0.02, set_xmax=0.1, set_pmin=0.2, set_pmax= 1.6)
+display(s.seed.f)
 mkpath(joinpath(FIG_DIR, "section_maps_attractive/detailE-051"))
 save(joinpath(FIG_DIR, "section_maps_attractive/detailE-051/sec.png"),s.sec.f)
 
@@ -145,15 +147,17 @@ lines!(ax, Point2f.(getindex.(u, 1).* sign.(getindex.(u,4)), getindex.(u, 2)) .*
        color=INK, label="Unperturbed")
 display(f)
 
+seed = orbsA1[1,:].v
+EN1= orbsA1[1,:].E
 prm = SectionParams(EN1, p; 
-          tmax = 20_000.0, nfast = 1, ndense=40, 
+          tmax = 2_000.0, nfast = 1, ndense=40, 
           cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = false, save_start = false)
 orb = analyse_seed(seed, 1, prm; str = "seed")
 println(orb.v)
 Es = collect(range(-20.0, 100.0, length=50000))
 
-traj, _, _ = get_traj(lift(orb.v, EN1, p), orb.T; p=p)
-delta = 1e-8
+traj, _, _ = get_traj(lift(seed, EN1, p), orb.T; p=p)
+delta = 1e-4
 dtraj1, _, _ = get_traj(lift(orb.v, EN1, p) + [-delta, 0, 0, 0], orb.T; p=p)
 dtraj2, _, _ = get_traj(lift(orb.v, EN1, p) + [0, delta, 0, 0], orb.T; p=p)
 dtraj3, _, _ = get_traj(lift(orb.v, EN1, p) + [0, 0, delta, 0], orb.T; p=p)
@@ -194,6 +198,43 @@ lines!(ax, Point2f.(getindex.(dtraj4, 1), getindex.(dtraj4, 2));
 axislegend(ax; position=:rt)
 
 display(f)
+
+
+
+i = 120
+seed = orbsA1[end-i,:].v
+EN1= orbsA1[end-i,:].E
+
+surf = section_map(EN1,p, nx=10, np=10, tint=400)
+
+prm = SectionParams(EN1, p; 
+          tmax = 2_000.0, nfast = 1, ndense=40, 
+          cc_tol = CC_TOL, int_tol = INT_TOL, save_everystep = false, save_start = false)
+orb = analyse_seed(seed, 1, prm; str = "seed")
+println(orb.v)
+Es = collect(range(-20.0, 100.0, length=50000))
+
+traj, _, _ = get_traj(lift(seed, EN1, p), orb.T; p=p)
+u_pert = lift(seed,EN1,p) .+ [0.0,1e-6,0.0,0.0]
+println(u_pert)
+
+pert, _, _ = get_traj(u_pert, 20)
+println()
+println(length(pert[1]))
+set_style!(:dark)
+f = Figure(size=(900, 900))
+ax = Axis(f[1, 1], xlabel="x1", ylabel="x2", aspect=DataAspect())
+lines!(ax, Point2f.(getindex.(traj, 1), getindex.(traj, 2));
+       color=INK, label="last")
+
+
+lines!(ax, Point2f.(getindex.(pert, 1), getindex.(pert, 2));
+       color=pick_color(2), label="proximity")
+scatter!(ax, pert[1][1], pert[1][2], markersize=8,color=pick_color(3))
+axislegend(ax; position=:rt)
+
+display(f)
+
 
 
 # so I want to find the periodic orbit 

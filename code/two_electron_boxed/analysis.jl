@@ -131,12 +131,13 @@ Returns a named tuple:
 - `monodrome`: monodromy/eigenvalue plots
 """
 function analyse_followed_traj(orbs, p; 
+       d=1e-9, kind=:standard,flow_to_periodic_frac=4,
        size=(1300, 900), 
        trajectory_every=100, 
        style=:dark)
 
     trajectory_every > 0 || throw(ArgumentError("trajectory_every must be positive"))
-    ana = monodrome(orbs; p=p, verbose=false)
+    ana = monodrome(orbs; p=p, verbose=false, d=d, kind=kind,flow_to_periodic_frac=flow_to_periodic_frac)
     orbits_with_mono = copy(orbs)
     orbits_with_mono.M = ana.M
     orbits_with_mono.check = ana.check

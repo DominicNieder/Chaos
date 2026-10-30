@@ -172,19 +172,25 @@ function flow(u0, t;
     return get_traj(u0, t; p=p, abstol = abstol, reltol = reltol)[1][end]
 end
 
-function monodromy(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8), d=1e-9, abstol = INT_TOL, reltol = INT_TOL)
-    u0prime = flow(u0, t/4; p=p, abstol=abstol, reltol=reltol)
-    M   = zeros(4, 4)
-    for j in 1:4
 
-        e = zeros(4); e[j] = d
-        if j==1
-            M[:, j] = (flow(u0prime .+ e, t; p=p, abstol=abstol, reltol=reltol) .-
-                    flow(u0prime .- e, t; p=p, abstol=abstol, reltol=reltol)) ./ (2d)
-        else
-            M[:, j] = (flow(u0prime .+ e, t; p=p, abstol=abstol, reltol=reltol) .-
+
+function monodromy(u0, t; p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8), d=1e-9, flow_to_period_frac=4, kind=:standard, abstol = INT_TOL, reltol = INT_TOL)
+    u0prime = flow(u0, t/flow_to_period_frac; p=p, abstol=abstol, reltol=reltol)
+    M   = zeros(4, 4)
+    if kind == :standard
+        for j in 1:4
+
+            e = zeros(4); e[j] = d
+            if j==1
+                M[:, j] = (flow(u0prime .+ e, t; p=p, abstol=abstol, reltol=reltol) .-
                         flow(u0prime .- e, t; p=p, abstol=abstol, reltol=reltol)) ./ (2d)
+            else
+                M[:, j] = (flow(u0prime .+ e, t; p=p, abstol=abstol, reltol=reltol) .-
+                            flow(u0prime .- e, t; p=p, abstol=abstol, reltol=reltol)) ./ (2d)
+            end
         end
+    elseif kind == :hexagon
+
     end
     return M
 end
@@ -645,13 +651,13 @@ end
     This takes care of (NaN or Inf) ∈ M
 """
 function monodrome(orbits; p = (;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8),
-                   verbose=false, show_progress=true)
+                   verbose=false, show_progress=true, d=1e-9, kind=:standard,flow_to_periodic_frac=4)
     M    = Vector{Matrix{Float64}}(undef, nrow(orbits))
     check = falses(nrow(orbits))
 
     @showprogress enabled=show_progress dt=1 desc="monodromy" for (i, o) in enumerate(eachrow(orbits))
         Mat = try
-            monodromy(lift(o.v, o.E, p), o.T; p=p)
+            monodromy(lift(o.v, o.E, p), o.T; p=p, d=d, kind=kind, flow_to_periodic_frac=flow_to_periodic_frac)
         catch err
             verbose && @warn "monodromy failed" E=o.E str=o.str exception=err
             fill(NaN, 4, 4)
