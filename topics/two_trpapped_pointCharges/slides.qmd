@@ -15,15 +15,38 @@ a *phase space* $x \in \mathbb{R}^{n}$, $n$ the degrees of freedom
 $$\frac{d x}{dt} := \dot{x} = f(x)$$
 
 
+$\Phi: T \times \mathbb{R}^n \rightarrow \mathbb{R}^n$
+
+$\Phi(t,x)$ is the trajectory 
 
 
 ---
 
-### autonomous Hamiltonian systems
+### Hamiltonian systems
 
-$x=(p,q) \in \mathbb{R}^{2d}$, and $p,q \in \mathbb{R}^d$
+$x=(p,q) \in \mathbb{R}^{2d}$
 
-$$\begin{pmatrix}\dot{p} \\ \dot{q} \end{pmatrix} = \begin{pmatrix}-\frac{\partial H(x)}{\partial q} \\  \frac{\partial H(x)}{\partial p} \end{pmatrix}$$
+$$H(x)=T(p)+U(q)=E$$ 
+
+degrees of freedom (dof) $2d \to 2d-1$
+::: {.columns}
+
+
+::: {.column}
+
+$$\dot{p}=-\frac{\partial H}{\partial q}$$
+
+:::
+
+::: {.column}
+
+$$\dot{q}=\frac{\partial H}{\partial p}$$
+
+:::
+
+:::
+
+
 
 ---
 
@@ -34,32 +57,116 @@ $$\begin{pmatrix}\dot{p} \\ \dot{q} \end{pmatrix} = \begin{pmatrix}-\frac{\parti
 $x=(p,q) \in \mathbb{R}^{2d}$, and $p,q \in \mathbb{R}^d$
 
 
-$$f(x)= \begin{pmatrix}0 & -\mathbb{1} \\ \mathbb{1} & 0\end{pmatrix} \begin{pmatrix} \tfrac{\partial H(x)}{\partial p} \\ \tfrac{\partial H(x)}{\partial q}\end{pmatrix}$$
+$$\begin{pmatrix}\dot{p}\\\dot{q}\end{pmatrix}= \begin{pmatrix}0 & -\mathbb{1} \\ \mathbb{1} & 0\end{pmatrix} \begin{pmatrix} \tfrac{\partial H(x)}{\partial p} \\ \tfrac{\partial H(x)}{\partial q}\end{pmatrix}$$
 
 ---
 
 ### Hamiltonian systems {data-transition="slide"}
 
-$x=(p,q) \in \mathbb{R}^{2d}$, and $p,q \in \mathbb{R}^d$
+$x=(p,q) \in \mathbb{R}^{2d}$
+
+$$\dot{x}= S \frac{\partial H(x)}{\partial x}$$
 
 
-$$f(x)= S \frac{\partial H(x)}{\partial x}$$
 
+- $S= \begin{pmatrix}0 & -\mathbb{1} \\ \mathbb{1} & 0\end{pmatrix} \Rightarrow$ **symplectic geometry**: conservation of phase–space volume!
 
-
-$S= \begin{pmatrix}0 & -\mathbb{1} \\ \mathbb{1} & 0\end{pmatrix} \begin{pmatrix} \Rightarrow$ **symplectic geometry**: conservation of phase–space volume!
 
 ---
+
+### Model
+
+
+<iframe id="two-charge-model" src="about:blank" title="Two trapped point charges model" width="100%" height="700" style="border: 0;" loading="lazy"></iframe>
+<script>
+  const modelFrame = document.getElementById("two-charge-model");
+  const inSlides = window.location.pathname.endsWith("/slides-revealjs.html");
+  const modelPath = window.location.pathname.includes("/topics/two_trpapped_pointCharges/")
+    ? "model.html"
+    : "topics/two_trpapped_pointCharges/model.html";
+  if (inSlides) {
+    modelFrame.style.height = "65vh";
+  }
+  modelFrame.src = new URL(`${modelPath}${inSlides ? "?slide-embed" : ""}`, window.location.href).href;
+</script>
+
+---
+
+### Model {#model-focus}
+
+<style>
+.reveal .slides #model-focus ~ .fragment.focus-line {
+  font-size: 0.75em;
+  margin: 0.25em 0;
+  opacity: 0.4 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+.reveal .slides #model-focus ~ .fragment.focus-line:first-of-type:not(.visible) {
+  opacity: 1 !important;
+}
+
+.reveal .slides #model-focus ~ .fragment.focus-line.current-fragment {
+  opacity: 1 !important;
+}
+</style>
+
+::: {.fragment .focus-line}
+$$
+\begin{aligned}
+H(x) &= T(p_L)+T(p_R) \\
+     &\quad + U_{int}(q_L,q_R)+U_{\mathcal{B}}(q_L,q_R)
+\end{aligned}
+$$
+:::
+
+::: {.fragment .focus-line}
+$$T(p_i)=\frac{p^2}{2m_i} \geq 0$$
+:::
+
+::: {.fragment .focus-line}
+$$U_{int}(q_L,q_R) = \frac{C}{|q_L-q_R|}$$
+:::
+
+::: {.fragment .focus-line}
+$$
+U_{\mathcal{B}}(q_L,q_R)=
+\begin{cases}
+0 & \text{for } (q_L,q_R) \in \mathcal{B} \\
+\infty & \text{else}
+\end{cases}
+$$
+:::
+
+::: {.fragment .focus-line}
+Reflecting boundary:
+$$x \in \mathcal{S} = \mathbb{R}^{2d} \cap \mathcal{B}$$
+:::
+
+---
+
 
 ### Periodic trajectories
 
-A trajectory is $\Phi(t,x)$ solves $\dot{x}=f(x)$: $\Phi(T,x)=x$ 
+A trajectory is $\Phi(t,x)$ solves $\dot{x}=f(x)$: 
 
+- periodic trajectory is if there is a period $T$, $\Phi(T,x)=x$ 
 
-
+Use *surface of section* to find periodic orbits
 
 ---
 
+### Surface of section 
 
-{{< include _content.qmd >}}
+$\mathcal{S}$ is a $(2d-1)$ dimensional surface, (constrained by Energy $E$)
 
+define a $(2d-1)$-surface in phase space $\Sigma \subset \mathcal{S}$
+
+$H(x)=E \Rightarrow p_L(E,p_R, q_L,q_R) $ 
+
+$$\begin{align*}H(x)= T(p_L)+T(p_R) + U(q_L,q_R)&=E \\
+T(p_R) + U(q_L,q_R) &\leq E \\
+T(p_R) + U(\partial \mathcal{B}_{L2}, q_R) \leq E\end{align*}$$
+
+$\Sigma = \{(p_R, q_R) | \Phi(t,x(v))=(p_L,p_R, \partial \mathcal{B}_{L2}, x_R) \}$
