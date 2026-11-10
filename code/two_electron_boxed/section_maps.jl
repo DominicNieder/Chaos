@@ -16,12 +16,12 @@ for `tint`, and returns:
 Seed trajectories are integrated in parallel when Julia is running with
 multiple threads; plotting is always performed serially.
 """
-function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 1, 0.99)), vis=:dark, set_pmin=nothing, set_pmax=nothing, set_xmin=nothing, set_xmax=nothing, parallel=true, show_progress=true)
+function section_map(E, p; nx=5, np=5, tint=1_000, plims=nothing, vis=:dark, set_pmin=nothing, set_pmax=nothing, set_xmin=nothing, set_xmax=nothing, parallel=true, show_progress=true, fig_size=(1300, 900))
     set_style!(vis)
     seeds     = sample_grid(E, p; nx, np, set_pmin=set_pmin, set_pmax=set_pmax, set_xmin=set_xmin, set_xmax=set_xmax)
     sec_bound = boundary(E; p, n=500)
 
-    f    = Figure(size=(1300, 900))
+    f    = Figure(size=fig_size)
     ax   = Axis(f[1:2, 1:2], xlabel=L"x_2\,[L]", ylabel=L"p_2",
                 title="Surface of section, E = $(round(E; sigdigits=4))")
     axen = Axis(f[1, 3], xlabel=L"t", ylabel=L"|E(t)-E|\,/\,|E|",
@@ -74,17 +74,34 @@ function section_map(E, p; nx=5, np=5, tint=1_000, plims=(-ε(E, 1, 0.99),ε(E, 
     isempty(kept) && error("all seeds aborted at E = $E")
 
     # ── seed figure ──
-    fseed    = Figure(size=(1300, 900))
+    fseed    = Figure(size=fig_size)
     ax_seeds = Axis(fseed[1, 1], xlabel=L"x_2\,[L]", ylabel=L"p_2",
                     title="Seeds, E = $(round(E; sigdigits=4))")
     scatter!(ax_seeds, sec_bound, color=INK, markersize=3)
     scatter!(ax_seeds, Point2f.(kept), color=[pick_color(i) for i in eachindex(kept)],
              markersize=10)
-    plims === nothing || ylims!(ax_seeds, plims...)
 
-    # ── section (left) + energy drift and legend (right) ──
-    plims === nothing || ylims!(ax, plims...)
-
+    # limits for the section and energy-drift axes
+    xs = getindex.(kept, 1); ys = getindex.(kept, 2)
+    xpad = max(0.05 * (maximum(xs) - minimum(xs)), eps())
+    x_lims = (minimum(xs) - xpad, maximum(xs) + xpad)
+    if plims === nothing
+        if E < -1.0
+            pmax = ε(E, p.m2, 0.99)
+        elseif -1.0 <= E < -0.0
+            pmax = ε(-1.0, p.m2, 0.99) 
+        else
+            pmax =  ε(-0.1, p.m2, 0.99) * sqrt(E)
+        end
+        xlims!(ax_seeds, x_lims)
+        ylims!(ax_seeds, (-pmax, pmax))
+        ylims!(ax, x_lims)
+    else
+        xlims!(ax_seeds, x_lims)
+        ylims!(ax_seeds, plims...)
+        xlims!(ax, x_lims)
+        ylims!(ax, plims...)
+    end
     # ── legend ──
     comp_elems  = [MarkerElement(color=INK, marker=:circle, markersize=6)]
     seed_elems  = [MarkerElement(color=pick_color(i), marker=:circle, markersize=8)
@@ -489,29 +506,44 @@ function relative_seeds(E, p; nx=5, np=5, margin=0.02)
 end
 
 "Integrate every seed at energy E; returns per-slot section points and max relative energy drift."
-function compute_section(E, p, seeds; tint=1_000)
+function compute_section(E, p, seeds; tint=1_000, drift_on=true,
+                         parallel=false, show_progress=true)
     secs   = [Point2f[] for _ in seeds]
-    drift  = fill(NaN, length(seeds))
+    drift_on ? (drift  = fill(NaN, length(seeds))) : (drift = nothing)
     Escale = E == 0 ? abs(p.C/p.L1) : abs(E)
-    for (k, s) in enumerate(seeds)
-        s === nothing && continue
+    function work(k)
+        s = seeds[k]
+        s === nothing && return
         try
-            in_section(s, E, p) || continue
+            in_section(s, E, p) || return
             u0 = lift(s, E, p)
-            u0 === nothing && continue
+            u0 === nothing && return
             u, _, pts = get_traj(u0, tint; p)
             secs[k]  = Point2f.(first.(pts, 2))
-            drift[k] = max(maximum(ui -> abs(energy(ui, p) - E), u) / Escale, eps())
+            drift_on && (drift[k] = max(maximum(ui -> abs(energy(ui, p) - E), u) / Escale, eps()))
         catch err
             @debug "seed failed" E seed=s exception=err
         end
     end
+
+    if parallel && Threads.nthreads() > 1 && length(seeds) > 1
+        @showprogress enabled=show_progress desc="section seeds" Threads.@threads for k in eachindex(seeds)
+            work(k)
+        end
+    else
+        parallel && length(seeds) > 1 && Threads.nthreads() == 1 &&
+            @warn "one Julia thread; start with --threads=auto to parallelize"
+        @showprogress enabled=show_progress desc="section seeds" for k in eachindex(seeds)
+            work(k)
+        end
+    end
+
     return secs, drift
 end
 
 """
     interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative,
-                             plims=nothing, follow_limits=true, vis=:dark,
+                             plims=nothing, c=0.99, follow_limits=true, vis=:dark,
                              markersize=3, parallel=true, show_progress=true,
                              folder=joinpath(FIG_DIR, "section_maps"))
 
@@ -526,20 +558,24 @@ them in one GLMakie window with an energy slider. No periodic-orbit search.
 
 Controls: slider, ←/→ step through energies, `s` saves the current frame to `folder`.
 Right panel: max relative energy drift vs E (worst seed), with the current E marked.
-`follow_limits=true` rescales the axes to each energy; `plims` fixes the p₂ range.
+With `plims=nothing`, the x₂ axis follows the current energy's section data.
+For negative energies, the p₂ range uses `±ε(E, p.m2, c)`; for nonnegative
+energies it uses the momentum at the far box corners, where the interaction
+potential is evaluated at `(box1[2], box2[2])`. Set `plims=(pmin, pmax)` to use
+fixed p₂ limits instead.
 
 Returns `(; fig, ax, axdrift, slider, energies, secs, drift, seeds)`.
 """
 function interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative,
-                                  plims=nothing, follow_limits=true, vis=:dark,
+                                  plims=nothing, c=0.99, vis=:dark,
                                   markersize=3, parallel=true, show_progress=true,
-                                  folder=joinpath(FIG_DIR, "section_maps"))
+                                  folder=joinpath(FIG_DIR, "section_maps"), drift_on=true)
     set_style!(vis)
     energies = collect(float.(Es))
     nE = length(energies)
 
-    seed_at(E) = seeds === :relative ? relative_seeds(E, p; nx, np) :
-                 seeds === :random   ? (try sample_grid(E, p; nx, np) catch; Vector{Float64}[] end) :
+    seed_at(E) = (seeds === :relative  && E < 0) ?  relative_seeds(E, p; nx, np) :
+                 seeds === :random || E >= 0  ? (try sample_grid(E, p; nx, np) catch; Vector{Float64}[] end) :
                  [in_section(s, E, p) ? s : nothing for s in seeds]
 
     seedsets = [seed_at(E) for E in energies]
@@ -547,9 +583,14 @@ function interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative
     nslots > 0 || error("no accessible seeds at any energy")
 
     secs  = Vector{Vector{Vector{Point2f}}}(undef, nE)
-    drift = Vector{Vector{Float64}}(undef, nE)
+    drift = drift_on ? Vector{Vector{Float64}}(undef, nE) : nothing
 
-    work(i) = ((secs[i], drift[i]) = compute_section(energies[i], p, seedsets[i]; tint))
+    function work(i)
+        section_data, energy_drift = compute_section(energies[i], p, seedsets[i];
+                                                     tint, drift_on)
+        secs[i] = section_data
+        drift_on && (drift[i] = energy_drift)
+    end
     if parallel && Threads.nthreads() > 1 && nE > 1
         @showprogress enabled=show_progress desc="section maps" Threads.@threads for i in 1:nE
             work(i)
@@ -563,19 +604,32 @@ function interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative
     end
 
     bounds   = [boundary(E; p, n=500) for E in energies]
-    maxdrift = [all(isnan, d) ? NaN : maximum(filter(!isnan, d)) for d in drift]
+    maxdrift = drift_on ?
+        [all(isnan, d) ? NaN : maximum(filter(!isnan, d)) for d in drift] :
+        fill(NaN, nE)
     nkept    = [count(!isempty, s) for s in secs]
 
     # ── figure ──
     fig    = Figure(size=(1300, 900))
-    slider = Slider(fig[2, 1:2], range=1:nE, startvalue=1)
-    idx    = slider.value
+    slider = Slider(drift_on ? fig[2, 1:2] : fig[2, 1],
+                    range=1:nE, startvalue=1)
+    idx = slider.value
 
     ax = Axis(fig[1, 1], xlabel=L"x_2\,[L]", ylabel=L"p_2",
               title=@lift("Surface of section, E = $(round(energies[$idx]; sigdigits=5))  " *
                           "($(nkept[$idx]) / $(length(seedsets[$idx])) seeds,  $(idx[]) / $nE)"))
-    axdrift = Axis(fig[1, 2], xlabel=L"E", ylabel=L"\max_t |E(t)-E|/|E|",
+    axdrift = nothing
+    if drift_on
+        axdrift = Axis(fig[1, 2], xlabel=L"E",
+                   ylabel=L"\max_t |E(t)-E|/|E|",
                    yscale=log10, title="Energy drift")
+        good = .!isnan.(maxdrift)
+        any(good) && scatterlines!(axdrift, energies[good], maxdrift[good];
+                                   color=INK, markersize=4)
+        vlines!(axdrift, @lift([energies[$idx]]);
+                color=pick_color(1), linewidth=2)
+        colsize!(fig.layout, 2, Relative(0.3))
+    end
 
     scatter!(ax, @lift(bounds[$idx]); color=INK, markersize=3)
     for k in 1:nslots                                  # one plot per slot: no length mismatch
@@ -583,27 +637,33 @@ function interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative
                  color=pick_color(k), markersize=markersize)
     end
 
-    good = .!isnan.(maxdrift)
-    any(good) && scatterlines!(axdrift, energies[good], maxdrift[good];
-                               color=INK, markersize=4)
-    vlines!(axdrift, @lift([energies[$idx]]); color=pick_color(1), linewidth=2)
-    colsize!(fig.layout, 2, Relative(0.3))
-
     # ── limits ──
     function set_limits!(i)
-        follow_limits || return
-        pts = vcat(bounds[i], reduce(vcat, secs[i]; init=Point2f[]))
-        pts = filter(q -> all(isfinite, q), pts)
-        isempty(pts) && return
-        xs, ys = first.(pts), last.(pts)
-        xp = max(0.03*(maximum(xs) - minimum(xs)), eps(Float32))
-        yp = max(0.03*(maximum(ys) - minimum(ys)), eps(Float32))
-        xlims!(ax, minimum(xs) - xp, maximum(xs) + xp)
-        plims === nothing ? ylims!(ax, minimum(ys) - yp, maximum(ys) + yp) : ylims!(ax, plims...)
+        section_points = reduce(vcat, secs[i]; init=Point2f[])
+        finite_points = filter(q -> all(isfinite, q),
+                               vcat(bounds[i], section_points))
+        if !isempty(finite_points)
+            xs = first.(finite_points)
+            xpad = max(0.03 * (maximum(xs) - minimum(xs)), eps(Float32))
+            xlims!(ax, minimum(xs) - xpad, maximum(xs) + xpad)
+        end
+
+        if plims !== nothing
+            ylims!(ax, plims...)
+        else
+            if energies[i] < 0
+                pmax = ε(energies[i], p.m2, c)
+            else
+                box1, box2 = get_boxes(p)
+                corner_potential = V_int([box1[2], box2[2], NaN, NaN], p)
+                pmax = sqrt(2p.m2 * (energies[i] - corner_potential)) + 3
+            end
+            pmax = max(pmax, eps(Float32))
+            ylims!(ax, -1.05pmax, 1.05pmax)
+        end
     end
     on(set_limits!, idx)
     set_limits!(1)
-    !follow_limits && plims !== nothing && ylims!(ax, plims...)
 
     # ── keyboard: ←/→ step, s saves the current frame ──
     on(events(fig.scene).keyboardbutton) do ev
@@ -620,20 +680,161 @@ function interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative
     end
 
     display(fig)
+
     return (; fig, ax, axdrift, slider, energies, secs, drift, seeds=seedsets)
 end
 
 
+"""
+    observe_trajectory(E, p, seeds=nothing; tint_traj=1_000, tint_bg=500,
+                      bg_seeds=nothing, background=true, ...)
 
-function sec_map_vid500_2(;n=64)
-    Es = range(-500,-2, n)
-    p= (;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= 1e-8)
-    seedE0 = [[]]  # select seeds for E=-500, then stretch x by how the ration increased
-    for e in Es
-        ε(E, p.m2, 0.99)
+Show trajectories in configuration space and on the surface of section.
+Use the trajectory slider to choose a seed and the progress slider to follow
+its saved `get_traj` samples. When `background=true`, section crossings from
+`bg_seeds` (or a default relative seed grid) are shown as gray markers.
+"""
+function observe_trajectory(E, p, seeds=nothing; tint_traj=500, tint_bg=1_000,
+                            bg_seeds=nothing, parallel=true, show_progress=true,
+                            background=true, bg_nx=5, bg_np=5, size=(1300, 900), viz=:dark)
+    set_style!(viz)
+
+    traj_seeds = seeds === nothing ? sample_grid(E, p; nx=5, np=5) : seeds
+    trajectories = Vector{Union{Nothing,NamedTuple}}(nothing, length(traj_seeds))
+
+    function integrate_seed(i)
+        seed = traj_seeds[i]
+        seed === nothing && return nothing
+        try
+            in_section(seed, E, p) || return nothing
+            u0 = lift(seed, E, p)
+            u0 === nothing && return nothing
+            u, ts, pts = get_traj(u0, tint_traj; p)
+            return (; seed, u, ts, pts)
+        catch err
+            @warn "trajectory integration failed" E seed exception=(err, catch_backtrace())
+            return nothing
+        end
     end
-    interactive_section_maps(Es, p; nx=5, np=5, tint=1_000, seeds=:relative,
-                                  plims=nothing, follow_limits=true, vis=:dark,
-                                  markersize=3, parallel=true, show_progress=true,
-                                  folder=joinpath(FIG_DIR, "section_maps"))
+
+    if parallel && Threads.nthreads() > 1 && length(traj_seeds) > 1
+        @showprogress enabled=show_progress desc="seed trajectories" Threads.@threads for i in eachindex(traj_seeds)
+            trajectories[i] = integrate_seed(i)
+        end
+    else
+        parallel && length(traj_seeds) > 1 && Threads.nthreads() == 1 &&
+            @warn "one Julia thread; start with --threads=auto to parallelize"
+        @showprogress enabled=show_progress desc="seed trajectories" for i in eachindex(traj_seeds)
+            trajectories[i] = integrate_seed(i)
+        end
+    end
+
+    results = NamedTuple[]
+    for trajectory in trajectories
+        trajectory === nothing || push!(results, trajectory)
+    end
+    isempty(results) && error("no valid trajectories at energy E = $E")
+
+    background_points = Point2f[]
+    if background
+        background_seeds = bg_seeds === nothing ?
+            ( (E<0) ? relative_seeds(E, p; nx=bg_nx, np=bg_np) : sample_grid(E, p; nx=bg_nx, np=bg_np) ) : bg_seeds
+        secs, _ = compute_section(E, p, background_seeds; tint=tint_bg, drift_on=false,
+                                  parallel, show_progress)
+        append!(background_points, reduce(vcat, secs; init=Point2f[]))
+    end
+
+    f = Figure(size=size, title="Trajectories, E = $(round(E; sigdigits=5))")
+    ax_sec = Axis(f[1, 1], xlabel=L"x_2\,[L]", ylabel=L"p_2",
+                  title="surface of section")
+    ax_conf = Axis(f[1, 2], xlabel=L"x_1\,[L]", ylabel=L"x_2\,[L]",
+                   title="configuration space")
+
+    !isempty(background_points) &&
+        scatter!(ax_sec, background_points; color=(:gray60, 0.55), markersize=2)
+    boundary_points = boundary(E; p, n=500)
+    !isempty(boundary_points) &&
+        lines!(ax_sec, boundary_points; color=INK, linewidth=1)
+
+    (xlo, xhi), (ylo, yhi) = get_boxes(p)
+    lines!(ax_conf, [xlo, xhi, xhi, xlo, xlo],
+           [ylo, ylo, yhi, yhi, ylo]; color=(:gray60, 0.6), linestyle=:dash)
+
+    limits!(ax_conf, xlo, xhi, ylo, yhi)
+    xmax = maximum(point -> point[1], boundary_points)
+    if E <0 
+        pmax = ε(E, p.m2, 0.99) 
+    else 
+        pmax =  sqrt(2* p.m2 * (E - V_int([xmax, 0.0, 0.0, 0.0], p)) ) + 3
+    end
+    limits!(ax_sec, 0.0, xmax, -pmax, pmax)
+    trajectory_color = pick_color(1)
+    section_path = Observable(Point2f[])
+    section_current = Observable(Point2f[])
+    configuration_path = Observable(Point2f[])
+    configuration_current = Observable(Point2f[])
+    trajectory_info = Observable("")
+    progress_info = Observable("")
+
+    scatter!(ax_sec, section_path; color=trajectory_color, markersize=4)
+    scatter!(ax_sec, section_current; color=trajectory_color, markersize=10,
+             strokecolor=:white, strokewidth=1)
+    lines!(ax_conf, configuration_path; color=trajectory_color, linewidth=1.5)
+    scatter!(ax_conf, configuration_current; color=trajectory_color, markersize=10,
+             strokecolor=:white, strokewidth=1)
+
+    Legend(f[1, 3],
+           [[MarkerElement(color=(:gray60, 0.65), marker=:circle, markersize=6)],
+            [LineElement(color=trajectory_color, linewidth=2),
+             MarkerElement(color=trajectory_color, marker=:circle, markersize=8)],
+            [LineElement(color=INK, linewidth=1.5),
+             LineElement(color=:gray60, linestyle=:dash, linewidth=1.5)]],
+           [["background section crossings"],
+            ["selected trajectory: section", "current section point"],
+            ["energy boundary", "box walls"]],
+           ["Background", "Selected trajectory", "Reference"];
+           framevisible=false, tellheight=false, halign=:left, valign=:top,
+           titlehalign=:left, titlesize=12, labelsize=11, rowgap=1, groupgap=8)
+
+    trajectory_slider = Slider(f[2, 1:2], range=1:length(results), startvalue=1, snap=true)
+    progress_slider = Slider(f[3, 1:2], range=0:0.001:1, startvalue=0)
+    Label(f[2, 3], trajectory_info; tellwidth=false, halign=:left)
+    Label(f[3, 3], progress_info; tellwidth=false, halign=:left)
+
+    function update_trajectory_view()
+        selected = results[trajectory_slider.value[]]
+        nstates = length(selected.u)
+        sample_index = clamp(round(Int, progress_slider.value[] * (nstates - 1)) + 1,
+                             1, nstates)
+        current_time = selected.ts[sample_index]
+        crossings = filter(point -> point[3] <= current_time, selected.pts)
+
+        section_points = Point2f[Point2f(selected.seed[1], selected.seed[2])]
+        append!(section_points, (Point2f(point[1], point[2]) for point in crossings))
+        section_path[] = section_points
+        section_current[] = [last(section_points)]
+
+        configuration_path[] = [
+            Point2f(state[1], state[2]) for state in @view selected.u[1:sample_index]
+        ]
+        state = selected.u[sample_index]
+        configuration_current[] = [Point2f(state[1], state[2])]
+
+        trajectory_info[] = "Trajectory $(trajectory_slider.value[]) / $(length(results)): " *
+                            "($(round(selected.seed[1]; sigdigits=4)), " *
+                            "$(round(selected.seed[2]; sigdigits=4)))"
+        progress_info[] = "t = $(round(current_time; sigdigits=5))"
+    end
+
+    on(trajectory_slider.value) do _
+        update_trajectory_view()
+    end
+    on(progress_slider.value) do _
+        update_trajectory_view()
+    end
+    update_trajectory_view()
+
+    display(f)
+    return (; fig=f, ax_sec, ax_conf, trajectory_slider, progress_slider,
+            trajectories=results, background_points)
 end

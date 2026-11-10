@@ -492,7 +492,7 @@ function sample_grid(E, p; nx = 10, np = 10, set_pmin=nothing, set_pmax=nothing,
         println(p2max," ", p2min)
         
         for p2 in range(p2min, p2max, np)
-            println(p12(x2, p2, E, p))
+            # println(p12(x2, p2, E, p))
             in_section([x2, p2], E, p) && push!(seeds, [x2, p2])
         end
     end
@@ -529,7 +529,7 @@ function sweep_po_energies(; Es, p=(;C= 1.0, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del
     for E in Es
         E_inunits = E/ abs(p.C/p.L1)
         prm = SectionParams(E_inunits, p; tmax, nfast, ndense, save_everystep = false, save_start = false)
-        seeds = sample_grid(E_inunits, p; nx = ny, np = np, margin = margin)
+        seeds =  sample_grid(E_inunits, p; nx = ny, np = np, margin = margin) 
         sweep!(df, seeds, nfast, prm; pmap_root_tol = pmap_root_tol)
     end
     return df
@@ -607,7 +607,7 @@ end
 function follow!(Es, p, n; seed=nothing, str=nothing, verbos=false)
     
     EN1 = first(Es) / abs(p.C / p.L1)
-    seedN1= seed === nothing ?  sample_grid(EN1, p, nx=1,np=2)[1] : seed
+    seedN1= (seed === nothing) ?  ( sample_grid(EN1, p, nx=1,np=2)[1]) : seed
     label = (str === nothing) ? label="seed" : label=str
     df = orbit_table()
     prm = SectionParams(EN1, p;

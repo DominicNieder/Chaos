@@ -8,9 +8,15 @@ BLAS.set_num_threads(1)          # your linear algebra is 2x2; BLAS threads only
 #                       Save and data directories
 # ============================================================================================
 
-const DATA_DIR   = joinpath(@__DIR__, "../../data/two-boxed-charges/")
+const DATA_DIR   = joinpath(@__DIR__, "../../data/two-boxed-charges/pSec/")
 
+const INTERVALL1 = joinpath(DATA_DIR, "-infinityto-1/")
+const INTERVALL2 = joinpath(DATA_DIR, "-1to0/")
+const INTERVALL3 = joinpath(DATA_DIR, "0to+infinity/")
 
+mkpath(INTERVALL1)
+mkpath(INTERVALL2)
+mkpath(INTERVALL3)
 
 # ============================================================================================
 #                       constants for precission of the simulations
@@ -28,6 +34,41 @@ const DEL_BOX = 1e-8          # offset between the two boxes that breaks the sym
 
 
 p =(;C=-1, m1=1.0, m2=1.0, L1=1.0, L2=1.0, del= DEL_BOX)
+
+E = -0.6
+
+sec = section_map(E, p; nx=3, np=10, tint=20_000, plims=nothing, vis=:dark, set_pmin=nothing, set_pmax=nothing, set_xmin=nothing, set_xmax=nothing, parallel=false, show_progress=true)
+
+display(sec.sec.f)
+
+
+traj_seeds1     = [[0.09, -1.45], [0.285,0.56],[0.36,0.6], [0.432,0.65],[0.9995,0.6725], [0.318, 0.53]] # sample_grid(E, p; nx=2, np=3)
+traj_obs1  = observe_trajectory(E, p, traj_seeds1; tint_traj=1000, tint_bg=2000,
+                            bg_seeds=nothing, parallel=false, show_progress=true,
+                            background=true, bg_nx=5, bg_np=8, size=(1300, 900), viz=:dark)
+
+
+display(traj_obs1.fig)
+
+
+
+porbit = find_periodic_orbits(E, p; nmax=23, nx=5, np=5, tmax=100_000.0,
+                              dup_tol=1e-7, verbose=false, show_progress=true)
+
+
+                
+traj_seeds = [Float64[y, py] for orbit in eachrow(porbit)
+              for (y, py) in zip(orbit.sec_y, orbit.sec_py)]
+traj_obs  = observe_trajectory(E, p, traj_seeds; tint_traj=1000, tint_bg=2000,
+                            bg_seeds=nothing, parallel=false, show_progress=true,
+                            background=true, bg_nx=5, bg_np=8, size=(1300, 900), viz=:dark)
+
+push!(traj_seeds1, traj_seeds[161])
+
+
+display(traj_obs.fig)
+
+
 
 # Es = collect(range(-1.5,-0.3,length= 256))
 # secs = interactive_section_maps(Es, p; 
