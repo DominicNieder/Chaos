@@ -14,10 +14,11 @@ page-layout: full
 
 ---
 
-## Latest: 21 October, 2026
+## Latest: 10 November, 2026
 
-{{< include topics/26-10-21-log/_content.qmd >}}
+{{< include topics/26-11-10-log/_content.qmd >}}
 
 ## Current project: Hénon-Heiles 
 
 {{< include topics/two_trpapped_pointCharges/_content.qmd >}}
+

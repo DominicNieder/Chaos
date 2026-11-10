@@ -1,0 +1,41 @@
+### To do!
+
+- [ ] quantum mechanics of the system
+    - [ ] read on QM and quantisaition [Quantum Poincare sections for two-dimensional billiards](https://journals.aps.org/pre/pdf/10.1103/PhysRevE.47.986), [Quantum Birthmarks: Ergodicity Breaking Beyond Scarring](https://journals.aps.org/prx/pdf/10.1103/dhzb-28rb)
+    - [ ] and [Classical and quantum chaos in a circular billiard with a straight cut](https://journals.aps.org/pre/pdf/10.1103/PhysRevE.60.1607)
+    - [ ] check the code of morgan, transcribe into julia?
+    - [ ] re-read classical statmech and thermodynamics, derivation of temperature and entropy in contex of the ensemble; The goalis to work toward a microscopical understanding of entropy and temperature
+- [ ] classical phase space
+    - [ ] 
+
+---
+
+### Quantum Mechanics of the system
+
+So I have the two charged particles trapped in an infinit potential well, that move along one axis. The particles interact by the Coulomb potential.
+
+With $$T_1 = \frac{1}{2m_1}\frac{\partial^2}{\partial x_1^2} \otimes \I$$ and $$T_2 = \I \otimes \frac{1}{2m_2}\frac{\partial^2}{\partial x_2^2} $$ the hamiltonian of the system is given by
+
+$$H = \underset{=H_{auto}}{\underbrace{T_1 + T_2 +V_{bound}}} + V_{int}$$
+
+We introduce $H_{auto}$ as the hamiltonian of the two trapped particles without interaction. The eigenbasis of to this problem is known:
+
+$$H_{auto}\,\ket{\varphi^{L}_n}\otimes \ket{\varphi^{R}_m} = (E_n+E_m) \ket{\varphi^{L}_n}\otimes \ket{\varphi^{R}_m}$$
+
+The eigenbasis in position space is given by sinusoidal functions, $\varphi^{L}_n(x_1) = \sqrt{\frac{2}{L}}\sin(\frac{n\pi (x_1-L-\epsilon)}{L})$ and $\varphi^{R}_m(x_2) = \sqrt{\frac{2}{L+}}\sin(\frac{m\pi (x_2+\epsilon)}{L})$.
+
+
+### reading 
+
+
+Anton M. Saul Atwood[Quantum Birthmarks: Ergodicity Breaking Beyond Scarring](https://journals.aps.org/prx/pdf/10.1103/dhzb-28rb)
+> The correspondence
+> principle states, quite reasonably, that the classical world
+> should start to emerge from the quantum description in the
+> large quantum number, or semiclassical limit
+
+> Bohigas-Giannoni-Schmit (BGS) conjecture rooted in the random matrix theory (RMT)
+
+
+
+### Lost Wonderers Thoughts:

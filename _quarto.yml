@@ -27,6 +27,8 @@ website:
           - topics/self-organized-criticallity/index.qmd
       - section: "Logs"
         contents:
+          - topics/26-11-10-log/index.qmd
+          - topics/26-11-04-log/index.qmd
           - topics/26-10-21-log/index.qmd
           - topics/26-10-20-log/index.qmd
           - topics/26-10-12-log/index.qmd

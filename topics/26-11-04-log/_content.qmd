@@ -1,0 +1,61 @@
+### To do!
+
+- [ ] writing down the results of my observations on the surface of section $-\infty< E/[|C/L|] < -1.0$, $-1.0 < E/[|C/L|] < +2$, $2 < E/[|C/L|] < +\infty$
+    - [ ] $\lambda H(p,q) = \tilde{H}(\tilde{p},\tilde{q})$ and $\lambda = \frac{1}{|C/L|}$, $\tilde{p} = \sqrt{\lambda} p$, $\tilde{q} = \sqrt{\lambda} q$
+    - [ ] investigate dynamics in $-1.0 < E/[|C/L|] < 0$
+        - [ ] sticky regions
+        - [ ] 
+    - [ ] follow unstable trajectories
+- [ ] read suggestions by Abu... 
+- [ ] read on QM and quantisation (read suggestions by Benoit)
+- [ ] have an error discussion
+
+
+---
+
+So I have looked at the general surface of section of the simple model. I have checked the limits, $E \to -\infty$ and $E\to+\infty$ as well as a particular interesting region between $-0.53 > E > -0.3$ in units of $|C/L|$ where $L_1=L_2=L$.
+
+In the region $-\infty< E/[|C/L|] < -1.0$ the surface of section shows a mixed phase space. Partially cahotic and partially regular. 
+The regular region centers around 
+
+### -500 to -2 C/L 
+
+<video controls muted loop playsinline width="100%">
+  <source src="../../figures/two-boxed-charges/section_maps/scan2/section_scan.mp4"
+          type="video/mp4">
+</video>
+
+
+Here we can see that the translation through the energy Intervals behaves like a linear transformation of the surface of section. The dynamics is invariant under rescaling.
+
+What I am trying to find the words for is this mathematical property of the system:
+
+$$\lambda H(p,q) = \tilde{H}(\tilde{p},\tilde{q})$$
+
+$$\dot{\tilde{x}} =  S\frac{\partial \tilde{H}}{\partial \tilde{x}}$$
+
+$$\begin{pmatrix} \dot{\tilde{p}} \\ \dot{\tilde{q}} \end{pmatrix} = \begin{pmatrix} - \frac{\partial \tilde{H}}{\partial \tilde{q}} \\ \frac{\partial \tilde{H}}{\partial \tilde{p}} \end{pmatrix}$$
+
+with the transformation $\tilde{p} = \sqrt{\lambda} p$, $\tilde{q} = \sqrt{\lambda} q$ and $\lambda = \frac{1}{|C/L|}$.
+
+$$\Rightarrow \Phi(\tilde{t},\tilde{x}) =  \Phi(t,x)$$
+
+Or there is a 
+
+
+### -1.5 to -0.3 C/L 
+
+<video controls muted loop playsinline width="100%">
+  <source src="../../figures/two-boxed-charges/section_maps/scan1/section_scan.mp4"
+          type="video/mp4">
+</video>
+
+
+### -2 to 5000 C/L
+
+<video controls muted loop playsinline width="100%">
+  <source src="../../figures/two-boxed-charges/section_maps/scanAll2/section_scan.mp4"
+          type="video/mp4">
+</video>
+
+### Lost Wonderers Thoughts:
