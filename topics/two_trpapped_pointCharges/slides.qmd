@@ -11,14 +11,15 @@ format:
 ## Dynamical Systems
 
 
-a *phase space* $x \in \mathbb{R}^{n}$, $n$ the degrees of freedom
-$$\frac{d x}{dt} := \dot{x} = f(x)$$
+
+$$\frac{d x}{dt} := \dot{x} = f(x) \text{ for } x \in \mathbb{R}^n$$
 
 
-$\Phi: T \times \mathbb{R}^n \rightarrow \mathbb{R}^n$
+$\Phi: T \times \mathbb{R}^n \rightarrow \mathbb{R}^n$ 
 
-$\Phi(t,x)$ is the trajectory 
+$\Phi(t,x)$ are the trajectories in *phase space* $\mathbb{R}^n$
 
+$x$ in a *phase space* $\mathbb{R}^{n}$ of $n$ degrees of freedom
 
 ---
 
