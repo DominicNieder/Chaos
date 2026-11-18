@@ -8,5 +8,4 @@ fi
 export RENDERING_SLIDE_DECK=1
 quarto render topics/two_trpapped_pointCharges/slides.qmd \
   --to revealjs \
-  --output slides-revealjs.html \
-  --output-dir _site/topics/two_trpapped_pointCharges
+  -M output-file:slides-revealjs.html

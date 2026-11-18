@@ -77,6 +77,43 @@ To open the Pluto notebook:
 julia --project=code -e 'using Pluto; Pluto.run()'
 ```
 
+## Hénon–Heiles slide presentation
+
+When trajectory JSON changes, rebuild the compact binary assets first:
+
+```bash
+node code/scripts/preprocess-trajectories.mjs
+```
+
+Run the trajectory-data and energy regression tests with:
+
+```bash
+node --test code/scripts/test-hh-energy.mjs code/scripts/test-hh-data.mjs
+```
+
+Render the website and RevealJS deck with Quarto:
+
+```bash
+quarto render
+```
+
+Serve the generated site over HTTP so the browser can load local ES modules and
+binary trajectory files:
+
+```bash
+python3 -m http.server 8000 --directory _site
+```
+
+Then open `http://localhost:8000/topics/two_trpapped_pointCharges/slides-revealjs.html`.
+The presentation uses the locally vendored Three.js modules under `vendor/three/`,
+so it does not require a CDN connection.
+
+Timelines are manually scrubbed; the 3D slide starts with the full long-term
+trajectory. Drag the 3D views to rotate and scroll to zoom. Press `E` to toggle
+the energy shell. On the moving-section slide, use the slider or scroll to move
+the plane, press `D` to hide/show the `pₓ ≤ 0` crossings, and press `T` to
+toggle trajectory lines. Drag and scroll on the fixed Poincaré map to pan and zoom.
+
 ## Glossary workflow
 
 (This has been gernerated by claude-ai to describe the workflow which I implemented with the help of claude-ai.)

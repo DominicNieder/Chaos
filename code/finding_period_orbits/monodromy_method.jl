@@ -11,7 +11,6 @@ BLAS.set_num_threads(1)          # your linear algebra is 2x2; BLAS threads only
 const CONFIG_DIR = joinpath(@__DIR__, "../sim_config/henon_heiles.json")
 const DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/simulation/simn-y256-py0/")
 const FIG_DIR    = joinpath(@__DIR__, "../../figures/henon-heiles/sep16-latex/")
-const SAVE_DATA_DIR   = joinpath(@__DIR__, "../../data/henon-heiles/sep16-latex/")
 
 
 
@@ -169,6 +168,90 @@ function section_trj(v, prm)
     sol = prm.integ_dense.sol
     return sol, permutedims([prm.yd prm.pyd]), copy(prm.tsd)
 end
+
+"""
+    return (; phi=sol.u, t=sol.t, sec_y=y, sec_py=py, sec_t=ts)
+
+calculates section trajectory as well as the trjactory
+"""
+function get_traj_and_map(u0, t; p=(1.0,1.0,1.0), abstol=INT_TOL, reltol=INT_TOL,
+                      cc_tol=CC_TOL, dt=nothing)
+    condition(u, t, integ) = u[1]
+
+    y, py, ts = Float64[], Float64[], Float64[]
+    affect_f!(integ) = begin
+        push!(y, integ.u[2]); push!(py, integ.u[4]); push!(ts, integ.t)
+    end
+    cont_callback = ContinuousCallback(condition, affect_f!, nothing; abstol=cc_tol)
+    prob = ODEProblem(HenonHeiles.equations!, u0, (0.0, t), p)
+
+    sol = if dt === nothing
+        solve(prob, Vern9(); abstol=abstol, reltol=reltol, callback=cont_callback)
+    else
+        solve(prob, Vern9(); abstol=abstol, reltol=reltol,
+              callback=cont_callback, saveat=dt)
+    end
+
+    return (; phi=sol.u, t=sol.t, sec_y=y, sec_py=py, sec_t=ts)
+end
+
+function _write_trajectory_data(path, variable_name, data, format)
+    extension = if format === :json
+        ".json"
+    elseif format === :js
+        ".js"
+    else
+        throw(ArgumentError("format must be :json or :js"))
+    end
+
+    _, path_extension = splitext(path)
+    output_path = if isempty(path_extension)
+        path * extension
+    elseif lowercase(path_extension) == extension
+        path
+    else
+        throw(ArgumentError("path extension must match format $format"))
+    end
+
+    mkpath(dirname(abspath(output_path)))
+    open(output_path, "w") do io
+        if format === :js
+            print(io, "window.", variable_name, " = ")
+        end
+        JSON3.write(io, data)
+        format === :js && println(io, ";")
+    end
+    return abspath(output_path)
+end
+
+"""
+   save_trajectory_data(result, path; format=:json)
+
+Save `result.phi` and `result.t` as JSON or as browser-loadable
+`window.trajectoryData` JavaScript.
+"""
+function save_trajectory_data(result, path; format=:json)
+    return _write_trajectory_data(
+        path, "trajectoryData", (; t=result.t, phi=result.phi), format)
+end
+
+"""
+   save_section_trajectory_data(result, path; format=:json)
+
+Save section crossing times and coordinates as JSON or as browser-loadable
+`window.sectionTrajectoryData` JavaScript.
+"""
+function save_section_trajectory_data(result, path; format=:json)
+    data = (; t=result.sec_t, y=result.sec_y, py=result.sec_py)
+    return _write_trajectory_data(path, "sectionTrajectoryData", data, format)
+end
+
+save_trajectory_js(result, path) =
+    save_trajectory_data(result, path; format=:js)
+
+save_section_trajectory_js(result, path) =
+    save_section_trajectory_data(result, path; format=:js)
+
 
 "Find the smallest k with |T^k v - v| < tol.
 

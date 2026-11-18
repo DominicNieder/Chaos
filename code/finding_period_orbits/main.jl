@@ -1,5 +1,14 @@
 include("monodromy_method.jl")
 
+
+### ===========================
+###    perparing presentation: Understanding the study of phase space ->  surface of section
+### ===========================
+const SAVE_DATA_DIR_TRAJ   = joinpath(@__DIR__, "../../data/henon-heiles/presentation/poincare-map/traj/")
+const SAVE_DATA_DIR_SEC   = joinpath(@__DIR__, "../../data/henon-heiles/presentation/poincare-map/map/")
+
+
+
 energy_sweep = ABC_energy_trace()
 orbits = append_monodrome(energy_sweep.all_ABC)
 

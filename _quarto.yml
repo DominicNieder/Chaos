@@ -9,7 +9,21 @@ project:
   resources:
     - "pic/**"
     - "figures/**"
-    - "topics/**/*.html"
+    - "topics/self-organized-criticallity/demo_size_prob_country_region_drilldown.html"
+    - "topics/two_trpapped_pointCharges/model.html"
+    - "topics/two_trpapped_pointCharges/trajectory-viz.js"
+    - "topics/two_trpapped_pointCharges/axis-indicator.js"
+    - "topics/two_trpapped_pointCharges/poincare-viz.js"
+    - "topics/two_trpapped_pointCharges/hh-energy.js"
+    - "topics/two_trpapped_pointCharges/hh-data.js"
+    - "topics/two_trpapped_pointCharges/hh-scene.js"
+    - "vendor/three/**"
+    - "data/henon-heiles/presentation/bin/**"
+    - "data/henon-heiles/presentation/1trajectory/chaotic_short.json"
+    - "data/henon-heiles/presentation/1trajectory/regular_short.json"
+    - "data/henon-heiles/presentation/1trajectory/chaotic_long.json"
+    - "data/henon-heiles/presentation/1trajectory/regular_long.json"
+    - "data/henon-heiles/presentation/poincare-map/**"
 
 website:
   title: "Chaos"
